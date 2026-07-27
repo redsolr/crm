@@ -1,0 +1,9 @@
+# Encoding guard — files in this repo are UTF-8, full stop. Spec files were
+# once saved with UTF-8 misread as Windows-1252, baking mojibake into e2e
+# locators/assertions (see src/__tests__/encoding-hygiene.test.ts, the
+# enforcing tripwire). Deliberately minimal: prettier owns formatting; this
+# file exists for the charset line.
+root = true
+
+[*]
+charset = utf-8

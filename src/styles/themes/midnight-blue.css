@@ -1,0 +1,64 @@
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  Theme: Midnight Blue                                              */
+/*  Cool dark base with blue accents — example of a swappable theme   */
+/*                                                                    */
+/*  To activate: set data-theme="midnight-blue" on <html>             */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+[data-theme="midnight-blue"] {
+  /* ── Core palette ── */
+  --background: #0a0a0f;
+  --foreground: #e0e4ec;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* ── Surface hierarchy ── */
+  --claude-dark: #12141c;
+  --claude-content: #111114;
+  --claude-sidebar: #0e1018;
+  --claude-accent: #1c2030;
+  --claude-highlight: #222840;
+  --claude-textbox: #1c2030;
+  --claude-text: #e0e4ec;
+
+  /* ── Layered backgrounds ── */
+  --theme-bg-primary: #10121a;
+  --theme-bg-secondary: #141822;
+  --theme-bg-tertiary: #1a1e2c;
+  --theme-bg-hover: #222840;
+  --theme-bg-active: #2c3452;
+
+  /* ── Borders ── */
+  --theme-border-primary: #1e2236;
+  --theme-border-secondary: #2a3050;
+  --theme-border-hover: #3a4268;
+
+  /* ── Text ── */
+  --theme-text-primary: #e0e4ec;
+  --theme-text-secondary: #8090a8;
+  --theme-text-muted: #566480;
+
+  /* ── Accent ── */
+  --theme-accent: #3b82f6;
+  --theme-accent-hover: #2563eb;
+  --theme-accent-subtle: rgba(59, 130, 246, 0.12);
+  --theme-accent-border: rgba(59, 130, 246, 0.2);
+  --theme-link: #579dff;
+  --theme-link-text: #1d2125;
+
+  /* ── Context chain ── */
+  --context-chain-bg: rgba(59, 130, 246, 0.08);
+  --context-chain-text: rgba(147, 197, 253, 0.7);
+  --context-chain-border: rgba(59, 130, 246, 0.15);
+
+  /* ── Code blocks ── */
+  --chat-user-bubble: #262c3a;
+
+  --code-bg: #0d1117;
+  --code-border: #30363d;
+  --code-text: #e6edf3;
+
+  /* ── Scrollbar ── */
+  --scrollbar-track: var(--theme-bg-primary);
+  --scrollbar-thumb: var(--theme-border-secondary);
+}

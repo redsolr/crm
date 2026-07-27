@@ -1,0 +1,245 @@
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  Brand-context kit — the portable, self-contained brand styling      */
+/*  shared by every Jurisimus FE repo.                                  */
+/*                                                                      */
+/*  THE KIT = this file + `src/components/auth/` (incl. AuthShell).     */
+/*  To bring the auth surface to another repo: copy both, add           */
+/*  `@import "../styles/brand-context.css";` to the repo's Tailwind     */
+/*  entry (globals.css) AFTER `@import "tailwindcss";`, done. Nothing   */
+/*  auth/brand-related may live in globals.css — that scattering is     */
+/*  exactly what previously shipped a flat background and an invisible  */
+/*  submit button when a copy missed a chunk.                           */
+/*                                                                      */
+/*  RULES:                                                              */
+/*  - web-app is the canonical source; keep this file byte-identical    */
+/*    across repos so copies stay diffable.                             */
+/*  - A repo's visual "spin" = a scoped --ctx-* variable override in    */
+/*    that repo's OWN stylesheet. Never fork this file for taste.       */
+/*  - Import position matters: after `@import "tailwindcss"` so the     */
+/*    `components` layer keeps its Tailwind-declared priority.          */
+/*                                                                      */
+/*  Consumers beyond auth (web-app): marketing landing, accept-terms,   */
+/*  checkout/success. Marketing-only rules stay in landing.css.         */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Register context colors as Tailwind utilities ──
+   Generates: text-ctx-primary, bg-ctx-soft, border-ctx-line, etc.
+   Values resolve from --ctx-* variables scoped to .velvet-dark / .card-light */
+@theme inline {
+  --color-ctx-primary: var(--ctx-text-primary);
+  --color-ctx-body: var(--ctx-text-body);
+  --color-ctx-muted: var(--ctx-text-muted);
+  --color-ctx-footer: var(--ctx-text-footer);
+  --color-ctx-footer-heading: var(--ctx-text-footer-heading);
+  --color-ctx-soft: var(--ctx-bg-soft);
+  --color-ctx-card: var(--ctx-bg-card);
+  --color-ctx-line: var(--ctx-border-light);
+  --color-ctx-line-nav: var(--ctx-border-nav);
+  --color-ctx-accent: var(--ctx-accent-primary);
+  --color-ctx-accent-mid: var(--ctx-accent-mid);
+  --color-ctx-accent-deep: var(--ctx-accent-deep);
+  --color-ctx-purple: var(--ctx-purple-badge);
+  --color-ctx-purple-accent: var(--ctx-purple-accent);
+  --color-ctx-purple-light: var(--ctx-purple-light);
+  --color-ctx-purple-base: var(--ctx-purple-base);
+  --color-ctx-purple-mid: var(--ctx-purple-mid);
+  --color-ctx-purple-dark: var(--ctx-purple-dark);
+  --color-ctx-velvet-base: var(--ctx-velvet-base);
+  --color-ctx-velvet-deep: var(--ctx-velvet-deep);
+}
+
+/* ── Context-aware color system ──
+   Components use var(--ctx-*) variables.
+   Dark context (.velvet-dark) = light text on dark bg.
+   Light context (.card-light) = dark text on white bg. */
+
+.velvet-dark {
+  /* Text */
+  --ctx-text-primary: rgb(234, 237, 239);
+  --ctx-text-body: rgba(234, 237, 239, 0.7);
+  --ctx-text-muted: rgba(234, 237, 239, 0.45);
+  --ctx-text-footer: rgba(234, 237, 239, 0.5);
+  --ctx-text-footer-heading: rgba(234, 237, 239, 0.6);
+
+  /* Backgrounds */
+  --ctx-bg-soft: rgba(255, 255, 255, 0.06);
+  --ctx-bg-card: rgba(255, 255, 255, 0.08);
+
+  /* Borders */
+  --ctx-border-light: rgba(255, 255, 255, 0.12);
+  --ctx-border-nav: rgba(255, 255, 255, 0.1);
+
+  /* Accent (red-pink) */
+  --ctx-accent-primary: #ff385c;
+  --ctx-accent-mid: #e61e4d;
+  --ctx-accent-deep: #d70466;
+  --ctx-accent-gradient: linear-gradient(
+    135deg,
+    #ff385c 0%,
+    #e61e4d 50%,
+    #d70466 100%
+  );
+
+  /* Deep section (warm wine) */
+  --ctx-velvet-base: #2d0519;
+  --ctx-velvet-deep: #1a0a12;
+  --ctx-purple-dark: #1a0a12;
+  --ctx-purple-mid: #3d1025;
+  --ctx-purple-base: #2a0a1a;
+  /* Accent tones (warm rose-gold) */
+  --ctx-purple-accent: #f0a0b8;
+  --ctx-purple-light: #f0a0b8;
+  --ctx-purple-badge: #e8b4a0;
+}
+
+/* Light context — auth card on white background */
+.card-light {
+  --ctx-text-primary: #1a1a1a;
+  --ctx-text-body: #4a5568;
+  --ctx-text-muted: #a0aec0;
+  --ctx-bg-soft: #f7fafc;
+  --ctx-bg-card: #f7fafc;
+  --ctx-border-light: #e2e8f0;
+  --ctx-purple-badge: #7c3aed;
+  --ctx-purple-accent: #7c3aed;
+}
+
+/* ── Velvet backdrop paint (shared by auth + landing) ── */
+
+.velvet-dark {
+  background-color: #2d0519;
+  background-image: radial-gradient(ellipse at 20% 50%, #6b0f3a 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, #3d0c24 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, #8b1a4a 0%, transparent 50%),
+    radial-gradient(ellipse at 30% 10%, #4a0e2e 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 70%, #7a1040 0%, transparent 50%),
+    linear-gradient(135deg, #2d0519 0%, #5c1132 25%, #3a0a20 50%, #6b1540 75%, #2d0519 100%);
+  background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200%, 200% 200%, 100% 100%;
+  background-attachment: fixed;
+  animation: velvet-shift 20s ease infinite;
+}
+
+body:has(.velvet-dark),
+body:has(.auth-page) {
+  background-color: #2d0519;
+}
+
+.velvet-dark::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes velvet-shift {
+  0% { background-position: 0% 50%, 100% 0%, 50% 100%, 0% 0%, 100% 100%, 0% 0%; }
+  33% { background-position: 50% 0%, 0% 50%, 100% 50%, 100% 50%, 0% 50%, 0% 0%; }
+  66% { background-position: 100% 100%, 50% 100%, 0% 0%, 50% 100%, 50% 0%, 0% 0%; }
+  100% { background-position: 0% 50%, 100% 0%, 50% 100%, 0% 0%, 100% 100%, 0% 0%; }
+}
+
+/* ── Primary CTA (submit / gradient) button ── */
+
+.landing-gradient-btn {
+  background: var(--ctx-accent-gradient);
+}
+
+.landing-gradient-btn:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 6px 24px rgba(255, 56, 92, 0.3);
+}
+
+/* ── Compound context classes ──
+   In @layer components so per-instance Tailwind utilities can override
+   these shared auth/landing form styles. */
+
+@layer components {
+.ctx-link-footer {
+  color: var(--ctx-text-footer);
+  transition: color 0.15s;
+}
+.ctx-link-footer:hover {
+  color: var(--ctx-purple-badge);
+}
+
+.ctx-input {
+  color: var(--ctx-text-primary);
+  border: 1px solid var(--ctx-border-light);
+  outline: none;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+.ctx-input::placeholder {
+  color: var(--ctx-text-muted);
+}
+.ctx-input:focus {
+  border-color: var(--ctx-accent-primary);
+  box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
+}
+.ctx-input-error {
+  border-color: #e53e3e;
+}
+
+.ctx-input-dark {
+  color: var(--ctx-text-primary);
+  background-color: var(--ctx-bg-card);
+  border: 1px solid var(--ctx-border-light);
+  outline: none;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+.ctx-input-dark::placeholder {
+  color: var(--ctx-text-muted);
+}
+.ctx-input-dark:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
+  border-color: rgba(255, 56, 92, 0.3);
+}
+
+/* ── Auth form utilities ── */
+
+.ctx-label {
+  color: var(--ctx-text-primary);
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: 0.375rem;
+}
+
+.ctx-title {
+  color: var(--ctx-text-primary);
+  font-size: 1.625rem;
+  font-weight: 700;
+}
+
+.ctx-subtitle {
+  color: var(--ctx-text-body);
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.ctx-body {
+  color: var(--ctx-text-body);
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.ctx-caption {
+  color: var(--ctx-text-muted);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 500;
+  line-height: 1.5;
+}
+}

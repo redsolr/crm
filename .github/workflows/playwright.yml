@@ -1,0 +1,206 @@
+name: Playwright Tests
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+jobs:
+  # ───────────────────────────────────────────────────────────────────────
+  # Tier 1 — Mocked + mobile. Fast, no backend. Runs on every PR.
+  # ───────────────────────────────────────────────────────────────────────
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run Playwright tests
+        run: npx playwright test --project=mocked --project=mobile
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Tier 2 — Integration. Boots the REAL platform backend (separate repo)
+  # on :8080 against a live Postgres + Redis, then runs the
+  # *.integration.spec.ts journeys (incl. the full lawyer/Maya journey).
+  # This is the tier that catches wire-contract drift the mocked tier
+  # can't — see e2e/matters-lab-journey.integration.spec.ts.
+  #
+  # Gated on the `RUN_INTEGRATION_E2E` repo variable so merging this
+  # workflow doesn't turn CI red before the cross-repo token exists. To
+  # enable:
+  #   1. Create a fine-grained PAT / deploy key with READ access to
+  #      Velvetier/platform and add it as the `PLATFORM_REPO_TOKEN`
+  #      repository secret.
+  #   2. Set the `RUN_INTEGRATION_E2E` repository variable to `true`.
+  #   3. (Optional) Set the `PLATFORM_REF` repository variable to the
+  #      platform branch to test against (defaults to `main`). While the
+  #      legal module lives on the platform's `legal-module` branch, set
+  #      this to `legal-module` until it merges.
+  # ───────────────────────────────────────────────────────────────────────
+  integration:
+    name: Playwright Integration (real backend)
+    if: ${{ vars.RUN_INTEGRATION_E2E == 'true' }}
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          POSTGRES_DB: jurisimus_dev
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+
+    steps:
+      - name: Checkout web-app
+        uses: actions/checkout@v4
+
+      - name: Checkout platform backend
+        uses: actions/checkout@v4
+        with:
+          repository: Velvetier/platform
+          path: platform
+          ref: ${{ vars.PLATFORM_REF || 'main' }}
+          token: ${{ secrets.PLATFORM_REPO_TOKEN }}
+
+      - name: Setup Bun (platform runtime)
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Node (web-app)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install platform dependencies
+        working-directory: platform
+        run: bun install --frozen-lockfile
+
+      - name: Bootstrap roles + extensions
+        # The local docker-compose mounts docker/postgres/init.sql
+        # automatically; the GitHub-services postgres doesn't, so apply
+        # the same bootstrap here (creates app_user + extensions).
+        run: PGPASSWORD=postgres psql -h localhost -U postgres -d jurisimus_dev -f platform/docker/postgres/init.sql
+        env:
+          PGPASSWORD: postgres
+
+      - name: Build platform
+        working-directory: platform
+        run: bun run build
+
+      - name: Apply migrations
+        working-directory: platform
+        run: bun run db:migrate
+        env:
+          # Mirrors the platform repo's maya-journey CI job verbatim.
+          DATABASE_URL: 'postgresql://app_user:app_user@localhost:5432/jurisimus_dev'
+          MIGRATE_DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/jurisimus_dev'
+
+      - name: Start platform server (background)
+        working-directory: platform
+        run: |
+          bun run start:prod > /tmp/platform.log 2>&1 &
+          echo $! > /tmp/platform.pid
+          for i in {1..60}; do
+            # Health is /health (excluded from the global /v1 prefix).
+            if curl -sf http://localhost:8080/health > /dev/null 2>&1; then
+              echo "platform server ready (try $i)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "platform server failed to start" >&2
+          tail -200 /tmp/platform.log >&2
+          exit 1
+        env:
+          NODE_ENV: production
+          PORT: '8080'
+          LLM_MOCK_ENABLED: 'true'
+          # E2E-only: lets the grounded-legal-research integration spec drive the
+          # real search_legal_corpus tool over HTTP (keyword-scoped; the mock
+          # only emits a tool_use when a message contains this phrase). Other
+          # chats — incl. the lawyer-journey's — are unaffected.
+          MOCK_LLM_LEGAL_TOOL_TRIGGER: 'civil and commercial code'
+          DEV_AUTH_ENABLED: 'true'
+          SKIP_SUBSCRIPTION_CHECK: 'true'
+          DISABLE_RATE_LIMIT: 'true'
+          # Authz OFF — UI journeys don't assert per-resource permissions,
+          # so we skip the SpiceDB sidecar entirely (the integration suite
+          # runs the same way). apply_template's tuple writes no-op here.
+          POLICY_ENGINE_ENABLED: 'false'
+          DATABASE_URL: 'postgresql://app_user:app_user@localhost:5432/jurisimus_dev'
+          MIGRATE_DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/jurisimus_dev'
+          REDIS_URL: 'redis://localhost:6379'
+          FRONTEND_URL: 'http://localhost:3000'
+          WORKOS_API_KEY: 'sk_test_ci_placeholder'
+          WORKOS_CLIENT_ID: 'client_ci_placeholder'
+          WORKOS_COOKIE_PASSWORD: 'ci_cookie_password_must_be_at_least_32_chars'
+          STRIPE_SECRET_KEY: 'sk_test_ci_placeholder'
+          STRIPE_WEBHOOK_SECRET: 'whsec_ci_placeholder'
+          STRIPE_PRICE_STARTER_MONTHLY: 'price_ci_starter'
+          STRIPE_PRICE_PLUS_MONTHLY: 'price_ci_plus'
+          STRIPE_PRICE_PRO_MONTHLY: 'price_ci_pro'
+          STRIPE_PRICE_MAX_MONTHLY: 'price_ci_max'
+
+      - name: Install web-app dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run integration E2E
+        # Playwright's webServer boots the Next dev server on :3000 with
+        # MOCK_AUTH=true; the specs hit the real backend at :8080.
+        run: npm run test:e2e:integration
+        env:
+          API_BASE_URL: 'http://localhost:8080'
+          NEXT_PUBLIC_API_BASE_URL: 'http://localhost:8080'
+
+      - name: Stop platform server
+        if: always()
+        run: |
+          if [ -f /tmp/platform.pid ]; then
+            kill "$(cat /tmp/platform.pid)" || true
+          fi
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-integration
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload platform server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform-log
+          path: /tmp/platform.log
+          retention-days: 7

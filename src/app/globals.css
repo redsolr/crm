@@ -1,0 +1,1614 @@
+@import "../../styles/_variables.scss";
+@import "../../styles/_keyframe-animations.scss";
+@import "../styles/app.css";
+
+/* ── Theme files ──
+   Each theme defines the full variable contract.
+   To add a new theme: create a file in styles/themes/ and import it here.
+   Then set data-theme="<theme-name>" on <html> to activate it.         */
+@import "../styles/themes/velvet-dark.css";
+@import "../styles/themes/midnight-blue.css";
+
+@import "tailwindcss";
+
+/* Brand-context kit (ctx-* system, velvet backdrop, auth form classes) —
+   byte-identical copy of web-app's src/styles/brand-context.css (the
+   canonical source; keep it diffable). Never re-add auth/brand rules to
+   globals.css. Must stay AFTER `@import "tailwindcss"` so the
+   `components` layer keeps its Tailwind-declared priority. */
+@import "../styles/brand-context.css";
+
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+}
+
+/* ── Dark-mode checkboxes ── */
+/* `:not(.sr-only)` so this element+attribute rule (specificity 0,1,1)
+   doesn't clobber Tailwind's `.sr-only` (0,1,0) — without it, the
+   `position: relative` below defeats sr-only's clip and a visually
+   hidden checkbox (e.g. ToggleSwitch's native input) renders as a
+   stray 14px box next to the custom control. */
+input[type="checkbox"]:not(.sr-only) {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--theme-border-hover);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+input[type="checkbox"]:checked {
+  background-color: var(--theme-link);
+  border-color: var(--theme-link);
+}
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 3.5px;
+  top: 1px;
+  width: 4px;
+  height: 7px;
+  border: solid var(--theme-link-text, #fff);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+input[type="checkbox"]:hover {
+  border-color: var(--theme-text-muted);
+}
+
+/* ── Dark-mode date inputs ── */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+input[type="date"] {
+  color-scheme: dark;
+}
+
+/* ── Task UI text tiers ──
+   Reusable text classes for consistent sizing/weight/color
+   across all task views (detail, backlog, board, sprint).
+
+   Hierarchy (biggest → smallest):
+     .task-title        – page-level heading (task detail title)
+     .task-heading      – section heading (Description, Activity)
+     .task-label        – property/field label (Status, Assignee)
+     .task-body         – body text (descriptions, comments)
+     .task-caption      – secondary info (timestamps, identifiers)
+     .task-hint         – placeholder / empty-state text
+
+   NOTE: these are loose rules (not @layer components) ON PURPOSE — the task
+   views were built around this cascade (they out-rank Tailwind utilities, and
+   several call-sites use `!text-…` to override on purpose). Moving them into
+   @layer would silently change weights/colors across backlog/board/detail.
+*/
+
+.task-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--theme-text-primary);
+  line-height: 1.3;
+}
+
+.task-heading {
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 600;
+  color: var(--theme-text-primary);
+}
+
+.task-label {
+  font-size: 0.875rem; /* 14px */
+  font-weight: 500;
+  color: var(--theme-text-secondary);
+}
+
+.task-body {
+  font-size: 0.875rem; /* 14px */
+  font-weight: 400;
+  color: var(--theme-text-primary);
+  line-height: 1.6;
+}
+
+.task-caption {
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 400;
+  color: var(--theme-text-secondary);
+}
+
+.task-hint {
+  font-size: 0.875rem; /* 14px */
+  font-weight: 400;
+  color: var(--theme-text-secondary);
+  font-style: italic;
+}
+
+.task-identifier {
+  font-size: 0.875rem; /* 14px */
+  font-weight: 500;
+  color: var(--theme-link);
+  font-family: var(--font-mono, monospace);
+}
+
+.task-tab {
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 500;
+}
+
+.task-tab.is-active {
+  color: var(--theme-text-primary);
+}
+
+.task-tab:not(.is-active) {
+  color: var(--theme-text-secondary);
+}
+
+/* NOTE: activity-bar (left rail) styling is co-located in the component
+   (src/components/layout/ActivityBar.tsx) as Tailwind utilities — it's
+   component-specific, not global. Don't re-add rail rules here. */
+
+/* ── Base ── */
+/* (ctx-* Tailwind utility registration lives in styles/brand-context.css;
+   the web-app-only lx-* prestige palette was dead here and is gone.) */
+
+:root {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Accent colors — shared across themes */
+  --claude-purple: #7b61ff;
+  --claude-purple-light: #9c89ff;
+  --theme-accent-purple: #a855f7;
+  --theme-accent-blue: #3b82f6;
+  --theme-accent-green: #22c55e;
+  --theme-accent-red: #ef4444;
+  --theme-accent-orange: #f59e0b;
+  --theme-accent-pink: #ec4899;
+}
+
+body,
+html {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  height: 100%;
+  box-sizing: border-box;
+  background: var(--claude-dark, #f8f9fa);
+}
+
+#root,
+#__next {
+  height: 100%;
+}
+
+/* ── Dark theme ──
+   The default dark theme maps to velvet-dark.
+   To switch themes, change data-theme on <html>.
+   See src/styles/themes/ for all available themes.
+   Theme contract (every theme MUST define these):
+     --background, --foreground, --color-background, --color-foreground,
+     --claude-dark, --claude-content, --claude-sidebar, --claude-accent, --claude-highlight,
+     --claude-textbox, --claude-text,
+     --theme-bg-primary, --theme-bg-secondary, --theme-bg-tertiary,
+     --theme-bg-hover, --theme-bg-active,
+     --theme-border-primary, --theme-border-secondary, --theme-border-hover,
+     --theme-text-primary, --theme-text-secondary, --theme-text-muted,
+     --theme-accent, --theme-accent-hover, --theme-accent-subtle, --theme-accent-border,
+     --context-chain-bg, --context-chain-text, --context-chain-border,
+     --code-bg, --code-border, --code-text,
+     --scrollbar-track, --scrollbar-thumb
+*/
+
+/* Fallback: .dark class maps to velvet-dark by default */
+:root.dark,
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --claude-dark: #1a1a1a;
+  --claude-content: #141414;
+  --claude-sidebar: #161616;
+  --claude-accent: #2a2a2a;
+  --claude-highlight: #2e2e2e;
+  --claude-textbox: #2a2a2a;
+  --claude-text: #eaedef;
+  --theme-bg-primary: #181818;
+  --theme-bg-secondary: #1c1c1c;
+  --theme-bg-tertiary: #242424;
+  --theme-bg-hover: #2e2e2e;
+  --theme-bg-active: #383838;
+  --theme-border-primary: #2a2a2a;
+  --theme-border-secondary: #333333;
+  --theme-border-hover: #444444;
+  --theme-text-primary: #e5e5e5;
+  --theme-text-secondary: #888888;
+  --theme-text-muted: #666666;
+  /* Accent (2026-07-12): GitHub-class green for the APP SHELL — the
+     action color that reads "go / safe / verified" and unifies with the
+     green the app already speaks (saved chips, healthy dot, LINE
+     badges, outbound bubbles). Replaced the landing's red-pink #ff385c
+     (read as an alert next to legal work) and an interim violet (a lone
+     hue with no meaning in the system). Marketing/auth surfaces keep
+     their literal brand classes; errors stay --theme-accent-red,
+     warnings stay amber — green is for actions only. */
+  --theme-accent: #2ea043;
+  --theme-accent-hover: #3fb950;
+  --theme-accent-subtle: rgba(63, 185, 80, 0.12);
+  --theme-accent-border: rgba(63, 185, 80, 0.25);
+  --mobile-accent: #ffd60a;
+  --mobile-accent-text: #000000;
+  --context-chain-bg: rgba(63, 185, 80, 0.08);
+  --context-chain-text: rgba(134, 220, 150, 0.75);
+  --context-chain-border: rgba(63, 185, 80, 0.15);
+  /* Own-message bubble in the AI chat: NEUTRAL elevation, no brand hue
+     (GPT/Claude convention — color never marks "me"; elevation does).
+     Deliberately brighter than bg-tertiary: on --claude-dark #1a1a1a a
+     #242424 bubble was near-invisible. */
+  --chat-user-bubble: #2f2f2f;
+  --code-bg: #16161d;
+  --code-border: rgba(63, 185, 80, 0.1);
+  --code-text: #e6edf3;
+  --theme-link: #579dff;
+  --theme-link-text: #1d2125;
+  --scrollbar-track: var(--theme-bg-primary);
+  --scrollbar-thumb: var(--theme-border-secondary);
+}
+
+/* ── Light theme (default) ── */
+
+:root,
+:root.light,
+:root[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #171717;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --claude-dark: #f8f9fa;
+  --claude-sidebar: #f1f3f5;
+  --claude-accent: #e9ecef;
+  --claude-highlight: #dee2e6;
+  --claude-textbox: #f1f3f5;
+  --claude-text: #0a2540;
+
+  --theme-bg-primary: #ffffff;
+  --theme-bg-secondary: #f6f9fc;
+  --theme-bg-tertiary: #eef2f6;
+  --theme-bg-hover: #e9ecef;
+  --theme-bg-active: #dee2e6;
+
+  --theme-border-primary: #e3e8ee;
+  --theme-border-secondary: #d1d5db;
+  --theme-border-hover: #adb5bd;
+
+  --theme-text-primary: #0a2540;
+  --theme-text-secondary: #425466;
+  --theme-text-muted: #8898aa;
+
+  --theme-link: #0c66e4;
+  --theme-link-text: #ffffff;
+
+  --context-chain-bg: rgba(168, 85, 247, 0.08);
+  --context-chain-text: rgba(126, 58, 242, 0.8);
+  --context-chain-border: rgba(168, 85, 247, 0.06);
+
+  /* Own-message bubble (AI chat) — neutral elevation on white. */
+  --chat-user-bubble: #e8eef5;
+}
+
+/* ── Scrollbar — theme-aware ── */
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: var(--theme-bg-primary);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--theme-border-secondary);
+  border-radius: 8px;
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--theme-bg-primary);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--theme-border-secondary) var(--theme-bg-primary);
+}
+
+/* ── Drag-and-drop cursors ── */
+
+/* Grip handle: hand on hover, grabbing when active/dragging */
+[data-drag-handle] {
+  cursor: grab !important;
+}
+[data-drag-handle]:active,
+body.is-dragging [data-drag-handle] {
+  cursor: grabbing !important;
+}
+body.is-dragging {
+  cursor: grabbing !important;
+}
+
+/* Board cards: grab on hover */
+.project-board-card {
+  cursor: grab;
+}
+.project-board-card:active,
+body.is-dragging .project-board-card {
+  cursor: grabbing;
+}
+
+/* ── Page transition ── */
+
+.animate-fade-in {
+  animation: page-fade-in 0.6s ease both;
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── Explorer context menu: entrance pop (grows from the click point) ── */
+
+.explorer-context-menu {
+  animation: explorer-context-menu-in 110ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top left;
+}
+
+@keyframes explorer-context-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ── Team chat: search deep-link highlight flash ── */
+
+.team-chat-message-highlight {
+  background: var(--theme-accent-subtle, rgba(139, 92, 246, 0.18));
+  border-radius: 6px;
+  transition: background 0.6s ease;
+}
+
+/* ── App boot loader — staggered pulsing dots (replaces the legacy
+      border-spinner; theme-aware via tokens, calm instead of spinny) ── */
+
+.loading-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.loading-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--theme-text-muted);
+  animation: loading-dot-pulse 1.2s ease-in-out infinite;
+}
+
+.loading-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.loading-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes loading-dot-pulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-dot {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   CRM app scope — the Sales face boots as its own product.
+
+   `.crm-app` remaps the whole theme-token contract for its subtree, so
+   every component rendered inside the (sales) route group — including
+   shared ones (Modal, Board) — takes the CRM dark-dense look without
+   any per-component forking. The legal face is untouched: this scope
+   never applies outside the CRM shell. Swapping the CRM's look later
+   is a token edit here, not component surgery.
+   ════════════════════════════════════════════════════════════════════ */
+
+.crm-app {
+  color-scheme: dark;
+  /* ── CRM viz palette (dataviz method) ──
+     Categorical slots, FIXED entity order, validated 2026-07-18 via the
+     dataviz validator against this scope's panel surface (#16181c dark /
+     #f7f8fa light): all six checks pass in both modes (light carries the
+     documented <3:1 contrast WARN on slots 3/4/5 → charts must ship
+     visible direct labels — the relief rule). Assign by ENTITY, never by
+     rank; ≤4 slots for all-pairs forms (scatter); fold past 8 to Other. */
+  --crm-viz-1: #3987e5;
+  --crm-viz-2: #008300;
+  --crm-viz-3: #d55181;
+  --crm-viz-4: #c98500;
+  --crm-viz-5: #199e70;
+  --crm-viz-6: #d95926;
+  --crm-viz-7: #9085e9;
+  --crm-viz-8: #e66767;
+  /* ── Brand CTA (velvet red) ──
+     brand-context.css scopes every --ctx-* var to the auth context
+     classes (.velvet-dark / .card-light), so inside the app shell
+     they are UNDEFINED — a bare var() background renders nothing
+     (the 2026-07-19 invisible interview buttons). The shell
+     re-declares the two the CRM chrome uses (interview-flow CTAs);
+     literals match the brand kit + Modal.Button's inline fallback. */
+  --ctx-accent-primary: #ff385c;
+  --ctx-accent-gradient: linear-gradient(
+    135deg,
+    #ff385c 0%,
+    #e61e4d 50%,
+    #d70466 100%
+  );
+  /* app-wide token contract, remapped */
+  --background: #0b0c0e;
+  --foreground: #e8eaed;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --claude-dark: #101114;
+  --claude-content: #0e0f12;
+  /* Sidebar sits a visible step ABOVE content (Slack/Linear two-tone
+     rail) — it was #101114, near-identical to #0e0f12 content, so the
+     pane boundary vanished (founder feedback 2026-07-19). */
+  --claude-sidebar: #15171c;
+  --claude-accent: #1c1e23;
+  --claude-highlight: #22242a;
+  --claude-textbox: #16181c;
+  --claude-text: #e8eaed;
+  --theme-bg-primary: #131418;
+  --theme-bg-secondary: #16181c;
+  --theme-bg-tertiary: #1a1c21;
+  --theme-bg-hover: #20232a;
+  --theme-bg-active: #262a32;
+  /* Border ladder raised one tier (2026-07-19): the old values sat
+     single-digit luminance steps above the surfaces, so section
+     separators and control outlines were effectively invisible in a
+     dim room. Slack-dark separators read at ~rgba(255,255,255,.1)+ —
+     these match that reference. */
+  --theme-border-primary: #2a2e36;
+  --theme-border-secondary: #353b45;
+  --theme-border-hover: #4a515e;
+  --theme-text-primary: #e8eaed;
+  --theme-text-secondary: #9aa1ac;
+  --theme-text-muted: #676e79;
+  --theme-accent: #4f8ff7;
+  --theme-accent-hover: #3b7ef0;
+  --theme-accent-subtle: rgba(79, 143, 247, 0.12);
+  --theme-accent-border: rgba(79, 143, 247, 0.25);
+  /* NOTE: --ctx-accent-primary is deliberately NOT remapped to the
+     theme blue here — every consumer writes
+     var(--ctx-accent-primary, #FF385C) intending the BRAND red
+     (modal checked states, selection rings, interview accents). The
+     red declaration lives with the gradient above. A blue remap here
+     silently overrode all of them until 2026-07-19. */
+  --theme-link: #579dff;
+  --theme-link-text: #10121a;
+  --code-bg: #101114;
+  --code-border: #262a31;
+  --code-text: #e6edf3;
+  --scrollbar-track: #131418;
+  --scrollbar-thumb: #262a31;
+  /* CRM-only semantic tokens */
+  --crm-green: #34d399;
+  --crm-green-subtle: rgba(52, 211, 153, 0.14);
+  --crm-amber: #fbbf24;
+  --crm-amber-subtle: rgba(251, 191, 36, 0.14);
+  --crm-red: #f87171;
+  --crm-red-subtle: rgba(248, 113, 113, 0.14);
+  background: var(--claude-content);
+  color: var(--claude-text);
+}
+
+/* Light variant of the CRM remap — same dense geometry, light surfaces.
+   The block above stays the default (matches DEFAULT_THEME_MODE=dark, so
+   first paint never flashes); this override tracks the user's theme
+   choice (data-theme set by the pre-hydration script / theme store). */
+:root[data-theme="light"] .crm-app {
+  /* Light-mode viz steps (same hues, re-stepped; see dark block note). */
+  --crm-viz-1: #2a78d6;
+  --crm-viz-2: #008300;
+  --crm-viz-3: #e87ba4;
+  --crm-viz-4: #eda100;
+  --crm-viz-5: #1baf7a;
+  --crm-viz-6: #eb6834;
+  --crm-viz-7: #4a3aa7;
+  --crm-viz-8: #e34948;
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #1a1f27;
+  --claude-dark: #f7f8fa;
+  --claude-content: #ffffff;
+  --claude-sidebar: #f7f8fa;
+  --claude-accent: #eef0f3;
+  --claude-highlight: #e7eaee;
+  --claude-textbox: #f2f4f7;
+  --claude-text: #1a1f27;
+  --theme-bg-primary: #ffffff;
+  --theme-bg-secondary: #f7f8fa;
+  --theme-bg-tertiary: #eef0f4;
+  --theme-bg-hover: #e9ecf0;
+  --theme-bg-active: #dfe3e9;
+  --theme-border-primary: #e5e8ec;
+  --theme-border-secondary: #d8dce2;
+  --theme-border-hover: #b9c0c9;
+  --theme-text-primary: #1a1f27;
+  --theme-text-secondary: #4d5560;
+  --theme-text-muted: #8b939e;
+  --theme-accent: #2f6fe4;
+  --theme-accent-hover: #245cc7;
+  --theme-accent-subtle: rgba(47, 111, 228, 0.1);
+  --theme-accent-border: rgba(47, 111, 228, 0.25);
+  /* Brand red, not theme blue — see the dark block's note. Deeper
+     mid-tone of the brand ramp for contrast on light surfaces. */
+  --ctx-accent-primary: #e61e4d;
+  --theme-link: #0c66e4;
+  --theme-link-text: #ffffff;
+  --code-bg: #f6f8fa;
+  --code-border: #d8dce2;
+  --code-text: #24292f;
+  --scrollbar-track: #f2f4f7;
+  --scrollbar-thumb: #d8dce2;
+  --crm-green: #0e9f6e;
+  --crm-green-subtle: rgba(14, 159, 110, 0.12);
+  --crm-amber: #b45309;
+  --crm-amber-subtle: rgba(180, 83, 9, 0.12);
+  --crm-red: #d92d20;
+  --crm-red-subtle: rgba(217, 45, 32, 0.1);
+}
+
+/* ── CRM shell chrome ── */
+
+.crm-sidebar {
+  /* OpenAI-platform-class rail: 260px column, ~36px rows. The previous
+     232px/28px was visibly cramped next to the reference products. */
+  width: 264px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--claude-sidebar);
+  border-right: 1px solid var(--theme-border-primary);
+}
+
+/* ── Workspace selector — the PRODUCT context switch ──
+   One CRM workspace per product's GTM motion (ADR-001), so this sits
+   at the TOP of the rail like OpenAI's project picker — it is not a
+   nav destination among others. Lists CRM workspaces only. */
+
+.crm-workspace-selector {
+  position: relative;
+  padding: 10px 10px 8px;
+}
+
+.crm-workspace-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 650;
+  text-align: left;
+  color: var(--theme-text-primary);
+  letter-spacing: 0.01em;
+  transition: background 0.12s ease;
+}
+
+.crm-workspace-trigger:hover {
+  background: var(--theme-bg-hover);
+}
+
+.crm-workspace-trigger-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-workspace-trigger-chevron {
+  flex-shrink: 0;
+  color: var(--theme-text-muted);
+}
+
+.crm-brand-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--theme-accent);
+  background: var(--theme-accent-subtle);
+  border: 1px solid var(--theme-accent-border);
+}
+
+.crm-workspace-menu {
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 10px;
+  right: 10px;
+  z-index: 50;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--theme-bg-elevated, var(--claude-sidebar));
+  border: 1px solid var(--theme-border-primary);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.crm-workspace-menu-label {
+  padding: 6px 10px 4px;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--theme-text-muted);
+}
+
+.crm-workspace-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 13.5px;
+  text-align: left;
+  color: var(--theme-text-secondary);
+  transition: background 0.12s ease;
+}
+
+.crm-workspace-option:hover {
+  background: var(--theme-bg-hover);
+  color: var(--theme-text-primary);
+}
+
+.crm-workspace-option[data-active="true"] {
+  color: var(--theme-text-primary);
+  font-weight: 600;
+}
+
+.crm-workspace-option-check {
+  flex-shrink: 0;
+  width: 14px;
+  color: var(--theme-accent);
+}
+
+.crm-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 10px 10px;
+}
+
+.crm-nav-section {
+  padding: 16px 10px 5px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--theme-text-muted);
+}
+
+.crm-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 13.5px;
+  text-align: left;
+  color: var(--theme-text-secondary);
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.crm-nav-item:hover:not(:disabled) {
+  background: var(--theme-bg-hover);
+  color: var(--theme-text-primary);
+}
+
+.crm-nav-item[data-active="true"] {
+  background: var(--theme-bg-active);
+  color: var(--theme-text-primary);
+  font-weight: 550;
+}
+
+.crm-nav-item:disabled {
+  color: var(--theme-text-muted);
+  cursor: not-allowed;
+}
+
+.crm-nav-item-count {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-text-muted);
+}
+
+.crm-nav-item-soon {
+  font-size: 9.5px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--theme-text-muted);
+  border: 1px solid var(--theme-border-secondary);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.crm-sidebar-footer {
+  border-top: 1px solid var(--theme-border-primary);
+  padding: 6px;
+}
+
+/* The footer's content is a button — it opens the AccountMenu popover
+   (web-app parity). Hover affordance so it reads as clickable. */
+.crm-sidebar-footer-button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* default stretch keeps the org/user spans full-width so their
+     text-overflow ellipsis still applies */
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background-color 0.12s ease;
+}
+
+.crm-sidebar-footer-button:hover {
+  background: var(--theme-bg-hover);
+}
+
+.crm-sidebar-org {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-sidebar-user {
+  font-size: 12px;
+  color: var(--theme-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-main {
+  /* Anchor for the right-snap peek panel (SalesPeekPanel portals here
+     and positions absolute against this box). */
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--claude-content);
+}
+
+/* ── CRM view furniture ── */
+
+.crm-view-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--theme-border-primary);
+  min-height: 52px;
+}
+
+.crm-view-title {
+  font-size: 14.5px;
+  font-weight: 650;
+  color: var(--theme-text-primary);
+}
+
+.crm-view-meta {
+  font-size: 12px;
+  color: var(--theme-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5.5px 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: #ffffff;
+  background: var(--theme-accent);
+  transition: background 0.12s ease;
+}
+
+.crm-btn-primary:hover:not(:disabled) {
+  background: var(--theme-accent-hover);
+}
+
+.crm-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.crm-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5.5px 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--theme-text-secondary);
+  background: transparent;
+  border: 1px solid var(--theme-border-secondary);
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.crm-btn-ghost:hover:not(:disabled) {
+  background: var(--theme-bg-hover);
+  color: var(--theme-text-primary);
+  border-color: var(--theme-border-hover);
+}
+
+.crm-btn-ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Compact size modifier — declared after the base buttons so it wins ties. */
+.crm-btn-xs {
+  padding: 3px 8px;
+  font-size: 11.5px;
+  border-radius: 5px;
+}
+
+/* State chips — sentence-case status pills (done/dead), chip-sized. */
+.crm-chip-done,
+.crm-chip-dead {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.crm-chip-done {
+  color: var(--crm-green);
+  background: var(--crm-green-subtle);
+}
+
+.crm-chip-dead {
+  color: var(--crm-red);
+  background: var(--crm-red-subtle);
+}
+
+.crm-chip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--theme-border-primary);
+}
+
+.crm-chip {
+  padding: 3.5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--theme-text-secondary);
+  border: 1px solid transparent;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.crm-chip:hover {
+  color: var(--theme-text-primary);
+  background: var(--theme-bg-hover);
+}
+
+.crm-chip[data-active="true"] {
+  color: var(--theme-text-primary);
+  background: var(--theme-bg-active);
+  border-color: var(--theme-border-secondary);
+  font-weight: 550;
+}
+
+.crm-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1.5px 8px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  color: var(--theme-text-secondary);
+  background: var(--theme-bg-tertiary);
+  border: 1px solid var(--theme-border-secondary);
+  white-space: nowrap;
+}
+
+/* ── Global topbar (Attio-shape: crumb · search · Ask AI) ── */
+
+.crm-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--theme-border-primary);
+  background: var(--theme-bg-primary);
+}
+
+.crm-topbar-crumb {
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--theme-text-secondary);
+  min-width: 90px;
+}
+
+.crm-topbar-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* ── Tab strip (Board ⇄ Table etc.) ── */
+
+.crm-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--theme-border-primary);
+}
+
+.crm-tab-btn {
+  padding: 7px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--theme-text-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition:
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.crm-tab-btn:hover {
+  color: var(--theme-text-primary);
+}
+
+.crm-tab-btn[data-active="true"] {
+  color: var(--theme-text-primary);
+  font-weight: 600;
+  border-bottom-color: var(--theme-accent);
+}
+
+/* ── Reports: wide cards + stage roster ── */
+
+.crm-report-card-wide {
+  grid-column: 1 / -1;
+}
+
+.crm-roster-row:hover td {
+  background: var(--theme-bg-hover);
+}
+
+.crm-company-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: var(--theme-bg-tertiary);
+  object-fit: contain;
+}
+
+.crm-company-logo-fallback {
+  color: #fff;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  user-select: none;
+}
+
+.crm-badge-danger,
+.crm-badge-warn,
+.crm-badge-success {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.crm-badge-danger {
+  color: var(--crm-red);
+  background: var(--crm-red-subtle);
+}
+
+.crm-badge-warn {
+  color: var(--crm-amber);
+  background: var(--crm-amber-subtle);
+}
+
+.crm-badge-success {
+  color: var(--crm-green);
+  background: var(--crm-green-subtle);
+}
+
+/* ── CRM data table (Attio-style) ── */
+
+.crm-table {
+  width: 100%;
+  font-size: 13px;
+  border-collapse: collapse;
+}
+
+.crm-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--claude-content);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--theme-text-muted);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--theme-border-secondary);
+}
+
+.crm-table tbody td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--theme-border-primary);
+  color: var(--theme-text-secondary);
+}
+
+.crm-table tbody tr {
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.crm-table tbody tr:hover {
+  background: var(--theme-bg-secondary);
+}
+
+.crm-table-footer {
+  padding: 10px 20px;
+  font-size: 12px;
+  color: var(--theme-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── CRM table v2 (Attio slice) ── */
+/* Sort headers, filter bar, inline cell editors, saved-view switcher,
+   and the kanban ⇄ table mode toggle for CrmRecordTable surfaces. */
+
+.crm-table-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  /* Inherit the th typography — the button is the header text. */
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+
+.crm-table-sort-btn:hover {
+  color: var(--theme-text-primary);
+}
+
+.crm-table-sort-btn[data-direction="asc"],
+.crm-table-sort-btn[data-direction="desc"] {
+  color: var(--theme-text-primary);
+}
+
+.crm-table-sort-icon {
+  font-size: 8px;
+  line-height: 1;
+  min-width: 8px;
+}
+
+.crm-table-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 20px;
+  border-bottom: 1px solid var(--theme-border-primary);
+  background: var(--theme-bg-secondary);
+}
+
+.crm-table-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.crm-table-filter-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--theme-text-muted);
+  white-space: nowrap;
+}
+
+.crm-table-filter-input {
+  padding: 2.5px 7px;
+  border-radius: 5px;
+  font-size: 12px;
+  color: var(--theme-text-primary);
+  background: var(--theme-bg-tertiary);
+  border: 1px solid var(--theme-border-secondary);
+  max-width: 140px;
+}
+
+.crm-table-filter-input:focus {
+  outline: none;
+  border-color: var(--theme-text-muted);
+}
+
+.crm-cell-editable {
+  cursor: text;
+}
+
+.crm-record-table-row:hover .crm-cell-editable:hover {
+  background: var(--theme-bg-tertiary);
+  box-shadow: inset 0 0 0 1px var(--theme-border-secondary);
+}
+
+.crm-cell-editor {
+  width: 100%;
+  min-width: 90px;
+  padding: 2.5px 7px;
+  border-radius: 5px;
+  font-size: 12.5px;
+  color: var(--theme-text-primary);
+  background: var(--theme-bg-tertiary);
+  border: 1px solid var(--theme-accent-border, var(--theme-border-hover));
+}
+
+.crm-cell-editor:focus {
+  outline: none;
+}
+
+.crm-cell-editor-checkbox {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--theme-accent);
+}
+
+.crm-stage-select {
+  padding: 2.5px 7px;
+  border-radius: 5px;
+  font-size: 12px;
+  color: var(--theme-text-primary);
+  background: var(--theme-bg-tertiary);
+  border: 1px solid var(--theme-border-secondary);
+  cursor: pointer;
+}
+
+.crm-stage-select:focus {
+  outline: none;
+  border-color: var(--theme-text-muted);
+}
+
+.crm-table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--theme-border-primary);
+}
+
+.crm-view-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crm-view-switcher-select {
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  color: var(--theme-text-primary);
+  background: var(--theme-bg-tertiary);
+  border: 1px solid var(--theme-border-secondary);
+  max-width: 180px;
+  cursor: pointer;
+}
+
+.crm-view-switcher-select:focus {
+  outline: none;
+  border-color: var(--theme-text-muted);
+}
+
+.crm-view-switcher-name-input {
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  color: var(--theme-text-primary);
+  background: var(--theme-bg-tertiary);
+  border: 1px solid var(--theme-border-secondary);
+  width: 140px;
+}
+
+.crm-view-switcher-name-input:focus {
+  outline: none;
+  border-color: var(--theme-text-muted);
+}
+
+.crm-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--theme-border-secondary);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.crm-mode-toggle-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--theme-text-secondary);
+  background: transparent;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.crm-mode-toggle-btn + .crm-mode-toggle-btn {
+  border-left: 1px solid var(--theme-border-secondary);
+}
+
+.crm-mode-toggle-btn:hover {
+  color: var(--theme-text-primary);
+  background: var(--theme-bg-hover);
+}
+
+.crm-mode-toggle-btn[data-active="true"] {
+  color: var(--theme-text-primary);
+  background: var(--theme-bg-active);
+  font-weight: 550;
+}
+
+/* ── CRM cards / panels / rows ── */
+
+.crm-panel {
+  background: var(--theme-bg-secondary);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.crm-panel-title {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--theme-text-muted);
+}
+
+.crm-row-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: var(--theme-bg-secondary);
+  border: 1px solid var(--theme-border-primary);
+  transition: border-color 0.12s ease;
+}
+
+.crm-row-card:hover {
+  border-color: var(--theme-border-hover);
+}
+
+/* Inset variant — row card sitting INSIDE a panel (one surface deeper). */
+.crm-row-card-inset {
+  background: var(--theme-bg-tertiary);
+}
+
+.crm-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 64px 24px;
+  text-align: center;
+}
+
+.crm-empty-title {
+  font-size: 17px;
+  font-weight: 650;
+  color: var(--theme-text-primary);
+  margin-bottom: 6px;
+}
+
+.crm-empty-copy {
+  font-size: 13px;
+  color: var(--theme-text-secondary);
+  max-width: 26rem;
+  margin-bottom: 20px;
+}
+
+/* ── CRM reports ── */
+
+.crm-reports-body {
+  padding: 16px 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 1180px;
+}
+
+.crm-stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.crm-stat-tile {
+  background: var(--theme-bg-secondary);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.crm-stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--theme-text-secondary);
+}
+
+.crm-stat-value {
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--theme-text-primary);
+}
+
+.crm-stat-sub {
+  font-size: 12px;
+  color: var(--theme-text-muted);
+}
+
+.crm-stat-sub[data-tone="serious"] {
+  color: var(--crm-red);
+}
+
+.crm-stat-sub[data-tone="good"] {
+  color: var(--crm-green);
+}
+
+.crm-reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 12px;
+}
+
+.crm-report-card {
+  background: var(--theme-bg-secondary);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: 10px;
+  padding: 16px;
+  min-width: 0;
+}
+
+.crm-report-card-title {
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--theme-text-primary);
+  margin-bottom: 2px;
+}
+
+.crm-report-card-subtitle {
+  font-size: 12px;
+  color: var(--theme-text-muted);
+}
+
+.crm-report-empty {
+  padding: 18px 0 8px;
+  font-size: 13px;
+  color: var(--theme-text-muted);
+}
+
+/* Horizontal bar list — single-hue magnitude marks with a visible
+   direct label per row; the tooltip bubble is supplementary detail. */
+.crm-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.crm-bar-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 108px 1fr 76px;
+  align-items: center;
+  gap: 10px;
+}
+
+.crm-bar-label {
+  font-size: 12.5px;
+  color: var(--theme-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-bar-track {
+  display: block;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--theme-bg-tertiary);
+  overflow: hidden;
+}
+
+.crm-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--theme-accent);
+  transition: width 0.25s ease;
+}
+
+.crm-bar-value {
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-text-primary);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.crm-bar-tooltip {
+  position: absolute;
+  left: 108px;
+  bottom: calc(100% + 4px);
+  z-index: 30;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: var(--theme-bg-active);
+  border: 1px solid var(--theme-border-secondary);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+  color: var(--theme-text-primary);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+}
+
+.crm-bar-row:hover .crm-bar-tooltip {
+  opacity: 1;
+}
+
+/* Commitment health — status colors never travel alone: each row is
+   dot + LABEL + count. */
+.crm-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.crm-status-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--theme-text-secondary);
+}
+
+.crm-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--theme-text-muted);
+}
+
+.crm-status-row[data-tone="serious"] .crm-status-dot {
+  background: var(--crm-red);
+}
+
+.crm-status-row[data-tone="warning"] .crm-status-dot {
+  background: var(--crm-amber);
+}
+
+.crm-status-row[data-tone="neutral"] .crm-status-dot {
+  background: var(--theme-accent);
+}
+
+.crm-status-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-text-primary);
+}
+
+.crm-outcome-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--theme-border-primary);
+}
+
+.crm-outcome-chip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--theme-border-secondary);
+  color: var(--theme-text-secondary);
+}
+
+.crm-outcome-chip[data-tone="good"] {
+  color: var(--crm-green);
+  background: var(--crm-green-subtle);
+  border-color: transparent;
+}
+
+.crm-outcome-chip[data-tone="serious"] {
+  color: var(--crm-red);
+  background: var(--crm-red-subtle);
+  border-color: transparent;
+}

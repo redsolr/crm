@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+# Pre-commit gate. Runs `lint-staged`, which:
+#   - lints ONLY the staged TS/JS files (with --cache --concurrency=auto)
+#   - runs whole-project `tsc --noEmit` (incremental, ~0.5s warm)
+#
+# See `lint-staged.config.mjs` for the actual command list and rationale.
+#
+# Implementation note: we deliberately call `node ./node_modules/.../bin/...`
+# instead of `npm run X`. Some Windows Git GUIs (Fork, GitKraken, etc.) inject
+# a `SHELL=/bin/bash` env var into hook execution, which causes `npm run` to
+# spawn its child processes via bash. On Windows, `bash` resolves to the WSL
+# shim (`C:\Windows\System32\bash.exe`), and if WSL has no Linux distribution
+# installed the entire chain fails with `execvpe(/bin/bash) failed`. By
+# invoking node + the binary directly, we never spawn a shell child process
+# and the GUI's broken SHELL env doesn't matter.
+#
+# To bypass this hook in an emergency, use `git commit --no-verify`.
+# Per CLAUDE.md, --no-verify is reserved for genuine emergencies; if you
+# find yourself reaching for it, fix the underlying issue instead.
+
+set -e
+
+node ./node_modules/lint-staged/bin/lint-staged.js

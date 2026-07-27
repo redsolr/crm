@@ -1,0 +1,80 @@
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  Theme: Velvet Dark                                                */
+/*  Dark base with warm velvet-red accents for easy reading           */
+/*                                                                    */
+/*  To create a new theme, copy this file and change the values.      */
+/*  Every variable listed here MUST be defined — they form the        */
+/*  "theme contract" that all components rely on.                     */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+[data-theme="velvet-dark"] {
+  /* ── Core palette ── */
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* ── Surface hierarchy ──
+     Named from darkest → lightest so components pick the right level.
+     claude-dark   = main content area background
+     claude-sidebar = sidebar / secondary panels
+     claude-accent  = subtle raised surface
+     claude-highlight = hover state on raised surfaces
+     claude-textbox = input fields                                    */
+  --claude-dark: #1a1a1a;
+  --claude-content: #141414;
+  --claude-sidebar: #161616;
+  --claude-accent: #2a2a2a;
+  --claude-highlight: #2e2e2e;
+  --claude-textbox: #2a2a2a;
+  --claude-text: #eaedef;
+
+  /* ── Layered backgrounds ──
+     Neutral dark surfaces. The velvet-red only shows in accents,
+     active states, and interactive elements — not in backgrounds.    */
+  --theme-bg-primary: #181818;
+  --theme-bg-secondary: #1c1c1c;
+  --theme-bg-tertiary: #242424;
+  --theme-bg-hover: #2e2e2e;
+  --theme-bg-active: #383838;
+
+  /* ── Borders ── */
+  --theme-border-primary: #2a2a2a;
+  --theme-border-secondary: #333333;
+  --theme-border-hover: #444444;
+
+  /* ── Text ── */
+  --theme-text-primary: #e5e5e5;
+  --theme-text-secondary: #888888;
+  --theme-text-muted: #666666;
+
+  /* ── Accent ──
+     The signature color for interactive elements, active states,
+     and primary actions. GitHub-class green (2026-07-12) — action
+     color that unifies with the green the app already speaks; keep
+     this in sync with the `:root.dark` block in globals.css (the
+     active dark theme). Errors stay red, warnings stay amber.        */
+  --theme-accent: #2ea043;
+  --theme-accent-hover: #3fb950;
+  --theme-accent-subtle: rgba(63, 185, 80, 0.12);
+  --theme-accent-border: rgba(63, 185, 80, 0.25);
+  --theme-link: #579dff;
+  --theme-link-text: #1d2125;
+
+  /* ── Context chain ── */
+  --context-chain-bg: rgba(63, 185, 80, 0.08);
+  --context-chain-text: rgba(134, 220, 150, 0.75);
+  --context-chain-border: rgba(63, 185, 80, 0.15);
+
+  /* ── Chat ── */
+  --chat-user-bubble: #2f2f2f;
+
+  /* ── Code blocks ── */
+  --code-bg: #16161d;
+  --code-border: rgba(63, 185, 80, 0.1);
+  --code-text: #e6edf3;
+
+  /* ── Scrollbar ── */
+  --scrollbar-track: var(--theme-bg-primary);
+  --scrollbar-thumb: var(--theme-border-secondary);
+}

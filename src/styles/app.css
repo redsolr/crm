@@ -1,0 +1,304 @@
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  Workspace / App component styles                                   */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+/* Workspace app uses theme variables */
+body:has([data-app]) {
+  background: var(--claude-dark);
+  color: var(--claude-text);
+}
+
+/* ── Message styles ── */
+.message-text {
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  font-size: 0.95rem;
+  color: var(--claude-text);
+  font-family: inherit;
+}
+
+.user-message {
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--claude-text);
+}
+
+.assistant-message {
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--claude-text);
+}
+
+@media (min-width: 768px) {
+  .message-text {
+    font-size: 1.05rem;
+    line-height: 1.5;
+  }
+
+  .user-message {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .assistant-message {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+}
+
+/* ── Resize sash ──
+   Thin border that widens on hover to indicate draggability.
+   Add `left-0` or `right-0` per component to set position.    */
+.resize-sash {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: ew-resize;
+  z-index: 30;
+  user-select: none;
+  background-color: var(--theme-border-secondary);
+  transition: background-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.resize-sash:hover {
+  background-color: var(--theme-border-hover);
+}
+.resize-sash .resize-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 28px;
+  border-radius: 4px;
+  pointer-events: none;
+  background-color: var(--theme-bg-tertiary, var(--theme-bg-secondary));
+  color: var(--theme-text-muted);
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.resize-sash:hover .resize-grip {
+  opacity: 1;
+}
+
+/* ── Panel bar ──
+   Shared height for sidebar headers and editor tab bar
+   so they align visually across the layout.              */
+.panel-bar {
+  height: 35px;
+  min-height: 35px;
+}
+
+/* ── Claude theme ── */
+.claude-bg {
+  background-color: var(--claude-dark);
+}
+
+.claude-sidebar {
+  background-color: var(--claude-sidebar);
+}
+
+.claude-hover:hover {
+  background-color: var(--claude-highlight);
+}
+
+.claude-accent {
+  background-color: var(--claude-accent);
+}
+
+.claude-textbox {
+  background-color: var(--claude-textbox);
+}
+
+.claude-button {
+  background-color: var(--claude-purple);
+}
+
+.claude-button:hover {
+  background-color: var(--claude-purple-light);
+}
+
+
+/* ── Markdown content ── */
+.markdown-content {
+  line-height: 1.6;
+}
+
+.markdown-content .inline-code {
+  background: rgba(110, 118, 129, 0.4);
+  color: #e6edf3;
+  padding: 0.2em 0.4em;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 0.85em;
+}
+
+.markdown-content .code-block-wrapper {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  margin: 16px 0;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.markdown-content .code-block-wrapper code {
+  display: block;
+  padding: 16px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #e6edf3;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* ── Syntax highlighting (GitHub Dark) ── */
+.markdown-content .hljs {
+  background: #0d1117;
+  color: #e6edf3;
+}
+
+.markdown-content .hljs-keyword,
+.markdown-content .hljs-selector-tag,
+.markdown-content .hljs-literal,
+.markdown-content .hljs-title.function_.invoke__ {
+  color: #ff7b72;
+}
+
+.markdown-content .hljs-string,
+.markdown-content .hljs-doctag {
+  color: #a5d6ff;
+}
+
+.markdown-content .hljs-comment {
+  color: #8b949e;
+}
+
+.markdown-content .hljs-variable,
+.markdown-content .hljs-template-variable,
+.markdown-content .hljs-attr {
+  color: #79c0ff;
+}
+
+.markdown-content .hljs-number,
+.markdown-content .hljs-regexp,
+.markdown-content .hljs-meta {
+  color: #a5d6ff;
+}
+
+.markdown-content .hljs-function,
+.markdown-content .hljs-title {
+  color: #d2a8ff;
+}
+
+.markdown-content .hljs-type,
+.markdown-content .hljs-class .hljs-title,
+.markdown-content .hljs-built_in {
+  color: #ffa657;
+}
+
+.markdown-content .hljs-params {
+  color: #e6edf3;
+}
+
+.markdown-content .hljs-symbol,
+.markdown-content .hljs-bullet {
+  color: #7ee787;
+}
+
+.markdown-content .hljs-addition {
+  color: #aff5b4;
+  background-color: rgba(46, 160, 67, 0.06);
+}
+
+.markdown-content .hljs-deletion {
+  color: #ffdcd7;
+  background-color: rgba(248, 81, 73, 0.06);
+}
+
+/* ── React Flow controls ── */
+.react-flow__controls {
+  background: var(--theme-bg-secondary) !important;
+  border: 1px solid var(--theme-border-primary) !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.react-flow__controls-button {
+  background: var(--theme-bg-secondary) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--theme-border-primary) !important;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--theme-bg-hover) !important;
+}
+
+.react-flow__controls-button svg {
+  width: 12px;
+  height: 12px;
+}
+
+.react-flow__controls-button svg path {
+  fill: var(--theme-text-primary) !important;
+}
+
+.react-flow__controls-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.react-flow__controls-button:disabled:hover {
+  background: var(--theme-bg-secondary) !important;
+}
+
+/* ── Key Findings highlights ── */
+.finding-highlight {
+  background-color: var(--theme-accent-subtle);
+  border-radius: 2px;
+  padding: 0 1px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.finding-highlight:hover {
+  background-color: rgba(255, 56, 92, 0.3);
+}
+
+.finding-highlight.animate-pulse {
+  animation: finding-pulse 1.5s ease-in-out;
+}
+
+@keyframes finding-pulse {
+  0%,
+  100% {
+    background-color: var(--theme-accent-subtle);
+  }
+  50% {
+    background-color: rgba(255, 56, 92, 0.5);
+    box-shadow: 0 0 8px rgba(255, 56, 92, 0.4);
+  }
+}
