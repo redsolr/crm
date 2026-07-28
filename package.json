@@ -35,7 +35,13 @@
     "openapi:clean": "node -e \"require('node:fs').rmSync('src/lib/generated/api', { recursive: true, force: true })\"",
     "openapi:gen": "openapi-generator-cli generate -i openapi/openapi.yaml -g typescript-fetch -o src/lib/generated/api --additional-properties=supportsES6=true,modelPropertyNaming=original,enumPropertyNaming=original,withoutRuntimeChecks=true",
     "openapi:check": "tsc --noEmit -p tsconfig.generated.json",
-    "openapi": "npm run openapi:sync && npm run openapi:clean && npm run openapi:gen && npm run openapi:check"
+    "openapi": "npm run openapi:sync && npm run openapi:clean && npm run openapi:gen && npm run openapi:check",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx --env-file=.env.local scripts/db-seed.ts",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -89,6 +95,7 @@
     "@workos-inc/node": "^8.9.0",
     "@xyflow/react": "^12.10.1",
     "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.2",
     "framer-motion": "^12.38.0",
     "graphology": "^0.26.0",
     "graphology-layout-forceatlas2": "^0.10.1",
@@ -100,6 +107,7 @@
     "lowlight": "^3.3.0",
     "lucide-react": "^1.17.0",
     "next": "^16.2.10",
+    "postgres": "^3.4.9",
     "posthog-js": "^1.363.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -138,6 +146,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "cross-env": "^10.1.0",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^10",
     "eslint-config-next": "16.2.0",
     "husky": "^9.1.7",
@@ -146,6 +155,7 @@
     "lint-staged": "^16.4.0",
     "sass": "^1.98.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.1",
     "typescript": "^5"
   }
 }
