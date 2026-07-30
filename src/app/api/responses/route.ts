@@ -1,8 +1,7 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse, type NextRequest } from "next/server";
 import { mintId } from "@/db/ids";
 import { apiError, readJsonBody } from "@/server/api-error";
-import { ASK_MODEL } from "@/server/ask";
+import { anthropicClient, ASK_MODEL, extractText } from "@/server/llm";
 
 /**
  * `POST /api/responses` — local replacement for the platform's
@@ -53,7 +52,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const client = new Anthropic();
+    const client = anthropicClient();
     const response = await client.messages.create({
       model: ASK_MODEL,
       max_tokens: MAX_TOKENS,
@@ -62,10 +61,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (response.stop_reason === "refusal") {
       return apiError(400, "declined", "The model declined this request");
     }
-    const text = response.content
-      .filter((block): block is Anthropic.TextBlock => block.type === "text")
-      .map((block) => block.text)
-      .join("");
+    const text = extractText(response.content);
     return NextResponse.json({
       id: mintId("resp"),
       object: "response",

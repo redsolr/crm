@@ -1,6 +1,7 @@
 import { type NextRequest } from "next/server";
 import { apiError, readJsonBody } from "@/server/api-error";
-import { loadChat, runAskStream, type AskSseWriter } from "@/server/ask";
+import { runAskStream, type AskSseWriter } from "@/server/ask";
+import { loadChat } from "@/server/chats";
 
 /**
  * `POST /api/chats/{id}/responses` — Anthropic-style SSE streaming for

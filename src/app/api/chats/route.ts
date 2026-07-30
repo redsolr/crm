@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError, readJsonBody } from "@/server/api-error";
-import { createChat, serializeChat } from "@/server/ask";
+import { createChat, serializeChat } from "@/server/chats";
 
 /**
  * `POST /api/chats` — lazy Ask-conversation create (backend-swap: Ask

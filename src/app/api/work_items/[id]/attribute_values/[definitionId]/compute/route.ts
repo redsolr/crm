@@ -1,7 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError } from "@/server/api-error";
-import { ASK_MODEL } from "@/server/ask";
+import { anthropicClient, ASK_MODEL, extractText } from "@/server/llm";
 import {
   findDefinition,
   listDefinitionsForType,
@@ -101,7 +100,7 @@ export async function POST(
     .join("\n");
 
   try {
-    const client = new Anthropic();
+    const client = anthropicClient();
     const response = await client.messages.create({
       model: ASK_MODEL,
       max_tokens: COMPUTE_MAX_TOKENS,
@@ -110,11 +109,7 @@ export async function POST(
     if (response.stop_reason === "refusal") {
       return NextResponse.json({ outcome: "failed", value: null });
     }
-    const text = response.content
-      .filter((block): block is Anthropic.TextBlock => block.type === "text")
-      .map((block) => block.text)
-      .join("")
-      .trim();
+    const text = extractText(response.content).trim();
     if (text === "") {
       return NextResponse.json({ outcome: "failed", value: null });
     }

@@ -112,16 +112,11 @@ export function validateBareValue(
   }
 }
 
-/** Manual upsert — the platform's conflict rule (computed never
- *  overwrites manual) is trivially satisfied: all local writes are
- *  manual until the enrichment step lands. */
-export async function upsertValue(
+async function findExistingValue(
   workItemId: string,
   definitionId: string,
-  bareValue: unknown,
-): Promise<ValueRow> {
-  const now = new Date();
-  const existing = await db
+): Promise<ValueRow | undefined> {
+  const rows = await db
     .select()
     .from(attributeValues)
     .where(
@@ -131,36 +126,59 @@ export async function upsertValue(
       ),
     )
     .limit(1);
+  return rows[0];
+}
 
-  if (existing[0]) {
-    await db
+/**
+ * Shared write path for both upserts: update the existing row or insert
+ * a new one, with the source/provenance columns supplied by the caller.
+ * `.returning()` gives the written row back without a re-select.
+ */
+async function writeValue(
+  existing: ValueRow | undefined,
+  workItemId: string,
+  definitionId: string,
+  bareValue: unknown,
+  provenance: Pick<ValueRow, "source"> &
+    Partial<Pick<ValueRow, "computedAt" | "computedModel">>,
+): Promise<ValueRow> {
+  const now = new Date();
+  if (existing) {
+    const rows = await db
       .update(attributeValues)
-      .set({ value: bareValue, source: "manual", updatedAt: now })
-      .where(eq(attributeValues.id, existing[0].id));
-    const updated = await db
-      .select()
-      .from(attributeValues)
-      .where(eq(attributeValues.id, existing[0].id))
-      .limit(1);
-    return updated[0]!;
+      .set({ value: bareValue, updatedAt: now, ...provenance })
+      .where(eq(attributeValues.id, existing.id))
+      .returning();
+    if (!rows[0]) throw new Error(`Attribute value ${existing.id} vanished mid-update`);
+    return rows[0];
   }
+  const rows = await db
+    .insert(attributeValues)
+    .values({
+      id: mintId("av"),
+      workItemId,
+      definitionId,
+      value: bareValue,
+      createdAt: now,
+      updatedAt: now,
+      ...provenance,
+    })
+    .returning();
+  if (!rows[0]) throw new Error("Attribute value insert returned no row");
+  return rows[0];
+}
 
-  const id = mintId("av");
-  await db.insert(attributeValues).values({
-    id,
-    workItemId,
-    definitionId,
-    value: bareValue,
+/** Manual upsert — the human PUT path (and the Ask agent's writes,
+ *  which ride the same validation). */
+export async function upsertValue(
+  workItemId: string,
+  definitionId: string,
+  bareValue: unknown,
+): Promise<ValueRow> {
+  const existing = await findExistingValue(workItemId, definitionId);
+  return writeValue(existing, workItemId, definitionId, bareValue, {
     source: "manual",
-    createdAt: now,
-    updatedAt: now,
   });
-  const created = await db
-    .select()
-    .from(attributeValues)
-    .where(eq(attributeValues.id, id))
-    .limit(1);
-  return created[0]!;
 }
 
 /**
@@ -174,59 +192,16 @@ export async function upsertComputedValue(
   bareValue: unknown,
   model: string,
 ): Promise<{ outcome: "computed" | "skipped_manual_override"; row: ValueRow }> {
-  const now = new Date();
-  const existing = await db
-    .select()
-    .from(attributeValues)
-    .where(
-      and(
-        eq(attributeValues.workItemId, workItemId),
-        eq(attributeValues.definitionId, definitionId),
-      ),
-    )
-    .limit(1);
-
-  if (existing[0] && existing[0].source === "manual") {
-    return { outcome: "skipped_manual_override", row: existing[0] };
+  const existing = await findExistingValue(workItemId, definitionId);
+  if (existing && existing.source === "manual") {
+    return { outcome: "skipped_manual_override", row: existing };
   }
-
-  if (existing[0]) {
-    await db
-      .update(attributeValues)
-      .set({
-        value: bareValue,
-        source: "computed",
-        computedAt: now,
-        computedModel: model,
-        updatedAt: now,
-      })
-      .where(eq(attributeValues.id, existing[0].id));
-    const updated = await db
-      .select()
-      .from(attributeValues)
-      .where(eq(attributeValues.id, existing[0].id))
-      .limit(1);
-    return { outcome: "computed", row: updated[0]! };
-  }
-
-  const id = mintId("av");
-  await db.insert(attributeValues).values({
-    id,
-    workItemId,
-    definitionId,
-    value: bareValue,
+  const row = await writeValue(existing, workItemId, definitionId, bareValue, {
     source: "computed",
-    computedAt: now,
+    computedAt: new Date(),
     computedModel: model,
-    createdAt: now,
-    updatedAt: now,
   });
-  const created = await db
-    .select()
-    .from(attributeValues)
-    .where(eq(attributeValues.id, id))
-    .limit(1);
-  return { outcome: "computed", row: created[0]! };
+  return { outcome: "computed", row };
 }
 
 export async function deleteValue(

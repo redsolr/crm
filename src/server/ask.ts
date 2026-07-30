@@ -1,13 +1,13 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { asc, eq } from "drizzle-orm";
-import { chatMessages, chats, db } from "@/db";
-import { mintId } from "@/db/ids";
+import type Anthropic from "@anthropic-ai/sdk";
 import { ASK_TOOLS, ASK_TOOLS_BY_NAME } from "./ask-tools";
+import { appendMessage, loadHistory } from "./chats";
+import { anthropicClient, ASK_MODEL } from "./llm";
 
 /**
- * Ask chat over the Anthropic SDK (backend-swap: Ask chat) — the local
+ * Ask chat agentic loop (backend-swap: Ask chat) — the local
  * replacement for the platform's `POST /api/chats/{id}/responses`
- * workspace agentic loop.
+ * workspace loop. Persistence lives in `chats.ts`; the LLM seam in
+ * `llm.ts`; this module owns the loop and the SSE event grammar.
  *
  * Wire contract: the SSE event shapes `src/lib/chat/stream.ts` parses —
  * Anthropic-style events with the platform's camelCase field spelling
@@ -16,20 +16,12 @@ import { ASK_TOOLS, ASK_TOOLS_BY_NAME } from "./ask-tools";
  * summary is the raw tool-result content, exactly what the platform
  * emitted. The manual tool loop is deliberate: we re-emit a custom SSE
  * wire format the SDK tool runner doesn't produce.
- *
- * The FE requests `gpt-5.4-nano` (the platform's default); standalone
- * the model is server policy — `CRM_ASK_MODEL` env, Claude by default.
  */
-
-export const ASK_MODEL = process.env.CRM_ASK_MODEL ?? "claude-opus-5";
 
 /** Hard cap on model turns per send — the platform's MAX_TOOL_LOOPS shape. */
 const MAX_TOOL_LOOPS = 8;
 
 const MAX_OUTPUT_TOKENS = 16000;
-
-/** History window per send — bounds prompt size on long conversations. */
-const HISTORY_MESSAGE_LIMIT = 40;
 
 const SYSTEM_PROMPT = [
   "You are the Ask assistant inside Jurisimus's internal sales CRM — the founder runs the 10-firm validation tour pipeline here. Records are work items: accounts (companies/firms), contacts, opportunities (pipeline deals, children of accounts), call notes, and commitments.",
@@ -40,83 +32,6 @@ const SYSTEM_PROMPT = [
   "- Pass along every detail the user provided (amounts, dates, sizes, sources) as tool inputs; do not drop details silently.",
   "- Do not stop to ask about OPTIONAL fields the user did not mention — create the records with what you have; missing optional details can be filled in later. Only ask when a REQUIRED input is genuinely unknowable from the request.",
 ].join("\n");
-
-// ---------------------------------------------------------------------------
-// Chat persistence
-// ---------------------------------------------------------------------------
-
-type ChatRow = typeof chats.$inferSelect;
-
-/** Flat wire shape `ChatResponseSchema` in src/lib/chat/schemas.ts parses. */
-export function serializeChat(row: ChatRow): Record<string, unknown> {
-  return {
-    id: row.id,
-    title: row.title,
-    page_id: null,
-    findings_count: 0,
-    parent_chat_id: null,
-    branched_from_message_id: null,
-    branch_name: null,
-    starred: false,
-    ephemeral: false,
-    created_at: row.createdAt.toISOString(),
-    updated_at: row.updatedAt.toISOString(),
-  };
-}
-
-export async function createChat(title: string | null): Promise<ChatRow> {
-  const id = mintId("chat");
-  await db.insert(chats).values({ id, title });
-  const rows = await db.select().from(chats).where(eq(chats.id, id)).limit(1);
-  if (!rows[0]) throw new Error(`Chat ${id} vanished after insert`);
-  return rows[0];
-}
-
-export async function loadChat(id: string): Promise<ChatRow | null> {
-  const rows = await db.select().from(chats).where(eq(chats.id, id)).limit(1);
-  return rows[0] ?? null;
-}
-
-async function loadHistory(chatId: string): Promise<Anthropic.MessageParam[]> {
-  const rows = await db
-    .select()
-    .from(chatMessages)
-    .where(eq(chatMessages.chatId, chatId))
-    .orderBy(asc(chatMessages.createdAt), asc(chatMessages.id));
-  return rows.slice(-HISTORY_MESSAGE_LIMIT).map((row) => ({
-    role: row.role === "assistant" ? "assistant" : "user",
-    content: row.content,
-  }));
-}
-
-async function appendMessage(
-  chatId: string,
-  role: "user" | "assistant",
-  content: string,
-): Promise<void> {
-  await db
-    .insert(chatMessages)
-    .values({ id: mintId("msg"), chatId, role, content });
-  await db
-    .update(chats)
-    .set({ updatedAt: new Date() })
-    .where(eq(chats.id, chatId));
-}
-
-// ---------------------------------------------------------------------------
-// SSE agentic loop
-// ---------------------------------------------------------------------------
-
-// No fallbacks for paid-call config (billing discipline): a missing key
-// fails loudly on first use rather than degrading to a canned answer.
-function anthropicClient(): Anthropic {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is not configured — the Ask assistant cannot run.",
-    );
-  }
-  return new Anthropic();
-}
 
 export interface AskSseWriter {
   emit(eventType: string, data: Record<string, unknown>): Promise<void>;
