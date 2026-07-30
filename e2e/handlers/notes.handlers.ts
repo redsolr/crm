@@ -3,16 +3,16 @@
  * Mocks the file-system API used by FileExplorer and PersonalExplorer.
  *
  * Wire contract (matches platform DTOs):
- *   - `/v1/file_system/nodes` returns `{ data, meta: { total } }`
+ *   - `/api/file_system/nodes` returns `{ data, meta: { total } }`
  *     where each node uses snake_case (`parent_id`, `created_at`, etc.)
- *   - `/v1/folders/*` envelope: `{ folder }`
- *   - `/v1/pages/*` envelope: `{ page }`
+ *   - `/api/folders/*` envelope: `{ folder }`
+ *   - `/api/pages/*` envelope: `{ page }`
  *   - The `Page` wire shape has `title` + `content` + `owner_id` +
  *     `owner_name` (polymorphic actor; opaque text, NOT prefixed acc_*)
  */
 
 import { Page } from "@playwright/test";
-import { API_V1, TEST_USER } from "./shared";
+import { API_ROOT, TEST_USER } from "./shared";
 
 // ============================================================================
 // Mock Data Types — snake_case throughout to match wire shape.
@@ -212,9 +212,9 @@ export async function setupNotesHandlers(
     });
 
   // ------------------------------------------------------------------
-  // GET /v1/file_system/nodes — returns flat list of all file nodes
+  // GET /api/file_system/nodes — returns flat list of all file nodes
   // ------------------------------------------------------------------
-  await page.route(`${API_V1}/file_system/nodes**`, async (route) => {
+  await page.route(`${API_ROOT}/file_system/nodes**`, async (route) => {
     const url = new URL(route.request().url());
     const scope = url.searchParams.get("scope");
 
@@ -235,9 +235,9 @@ export async function setupNotesHandlers(
   });
 
   // ------------------------------------------------------------------
-  // GET /v1/file_system/tree — returns pre-built tree structure
+  // GET /api/file_system/tree — returns pre-built tree structure
   // ------------------------------------------------------------------
-  await page.route(`${API_V1}/file_system/tree**`, async (route) => {
+  await page.route(`${API_ROOT}/file_system/tree**`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -246,23 +246,23 @@ export async function setupNotesHandlers(
   });
 
   // ------------------------------------------------------------------
-  // GET /v1/pages/:id — page content
-  // PUT /v1/pages/:id — update
-  // DELETE /v1/pages/:id — soft delete
-  // POST /v1/pages/:id/restore — restore
-  // PUT /v1/pages/:id/move — move folder
+  // GET /api/pages/:id — page content
+  // PUT /api/pages/:id — update
+  // DELETE /api/pages/:id — soft delete
+  // POST /api/pages/:id/restore — restore
+  // PUT /api/pages/:id/move — move folder
   // ------------------------------------------------------------------
   await page.route(
-    (url) => /^\/v1\/pages\/[^/]+(\/.*)?$/.test(url.pathname),
+    (url) => /^\/api\/pages\/[^/]+(\/.*)?$/.test(url.pathname),
     async (route, request) => {
       const method = request.method();
       const url = request.url();
       const pathParts =
-        url.split("/v1/pages/")[1]?.split("?")[0]?.split("/") ?? [];
+        url.split("/api/pages/")[1]?.split("?")[0]?.split("/") ?? [];
       const pageId = pathParts[0] ?? "";
       const subPath = pathParts[1];
 
-      // POST /v1/pages/:id/restore
+      // POST /api/pages/:id/restore
       if (method === "POST" && subPath === "restore") {
         await route.fulfill({
           status: 200,
@@ -274,7 +274,7 @@ export async function setupNotesHandlers(
         return;
       }
 
-      // PUT /v1/pages/:id/move
+      // PUT /api/pages/:id/move
       if (method === "PUT" && subPath === "move") {
         await route.fulfill({
           status: 200,
@@ -333,13 +333,13 @@ export async function setupNotesHandlers(
   );
 
   // ------------------------------------------------------------------
-  // POST /v1/pages — create
-  // GET /v1/pages — list (empty by default)
+  // POST /api/pages — create
+  // GET /api/pages — list (empty by default)
   // ------------------------------------------------------------------
-  await page.route(`${API_V1}/pages**`, async (route, request) => {
+  await page.route(`${API_ROOT}/pages**`, async (route, request) => {
     const u = new URL(request.url());
-    // Defer to /v1/pages/:id handler
-    if (u.pathname !== "/v1/pages") {
+    // Defer to /api/pages/:id handler
+    if (u.pathname !== "/api/pages") {
       await route.fallback();
       return;
     }
@@ -385,9 +385,9 @@ export async function setupNotesHandlers(
   });
 
   // ------------------------------------------------------------------
-  // POST /v1/folders — create
+  // POST /api/folders — create
   // ------------------------------------------------------------------
-  await page.route(`${API_V1}/folders`, async (route, request) => {
+  await page.route(`${API_ROOT}/folders`, async (route, request) => {
     if (request.method() !== "POST") {
       await route.fallback();
       return;
@@ -410,17 +410,17 @@ export async function setupNotesHandlers(
   });
 
   // ------------------------------------------------------------------
-  // PUT/DELETE /v1/folders/:id
-  // PUT /v1/folders/:id/move
-  // GET /v1/folders/:id/children (legacy)
+  // PUT/DELETE /api/folders/:id
+  // PUT /api/folders/:id/move
+  // GET /api/folders/:id/children (legacy)
   // ------------------------------------------------------------------
   await page.route(
-    (url) => /^\/v1\/folders\/[^/]+(\/.*)?$/.test(url.pathname),
+    (url) => /^\/api\/folders\/[^/]+(\/.*)?$/.test(url.pathname),
     async (route, request) => {
       const method = request.method();
       const url = request.url();
       const pathParts =
-        url.split("/v1/folders/")[1]?.split("?")[0]?.split("/") ?? [];
+        url.split("/api/folders/")[1]?.split("?")[0]?.split("/") ?? [];
       const folderId = pathParts[0] ?? "";
       const subPath = pathParts[1];
 

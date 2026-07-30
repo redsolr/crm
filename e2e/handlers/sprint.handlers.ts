@@ -1,10 +1,10 @@
 ﻿/**
  * Route handler factories for iteration (sprint) management endpoints.
- * Mocks `/v1/iterations` CRUD, lifecycle (start/complete), metrics, and
+ * Mocks `/api/iterations` CRUD, lifecycle (start/complete), metrics, and
  * the iteration/backlog work_item list endpoint.
  *
  * UI copy retains "Sprint" wording; the platform primitive is `iteration`,
- * reached via `/v1/iterations` (snake_case path, Stripe v2 style).
+ * reached via `/api/iterations` (snake_case path, Stripe v2 style).
  *
  * Wire contract (matches
  * `platform/src/modules/iterations/iterations.response.dto.ts`):
@@ -14,7 +14,7 @@
  */
 
 import { Page } from "@playwright/test";
-import { API_V1, TEST_USER } from "./shared";
+import { API_ROOT, TEST_USER } from "./shared";
 import type { MockWorkItem } from "./task.handlers";
 import { createWorkItemResponse } from "./task.handlers";
 
@@ -222,8 +222,8 @@ export async function setupSprintHandlers(
     completed_points: 0,
   };
 
-  // GET /v1/iterations/active?workspace_id=... — active iteration for a workspace
-  await page.route(`${API_V1}/iterations/active**`, async (route) => {
+  // GET /api/iterations/active?workspace_id=... — active iteration for a workspace
+  await page.route(`${API_ROOT}/iterations/active**`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -231,9 +231,9 @@ export async function setupSprintHandlers(
     });
   });
 
-  // GET /v1/iterations/:id/metrics — iteration metrics
+  // GET /api/iterations/:id/metrics — iteration metrics
   await page.route(
-    (url) => /^\/v1\/iterations\/[^/]+\/metrics$/.test(url.pathname),
+    (url) => /^\/api\/iterations\/[^/]+\/metrics$/.test(url.pathname),
     async (route) => {
       await route.fulfill({
         status: 200,
@@ -243,9 +243,9 @@ export async function setupSprintHandlers(
     },
   );
 
-  // POST /v1/iterations/:id/start — start an iteration
+  // POST /api/iterations/:id/start — start an iteration
   await page.route(
-    (url) => /^\/v1\/iterations\/[^/]+\/start$/.test(url.pathname),
+    (url) => /^\/api\/iterations\/[^/]+\/start$/.test(url.pathname),
     async (route) => {
       const url = route.request().url();
       const iterationId =
@@ -264,9 +264,9 @@ export async function setupSprintHandlers(
     },
   );
 
-  // POST /v1/iterations/:id/complete — complete an iteration
+  // POST /api/iterations/:id/complete — complete an iteration
   await page.route(
-    (url) => /^\/v1\/iterations\/[^/]+\/complete$/.test(url.pathname),
+    (url) => /^\/api\/iterations\/[^/]+\/complete$/.test(url.pathname),
     async (route) => {
       const url = route.request().url();
       const iterationId =
@@ -285,15 +285,15 @@ export async function setupSprintHandlers(
     },
   );
 
-  // POST /v1/iterations (create) + GET /v1/iterations (list)
-  await page.route(`${API_V1}/iterations**`, async (route, request) => {
+  // POST /api/iterations (create) + GET /api/iterations (list)
+  await page.route(`${API_ROOT}/iterations**`, async (route, request) => {
     const u = new URL(request.url());
     // Defer to more-specific iteration sub-routes (active / :id / :id/start /
     // :id/complete / :id/metrics). The empty-string check guards against the
-    // trailing-`/` form `/v1/iterations/`.
+    // trailing-`/` form `/api/iterations/`.
     if (
-      u.pathname !== "/v1/iterations" &&
-      u.pathname !== "/v1/iterations/"
+      u.pathname !== "/api/iterations" &&
+      u.pathname !== "/api/iterations/"
     ) {
       await route.fallback();
       return;
@@ -335,9 +335,9 @@ export async function setupSprintHandlers(
     });
   });
 
-  // PATCH/DELETE/GET /v1/iterations/:id
+  // PATCH/DELETE/GET /api/iterations/:id
   await page.route(
-    (url) => /^\/v1\/iterations\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/iterations\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       const method = request.method();
       const id =
@@ -372,18 +372,18 @@ export async function setupSprintHandlers(
     },
   );
 
-  // GET /v1/work_items* — backlog + iteration-filtered work items
+  // GET /api/work_items* — backlog + iteration-filtered work items
   // (this handler may compete with task.handlers.ts when both fixtures
   // are in use; specs typically don't call both for the same view).
-  await page.route(`${API_V1}/work_items**`, async (route, request) => {
+  await page.route(`${API_ROOT}/work_items**`, async (route, request) => {
     if (request.method() !== "GET") {
       await route.fallback();
       return;
     }
     const u = new URL(request.url());
     if (
-      u.pathname === "/v1/work_items/bulk" ||
-      /^\/v1\/work_items\/[^/]+/.test(u.pathname)
+      u.pathname === "/api/work_items/bulk" ||
+      /^\/api\/work_items\/[^/]+/.test(u.pathname)
     ) {
       await route.fallback();
       return;

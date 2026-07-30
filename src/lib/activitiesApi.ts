@@ -1,12 +1,12 @@
 /**
  * Activities API Client
  *
- * Hits `/v1/activities` — audit/change feed for workspaces, entities,
+ * Hits `/api/activities` — audit/change feed for workspaces, entities,
  * and the current user.
  *
  * Workspace rename arc (2026-05-27): the per-project feed endpoint
- * `GET /v1/activities/project/:projectId` was renamed to
- * `GET /v1/activities/workspace` — the workspace is now resolved from
+ * `GET /api/activities/project/:projectId` was renamed to
+ * `GET /api/activities/workspace` — the workspace is now resolved from
  * the caller credential (API key, JWT, or PAT). The hook parameter
  * name `project_id` is preserved at call sites as a JS-local; it
  * carries the active workspace id on the wire.
@@ -47,9 +47,9 @@ export interface ActivityWithActor {
 
 // Activity responses.
 //
-// `/v1/activities` (sidebar) returns `{ activities, total }`.
-// `/v1/activities/workspace`, `/v1/activities/entity/:type/:id`,
-// `/v1/activities/me` return `{ activities }` (no total — the BE feed
+// `/api/activities` (sidebar) returns `{ activities, total }`.
+// `/api/activities/workspace`, `/api/activities/entity/:type/:id`,
+// `/api/activities/me` return `{ activities }` (no total — the BE feed
 // is bounded server-side at ~50 rows).
 //
 // Note: BE returns bare `Activity` rows (no actor join). The historic

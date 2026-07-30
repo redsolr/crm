@@ -5,7 +5,7 @@
  */
 
 import { test, expect } from "./fixtures/auth.fixture";
-import { API_V1 } from "./handlers/shared";
+import { API_ROOT } from "./handlers/shared";
 
 const INVITE_CODE = "TEST-CODE-123";
 const INVITE_URL = `/invite/${INVITE_CODE}`;
@@ -21,7 +21,7 @@ const VALID_INVITE_RESPONSE = {
 test.describe("Invite Page", () => {
   test("shows invite details for valid code", async ({ authedPage }) => {
     await authedPage.route(
-      `${API_V1}/invite/${INVITE_CODE}`,
+      `${API_ROOT}/invite/${INVITE_CODE}`,
       async (route) => {
         await route.fulfill({
           status: 200,
@@ -44,7 +44,7 @@ test.describe("Invite Page", () => {
 
   test("shows error for invalid code", async ({ authedPage }) => {
     await authedPage.route(
-      `${API_V1}/invite/${INVITE_CODE}`,
+      `${API_ROOT}/invite/${INVITE_CODE}`,
       async (route) => {
         await route.fulfill({
           status: 404,
@@ -63,7 +63,7 @@ test.describe("Invite Page", () => {
 
   test("accepts invite and shows success", async ({ authedPage }) => {
     await authedPage.route(
-      `${API_V1}/invite/${INVITE_CODE}`,
+      `${API_ROOT}/invite/${INVITE_CODE}`,
       async (route) => {
         await route.fulfill({
           status: 200,
@@ -80,7 +80,7 @@ test.describe("Invite Page", () => {
     );
 
     await authedPage.route(
-      `${API_V1}/invite/${INVITE_CODE}/accept`,
+      `${API_ROOT}/invite/${INVITE_CODE}/accept`,
       async (route) => {
         await route.fulfill({
           status: 200,
@@ -107,7 +107,7 @@ test.describe("Invite Page", () => {
 
   test("redirects to workspace after accepting", async ({ authedPage }) => {
     await authedPage.route(
-      `${API_V1}/invite/${INVITE_CODE}`,
+      `${API_ROOT}/invite/${INVITE_CODE}`,
       async (route) => {
         await route.fulfill({
           status: 200,
@@ -118,7 +118,7 @@ test.describe("Invite Page", () => {
     );
 
     await authedPage.route(
-      `${API_V1}/invite/${INVITE_CODE}/accept`,
+      `${API_ROOT}/invite/${INVITE_CODE}/accept`,
       async (route) => {
         await route.fulfill({
           status: 200,

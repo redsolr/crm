@@ -20,7 +20,7 @@
 
 import { BaseApiClient, buildApiError } from "../api-client";
 import { freshIdempotencyKey } from "../idempotency";
-import { API_V1 } from "@/lib/api-base";
+import { API_ROOT } from "@/lib/api-base";
 import {
   BranchInfoArraySchema,
   BranchTreeNodeSchema,
@@ -274,8 +274,8 @@ export async function getChatHistory(options?: {
   if (options?.limit) params.set("limit", String(options.limit));
 
   const query = params.toString();
-  // All public platform endpoints are versioned under `/v1/`.
-  const url = `${API_V1}/chats/history${query ? `?${query}` : ""}`;
+  // All public platform endpoints are versioned under `/api/`.
+  const url = `${API_ROOT}/chats/history${query ? `?${query}` : ""}`;
 
   const response = await fetch(url, {
     credentials: "include",

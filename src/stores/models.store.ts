@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { API_V1, API_VERSION } from "@/lib/api-base";
+import { API_ROOT } from "@/lib/api-base";
 
 export interface ModelEntry {
   id: string;
@@ -48,9 +48,8 @@ export const useModelsStore = create<ModelsState & ModelsActions>()(
         set({ loading: true, error: null }, false, "fetchModels/start");
 
         try {
-          const res = await fetch(`${API_V1}/models`, {
+          const res = await fetch(`${API_ROOT}/models`, {
             credentials: "include",
-            headers: { "Jurisimus-Version": API_VERSION },
           });
 
           if (!res.ok) {

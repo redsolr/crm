@@ -10,13 +10,13 @@
  *
  * URL discipline (2026-05-22):
  *   Every platform API call goes through `BaseApiClient` with
- *   `baseUrl = ${API_BASE}/v1`. Mocks MUST intercept with the `/v1/`
+ *   `baseUrl = ${API_BASE}/api`. Mocks MUST intercept with the `/api/`
  *   prefix or `page.route` will silently never match. Previously these
- *   mocks lived at `${API_BASE}/<path>` (no `/v1/`) which made the entire
+ *   mocks lived at `${API_BASE}/<path>` (no `/api/`) which made the entire
  *   mock layer dead — tests were passing on empty-state UI because the
  *   FE's real fetches hit nothing.
  *
- *   Routes outside `/v1/` (per `platform/src/main.ts` exclude list):
+ *   Routes outside `/api/` (per `platform/src/main.ts` exclude list):
  *   `/auth/*`, `/oauth/*`, `/.well-known/*`, `/mcp/*`,
  *   `/payments/webhooks/*`, `/subscriptions/webhook/*`,
  *   `/collaboration`, `/health`, `/health/*`. Use `API_BASE` directly
@@ -24,7 +24,7 @@
  */
 
 import { test as base, Page } from "@playwright/test";
-import { TEST_USER, TEST_TOKEN, API_BASE, API_V1 } from "../handlers/shared";
+import { TEST_USER, TEST_TOKEN, API_BASE, API_ROOT } from "../handlers/shared";
 import { setupAuthHandlers } from "../handlers/auth.handlers";
 import { setupUsageHandlers } from "../handlers/usage.handlers";
 
@@ -63,7 +63,7 @@ export const test = base.extend<{
     // ------------------------------------------------------------------
     // HERMETIC TRIPWIRE — registered FIRST so every later (more specific)
     // route wins; Playwright matches last-registered-first and cascades
-    // here only via `route.fallback()`. Any /v1/* request that NO handler
+    // here only via `route.fallback()`. Any /api/* request that NO handler
     // mocked used to silently hit the real backend at :8080 — green when a
     // dev server happened to be running, random connection-refused "flakes"
     // when it wasn't. Now it fails LOUDLY with the offending path so the
@@ -71,7 +71,7 @@ export const test = base.extend<{
     // (599 — outside the api-client's 401-refresh / 429 / 503 retry paths.)
     // ------------------------------------------------------------------
     await page.route(
-      (url) => url.pathname.startsWith("/v1/"),
+      (url) => url.pathname.startsWith("/api/"),
       async (route, request) => {
         const path = new URL(request.url()).pathname;
         const msg =
@@ -122,17 +122,17 @@ export const test = base.extend<{
       },
     );
     // Legal findings panel (matters lab) — `FindingListSchema` → `{findings}`.
-    await page.route(`${API_V1}/legal/findings**`, async (route, request) => {
+    await page.route(`${API_ROOT}/legal/findings**`, async (route, request) => {
       if (request.method() !== "GET") return route.fallback();
       await route.fulfill(emptyJson({ findings: [] }));
     });
     // Matter templates picker.
-    await page.route(`${API_V1}/matter_templates**`, async (route, request) => {
+    await page.route(`${API_ROOT}/matter_templates**`, async (route, request) => {
       if (request.method() !== "GET") return route.fallback();
       await route.fulfill(emptyJson({ matter_templates: [] }));
     });
     // LLM budget indicator (camelCase per-module exception).
-    await page.route(`${API_V1}/usage/budget**`, async (route, request) => {
+    await page.route(`${API_ROOT}/usage/budget**`, async (route, request) => {
       if (request.method() !== "GET") return route.fallback();
       await route.fulfill(
         emptyJson({
@@ -146,12 +146,12 @@ export const test = base.extend<{
       );
     });
     // Usage summary widget — client accepts `UsageSummary | null`.
-    await page.route(`${API_V1}/usage/summary**`, async (route, request) => {
+    await page.route(`${API_ROOT}/usage/summary**`, async (route, request) => {
       if (request.method() !== "GET") return route.fallback();
       await route.fulfill(emptyJson(null));
     });
     // Saved views list — `{ data: SavedView[] }`.
-    await page.route(`${API_V1}/views**`, async (route, request) => {
+    await page.route(`${API_ROOT}/views**`, async (route, request) => {
       if (request.method() !== "GET") return route.fallback();
       await route.fulfill(emptyJson({ data: [] }));
     });
@@ -162,7 +162,7 @@ export const test = base.extend<{
     // and richer data still come from `setupMatterIntakeHandlers`
     // (later-wins) or fall through to the tripwire.
     await page.route(
-      (url) => url.pathname === "/v1/communication_threads",
+      (url) => url.pathname === "/api/communication_threads",
       async (route, request) => {
         if (request.method() !== "GET") return route.fallback();
         await route.fulfill(emptyJson(emptyCursorPage));
@@ -173,7 +173,7 @@ export const test = base.extend<{
     // tripwire hit (2026-07-10) never failed a test, but hermetic means
     // hermetic. `list()` parses `{ data: ReplySnippet[] }`.
     await page.route(
-      (url) => url.pathname === "/v1/reply_snippets",
+      (url) => url.pathname === "/api/reply_snippets",
       async (route, request) => {
         if (request.method() !== "GET") return route.fallback();
         await route.fulfill(emptyJson({ data: [] }));
@@ -184,23 +184,23 @@ export const test = base.extend<{
     // snippets (tripwire hits 2026-07-10). Both parse `{ data: [] }`.
     await page.route(
       (url) =>
-        url.pathname === "/v1/matter_checklists" ||
-        url.pathname === "/v1/matter_checklists/presets",
+        url.pathname === "/api/matter_checklists" ||
+        url.pathname === "/api/matter_checklists/presets",
       async (route, request) => {
         if (request.method() !== "GET") return route.fallback();
         await route.fulfill(emptyJson({ data: [] }));
       },
     );
     // Work-items list (AIP-158 cursor page).
-    await page.route(`${API_V1}/work_items**`, async (route, request) => {
+    await page.route(`${API_ROOT}/work_items**`, async (route, request) => {
       const isList =
         request.method() === "GET" &&
-        new URL(request.url()).pathname === "/v1/work_items";
+        new URL(request.url()).pathname === "/api/work_items";
       if (!isList) return route.fallback();
       await route.fulfill(emptyJson(emptyCursorPage));
     });
 
-    // Set up auth API route handlers (these live under /auth/*, NOT /v1/)
+    // Set up auth API route handlers (these live under /auth/*, NOT /api/)
     await setupAuthHandlers(page);
     await setupUsageHandlers(page);
 
@@ -212,13 +212,13 @@ export const test = base.extend<{
     // ------------------------------------------------------------------
 
     // Chat history sidebar
-    await page.route(`${API_V1}/chats**`, async (route, request) => {
+    await page.route(`${API_ROOT}/chats**`, async (route, request) => {
       // Only intercept LIST calls here — specific chat ops are mocked
       // by chat.handlers.ts in tests that need them.
       const u = new URL(request.url());
       const isList =
         request.method() === "GET" &&
-        u.pathname === "/v1/chats" &&
+        u.pathname === "/api/chats" &&
         !u.pathname.endsWith("/messages");
       if (isList) {
         await route.fulfill({
@@ -237,7 +237,7 @@ export const test = base.extend<{
     });
 
     // Findings list (top-bar)
-    await page.route(`${API_V1}/findings**`, async (route, request) => {
+    await page.route(`${API_ROOT}/findings**`, async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
           status: 200,
@@ -254,12 +254,12 @@ export const test = base.extend<{
       await route.fallback();
     });
 
-    // Notifications (right-sidebar bell). `GET /v1/notifications`
+    // Notifications (right-sidebar bell). `GET /api/notifications`
     // returns a bare array `AppNotification[]` per
     // `notificationsApi.getNotifications()`, NOT the cursor envelope.
-    await page.route(`${API_V1}/notifications**`, async (route, request) => {
+    await page.route(`${API_ROOT}/notifications**`, async (route, request) => {
       const u = new URL(request.url());
-      if (request.method() === "GET" && u.pathname === "/v1/notifications") {
+      if (request.method() === "GET" && u.pathname === "/api/notifications") {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -271,7 +271,7 @@ export const test = base.extend<{
       // tests that exercise them mock further down the stack.
       if (
         request.method() === "GET" &&
-        u.pathname === "/v1/notifications/vapid-key"
+        u.pathname === "/api/notifications/vapid-key"
       ) {
         await route.fulfill({
           status: 200,
@@ -285,7 +285,7 @@ export const test = base.extend<{
 
     // Account-scoped sub-resources (members, folders) — empty defaults
     await page.route(
-      `${API_V1}/accounts/*/folders**`,
+      `${API_ROOT}/accounts/*/folders**`,
       async (route) =>
         await route.fulfill({
           status: 200,
@@ -299,7 +299,7 @@ export const test = base.extend<{
         }),
     );
     await page.route(
-      `${API_V1}/accounts/*/members**`,
+      `${API_ROOT}/accounts/*/members**`,
       async (route) =>
         await route.fulfill({
           status: 200,
@@ -314,7 +314,7 @@ export const test = base.extend<{
     );
 
     // Presence heartbeat
-    await page.route(`${API_V1}/presence/heartbeat**`, async (route) => {
+    await page.route(`${API_ROOT}/presence/heartbeat**`, async (route) => {
       await route.fulfill({ status: 204 });
     });
 
@@ -332,7 +332,7 @@ export const test = base.extend<{
     );
 
     // Model selector
-    await page.route(`${API_V1}/chat/models**`, async (route) => {
+    await page.route(`${API_ROOT}/chat/models**`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -374,16 +374,16 @@ export const test = base.extend<{
     // Suite-specific handlers that mount BEFORE this fallback (e.g.
     // `setupWorkspaceHandlers`) take precedence — Playwright runs
     // `page.route` registrations LIFO.
-    await page.route(`${API_V1}/workspaces**`, async (route, request) => {
+    await page.route(`${API_ROOT}/workspaces**`, async (route, request) => {
       const u = new URL(request.url());
       // Only intercept the top-level list — let
-      // `/v1/workspaces/{id}/...` resource calls (labels, workflows,
+      // `/api/workspaces/{id}/...` resource calls (labels, workflows,
       // work_item_types) fall through to handler-specific mocks.
       //
       // Envelope is `{ workspaces: [...] }` (NOT `{ data: [...] }`) per
       // platform openapi.yaml WorkspaceListResponse (post 2026-05-27
       // workspace rename arc; see workspace-shape-spec-2026-05-27.md).
-      if (u.pathname === "/v1/workspaces") {
+      if (u.pathname === "/api/workspaces") {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -412,7 +412,7 @@ export const test = base.extend<{
     });
 
     // Favorites list (left sidebar)
-    await page.route(`${API_V1}/favorites**`, async (route, request) => {
+    await page.route(`${API_ROOT}/favorites**`, async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
           status: 200,
@@ -431,7 +431,7 @@ export const test = base.extend<{
 
     // Organizations the caller belongs to (organization-switcher source)
     await page.route(
-      `${API_V1}/accounts/me/organizations**`,
+      `${API_ROOT}/accounts/me/organizations**`,
       async (route) => {
         await route.fulfill({
           status: 200,
@@ -453,9 +453,9 @@ export const test = base.extend<{
       },
     );
 
-    // GET /v1/accounts/me - caller identity (some app paths fetch this
+    // GET /api/accounts/me - caller identity (some app paths fetch this
     // in addition to the layout-injected store hydration).
-    await page.route(`${API_V1}/accounts/me`, async (route, request) => {
+    await page.route(`${API_ROOT}/accounts/me`, async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
           status: 200,
@@ -476,14 +476,14 @@ export const test = base.extend<{
       await route.fallback();
     });
 
-    // GET /v1/accounts/:id - generic account fetch used by Settings's
+    // GET /api/accounts/:id - generic account fetch used by Settings's
     // UsageSection (`accountApiClient.getAccount`). The FE reads
     // `allowOverage` (camelCase) off the response object.
     // Registered AFTER `/accounts/me` so the more-specific matcher wins
     // via Playwright's LIFO ordering.
     await page.route(
       (url) =>
-        /^\/v1\/accounts\/[^/]+$/.test(url.pathname) &&
+        /^\/api\/accounts\/[^/]+$/.test(url.pathname) &&
         !url.pathname.endsWith("/me"),
       async (route, request) => {
         if (request.method() !== "GET") {
@@ -491,7 +491,7 @@ export const test = base.extend<{
           return;
         }
         const id =
-          request.url().split("/v1/accounts/")[1]?.split(/[?/]/)[0] ?? "";
+          request.url().split("/api/accounts/")[1]?.split(/[?/]/)[0] ?? "";
         const now = new Date().toISOString();
         await route.fulfill({
           status: 200,
@@ -510,12 +510,12 @@ export const test = base.extend<{
       },
     );
 
-    // GET /v1/accounts/:id/overage_settings + PATCH variants - Settings >
+    // GET /api/accounts/:id/overage_settings + PATCH variants - Settings >
     // Usage tab. Returns the overage toggle's current state.
     await page.route(
       (url) =>
-        /^\/v1\/accounts\/[^/]+\/overage_settings?$/.test(url.pathname) ||
-        /^\/v1\/accounts\/[^/]+\/(?:overage|allow_overage)$/.test(
+        /^\/api\/accounts\/[^/]+\/overage_settings?$/.test(url.pathname) ||
+        /^\/api\/accounts\/[^/]+\/(?:overage|allow_overage)$/.test(
           url.pathname,
         ),
       async (route) =>
@@ -529,14 +529,14 @@ export const test = base.extend<{
         }),
     );
 
-    // GET /v1/organizations/:id/usage/summary - org-level usage tile.
+    // GET /api/organizations/:id/usage/summary - org-level usage tile.
     // Matches `OrganizationUsageSummary` in src/lib/platformApi.ts.
     await page.route(
       (url) =>
-        /^\/v1\/organizations\/[^/]+\/usage\/summary$/.test(url.pathname),
+        /^\/api\/organizations\/[^/]+\/usage\/summary$/.test(url.pathname),
       async (route, request) => {
         const orgId =
-          request.url().split("/v1/organizations/")[1]?.split("/")[0] ?? "";
+          request.url().split("/api/organizations/")[1]?.split("/")[0] ?? "";
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -590,13 +590,13 @@ export const test = base.extend<{
       },
     );
 
-    // GET /v1/organizations/:id/subscription - org subscription wrap
+    // GET /api/organizations/:id/subscription - org subscription wrap
     await page.route(
       (url) =>
-        /^\/v1\/organizations\/[^/]+\/subscription$/.test(url.pathname),
+        /^\/api\/organizations\/[^/]+\/subscription$/.test(url.pathname),
       async (route, request) => {
         const orgId =
-          request.url().split("/v1/organizations/")[1]?.split("/")[0] ?? "";
+          request.url().split("/api/organizations/")[1]?.split("/")[0] ?? "";
         const now = new Date().toISOString();
         await route.fulfill({
           status: 200,
@@ -629,9 +629,9 @@ export const test = base.extend<{
       },
     );
 
-    // GET /v1/accounts/me/usage/summary - account-level consolidated usage.
+    // GET /api/accounts/me/usage/summary - account-level consolidated usage.
     await page.route(
-      `${API_V1}/accounts/me/usage/summary`,
+      `${API_ROOT}/accounts/me/usage/summary`,
       async (route) =>
         await route.fulfill({
           status: 200,
@@ -659,19 +659,19 @@ export const test = base.extend<{
     );
 
 
-    // Workspace rename arc (2026-05-27): no `/v1/projects*`,
-    // `/v1/projects/:id/envs`, `/v1/projects/:id/settings`, or
-    // `/v1/accounts/me/envs` mocks — the `project` + `env` primitives
+    // Workspace rename arc (2026-05-27): no `/api/projects*`,
+    // `/api/projects/:id/envs`, `/api/projects/:id/settings`, or
+    // `/api/accounts/me/envs` mocks — the `project` + `env` primitives
     // were retired. The sole grouping/isolation boundary is `workspace`
-    // (`/v1/workspaces`, mocked above). Tenancy is the JWT-bound
+    // (`/api/workspaces`, mocked above). Tenancy is the JWT-bound
     // workspace (or a `Jurisimus-Workspace-Id` override); there is no
     // env switcher.
 
-    // GET/PATCH /v1/accounts/me/notification_preferences - settings >
+    // GET/PATCH /api/accounts/me/notification_preferences - settings >
     // notifications. Returns the boolean toggle state for safety-net
     // emails. Default everything ON.
     await page.route(
-      `${API_V1}/accounts/me/notification_preferences`,
+      `${API_ROOT}/accounts/me/notification_preferences`,
       async (route) =>
         await route.fulfill({
           status: 200,
@@ -684,10 +684,10 @@ export const test = base.extend<{
         }),
     );
 
-    // GET/PUT /v1/user_preferences/me - user preferences envelope
+    // GET/PUT /api/user_preferences/me - user preferences envelope
     // `{ data: UserPreferences | null }`.
     await page.route(
-      `${API_V1}/user_preferences/me`,
+      `${API_ROOT}/user_preferences/me`,
       async (route) =>
         await route.fulfill({
           status: 200,
@@ -696,10 +696,10 @@ export const test = base.extend<{
         }),
     );
 
-    // GET /v1/organizations/:id/usage/breakdown - usage drill-down by group
+    // GET /api/organizations/:id/usage/breakdown - usage drill-down by group
     await page.route(
       (url) =>
-        /^\/v1\/organizations\/[^/]+\/usage\/breakdown$/.test(url.pathname),
+        /^\/api\/organizations\/[^/]+\/usage\/breakdown$/.test(url.pathname),
       async (route) =>
         await route.fulfill({
           status: 200,
@@ -717,9 +717,9 @@ export const test = base.extend<{
         }),
     );
 
-    // GET /v1/api_keys/:id/usage - per-key usage history
+    // GET /api/api_keys/:id/usage - per-key usage history
     await page.route(
-      (url) => /^\/v1\/api_keys\/[^/]+\/usage$/.test(url.pathname),
+      (url) => /^\/api\/api_keys\/[^/]+\/usage$/.test(url.pathname),
       async (route) =>
         await route.fulfill({
           status: 200,
@@ -739,8 +739,8 @@ export const test = base.extend<{
         }),
     );
 
-    // GET /v1/api_keys - empty default
-    await page.route(`${API_V1}/api_keys`, async (route, request) => {
+    // GET /api/api_keys - empty default
+    await page.route(`${API_ROOT}/api_keys`, async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
           status: 200,
@@ -757,8 +757,8 @@ export const test = base.extend<{
       await route.fallback();
     });
 
-    // GET /v1/events - empty Stripe-style developer events
-    await page.route(`${API_V1}/events**`, async (route, request) => {
+    // GET /api/events - empty Stripe-style developer events
+    await page.route(`${API_ROOT}/events**`, async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
           status: 200,
@@ -775,8 +775,8 @@ export const test = base.extend<{
       await route.fallback();
     });
 
-    // GET /v1/audit_logs - empty audit log list
-    await page.route(`${API_V1}/audit_logs**`, async (route, request) => {
+    // GET /api/audit_logs - empty audit log list
+    await page.route(`${API_ROOT}/audit_logs**`, async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
           status: 200,
@@ -793,8 +793,8 @@ export const test = base.extend<{
       await route.fallback();
     });
 
-    // GET /v1/request_logs - customer-facing API health
-    await page.route(`${API_V1}/request_logs**`, async (route, request) => {
+    // GET /api/request_logs - customer-facing API health
+    await page.route(`${API_ROOT}/request_logs**`, async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
           status: 200,
@@ -811,13 +811,13 @@ export const test = base.extend<{
       await route.fallback();
     });
 
-    // GET /v1/plans - public pricing catalog. Returns `SubscriptionPlan[]`
+    // GET /api/plans - public pricing catalog. Returns `SubscriptionPlan[]`
     // bare array (no envelope) per subscriptionsApi.getPlans(). Seat-based
     // catalog (docs/platform/seat-based-pricing-2026-07-06.md): exactly two
     // rows — free (AI locked) + team (per-seat price, pooled AI allowance).
     // THB-first: `currency: 'THB'`, seat prices in satang (฿890/mo,
     // ฿8,900/yr); the LLM allowance stays USD cents (metering currency).
-    await page.route(`${API_V1}/plans`, async (route) => {
+    await page.route(`${API_ROOT}/plans`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -855,9 +855,9 @@ export const test = base.extend<{
       });
     });
 
-    // GET /v1/webhooks/portal - returns redirect URL for Svix portal
+    // GET /api/webhooks/portal - returns redirect URL for Svix portal
     await page.route(
-      `${API_V1}/webhooks/portal`,
+      `${API_ROOT}/webhooks/portal`,
       async (route) =>
         await route.fulfill({
           status: 200,
@@ -866,12 +866,12 @@ export const test = base.extend<{
         }),
     );
 
-    // GET /v1/billing/overview — drives `useUsageDisplayQuery` (the
+    // GET /api/billing/overview — drives `useUsageDisplayQuery` (the
     // billing-overview rollup with per-model breakdown). Matches the
     // `BillingOverview` shape in `src/lib/usageApi.ts`. Individual
     // specs can override with `setupBillingMocks` / `setupUsageTabMocks`
     // for richer fixtures; this is the safe default.
-    await page.route(`${API_V1}/billing/overview**`, async (route) => {
+    await page.route(`${API_ROOT}/billing/overview**`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -905,12 +905,12 @@ export const test = base.extend<{
       });
     });
 
-    // GET /v1/organizations - bare array `Organization[]` per the
+    // GET /api/organizations - bare array `Organization[]` per the
     // platform's OrganizationsListResponse (no envelope). The `**`
     // glob below is intentionally narrowed by pathname so the same
-    // handler doesn't catch /v1/organizations/:id/{subscription,members},
+    // handler doesn't catch /api/organizations/:id/{subscription,members},
     // which need their own shapes.
-    await page.route(`${API_V1}/organizations**`, async (route, request) => {
+    await page.route(`${API_ROOT}/organizations**`, async (route, request) => {
       const u = new URL(request.url());
       if (request.method() !== "GET") {
         await route.fallback();
@@ -918,7 +918,7 @@ export const test = base.extend<{
       }
       const now = new Date().toISOString();
 
-      if (u.pathname === "/v1/organizations") {
+      if (u.pathname === "/api/organizations") {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -937,7 +937,7 @@ export const test = base.extend<{
         return;
       }
 
-      const singleOrg = u.pathname.match(/^\/v1\/organizations\/([^/]+)$/);
+      const singleOrg = u.pathname.match(/^\/api\/organizations\/([^/]+)$/);
       if (singleOrg !== null) {
         await route.fulfill({
           status: 200,
@@ -957,20 +957,20 @@ export const test = base.extend<{
         return;
       }
 
-      // /v1/organizations/:id/subscription - fall through to the
+      // /api/organizations/:id/subscription - fall through to the
       // dedicated envelope handler registered above (`{ subscription,
       // organization }` with the seat-based SubscriptionResponseDto
       // shape). This glob is registered later so it would otherwise
       // shadow that route with a stale non-envelope body.
-      if (/^\/v1\/organizations\/[^/]+\/subscription$/.test(u.pathname)) {
+      if (/^\/api\/organizations\/[^/]+\/subscription$/.test(u.pathname)) {
         await route.fallback();
         return;
       }
 
-      // /v1/organizations/:id/members - team-page list. The FE
+      // /api/organizations/:id/members - team-page list. The FE
       // `teamApi.getAccountMembers` returns `AccountMember[]` (bare
       // array, no envelope) — match that shape.
-      if (/^\/v1\/organizations\/[^/]+\/members$/.test(u.pathname)) {
+      if (/^\/api\/organizations\/[^/]+\/members$/.test(u.pathname)) {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -995,10 +995,10 @@ export const test = base.extend<{
       await route.fallback();
     });
 
-    // GET /v1/chats/history - chat sidebar history. The FE Zod schema
+    // GET /api/chats/history - chat sidebar history. The FE Zod schema
     // ChatHistoryResponseSchema requires `{ chats, total, grouped }`.
     await page.route(
-      `${API_V1}/chats/history**`,
+      `${API_ROOT}/chats/history**`,
       async (route) =>
         await route.fulfill({
           status: 200,
@@ -1007,11 +1007,11 @@ export const test = base.extend<{
         }),
     );
 
-    // GET /v1/plugins/installations - empty installed list.
+    // GET /api/plugins/installations - empty installed list.
     // Response shape per pluginsApi.getInstalled():
     // `{ data: [{ installation, plugin }] }`.
     await page.route(
-      `${API_V1}/plugins/installations**`,
+      `${API_ROOT}/plugins/installations**`,
       async (route) =>
         await route.fulfill({
           status: 200,
@@ -1020,10 +1020,10 @@ export const test = base.extend<{
         }),
     );
 
-    // GET /v1/models — chat model selector (models.store fetches this
+    // GET /api/models — chat model selector (models.store fetches this
     // directly via raw fetch, not BaseApiClient, but the URL still
-    // lives under /v1/).
-    await page.route(`${API_V1}/models**`, async (route) => {
+    // lives under /api/).
+    await page.route(`${API_ROOT}/models**`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -1055,7 +1055,7 @@ export const test = base.extend<{
       });
     });
 
-    // GET/PATCH /v1/user_preferences/ui_layout — ui-layout +
+    // GET/PATCH /api/user_preferences/ui_layout — ui-layout +
     // activity-bar store hydrate. Wire shape is snake_case, mirroring
     // `UiLayoutResponseDto` (`{ data: { v: 1, panel_widths?: {...},
     // activity_bar?: { order, hidden } } }`); the FE Zod validates the
@@ -1066,7 +1066,7 @@ export const test = base.extend<{
     // specs. tour.spec.ts registers its own (later-wins) handler with
     // an empty list to exercise the tour flows.
     await page.route(
-      `${API_V1}/user_preferences/ui_layout`,
+      `${API_ROOT}/user_preferences/ui_layout`,
       async (route) =>
         await route.fulfill({
           status: 200,

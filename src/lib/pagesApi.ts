@@ -7,7 +7,7 @@
 import { BaseApiClient } from "./api-client";
 import { authService } from "./authTokenManager";
 import { freshIdempotencyKey } from "./idempotency";
-import { API_V1, API_VERSION } from "@/lib/api-base";
+import { API_ROOT } from "@/lib/api-base";
 import type { Page as ApiPage } from "./generated/api/models";
 
 // ============================================================================
@@ -153,7 +153,7 @@ class PagesApiClient extends BaseApiClient {
   /**
    * Lightweight search across pages — returns minimal `{ id, title, icon,
    * updated_at }` rows for picker / link-menu UIs. Backed by
-   * `GET /v1/pages/search?query=&limit=`.
+   * `GET /api/pages/search?query=&limit=`.
    */
   async searchPages(query: string, limit = 10): Promise<PagesListResponse> {
     const params = new URLSearchParams();
@@ -257,9 +257,8 @@ class PagesApiClient extends BaseApiClient {
    * Uses a raw fetch (not the base `request()`) because the response is binary.
    */
   async exportAllNotes(): Promise<Blob> {
-    const url = `${API_V1}/pages/export`;
+    const url = `${API_ROOT}/pages/export`;
     const headers: HeadersInit = {
-      "Jurisimus-Version": API_VERSION,
     };
 
     const response = await fetch(url, {

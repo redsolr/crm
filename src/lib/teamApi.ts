@@ -17,7 +17,7 @@ export type InvitableRole = Exclude<MemberRole, "owner">;
 /**
  * Mirror of `OrganizationMemberResponseDto` (snake_case on the wire).
  * `account_email` / `account_full_name` are only present on the bulk
- * list (`GET /v1/organizations/:id/members`); single-row mutation
+ * list (`GET /api/organizations/:id/members`); single-row mutation
  * responses (add / role change) return the bare row without the join.
  */
 export interface AccountMember {
@@ -144,7 +144,7 @@ class TeamApiClient extends BaseApiClient {
 
   // ─── Organizations ──────────────────────────────────────
 
-  /** `GET /v1/organizations` — bare array on the wire (no envelope). */
+  /** `GET /api/organizations` — bare array on the wire (no envelope). */
   async getOrganizations(): Promise<Organization[]> {
     return this.request("/organizations");
   }

@@ -1,5 +1,5 @@
 /**
- * Mock handlers for the save-a-Workflow surface (`/v1/legal/workflows`).
+ * Mock handlers for the save-a-Workflow surface (`/api/legal/workflows`).
  * Stateful in-memory store: create/list/delete workflows; `POST …/:id/run`
  * enqueues a run (202, `running`) and the GET poll flips it to `completed` with
  * per-step OUTCOMES computed from the workflow's steps — mirroring the platform's
@@ -109,7 +109,7 @@ export async function setupLegalWorkflowsHandlers(page: Page): Promise<void> {
 
   // A couple of playbooks so the builder's check_playbook option is populated.
   await page.route(
-    (url) => url.pathname === "/v1/legal/playbooks",
+    (url) => url.pathname === "/api/legal/playbooks",
     async (route, request) => {
       if (request.method() !== "GET") {
         await route.fallback();
@@ -134,9 +134,9 @@ export async function setupLegalWorkflowsHandlers(page: Page): Promise<void> {
     },
   );
 
-  // GET (list) / POST (create) /v1/legal/workflows
+  // GET (list) / POST (create) /api/legal/workflows
   await page.route(
-    (url) => url.pathname === "/v1/legal/workflows",
+    (url) => url.pathname === "/api/legal/workflows",
     async (route, request) => {
       const method = request.method();
       if (method === "GET") {
@@ -173,9 +173,9 @@ export async function setupLegalWorkflowsHandlers(page: Page): Promise<void> {
     },
   );
 
-  // GET / PATCH / DELETE /v1/legal/workflows/:id (not /run, /runs)
+  // GET / PATCH / DELETE /api/legal/workflows/:id (not /run, /runs)
   await page.route(
-    (url) => /^\/v1\/legal\/workflows\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/legal\/workflows\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       const id = new URL(request.url()).pathname.split("/").pop() ?? "";
       const idx = workflows.findIndex((w) => w.id === id);
@@ -201,9 +201,9 @@ export async function setupLegalWorkflowsHandlers(page: Page): Promise<void> {
     },
   );
 
-  // POST /v1/legal/workflows/:id/run → enqueue a run (202, running).
+  // POST /api/legal/workflows/:id/run → enqueue a run (202, running).
   await page.route(
-    (url) => /^\/v1\/legal\/workflows\/[^/]+\/run$/.test(url.pathname),
+    (url) => /^\/api\/legal\/workflows\/[^/]+\/run$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -235,9 +235,9 @@ export async function setupLegalWorkflowsHandlers(page: Page): Promise<void> {
     },
   );
 
-  // GET /v1/legal/workflows/:id/runs → list runs (newest first).
+  // GET /api/legal/workflows/:id/runs → list runs (newest first).
   await page.route(
-    (url) => /^\/v1\/legal\/workflows\/[^/]+\/runs$/.test(url.pathname),
+    (url) => /^\/api\/legal\/workflows\/[^/]+\/runs$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "GET") {
         await route.fallback();
@@ -257,10 +257,10 @@ export async function setupLegalWorkflowsHandlers(page: Page): Promise<void> {
     },
   );
 
-  // GET /v1/legal/workflows/:id/runs/:runId → poll; first read flips
+  // GET /api/legal/workflows/:id/runs/:runId → poll; first read flips
   // running → completed and reveals the per-step outcomes.
   await page.route(
-    (url) => /^\/v1\/legal\/workflows\/[^/]+\/runs\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/legal\/workflows\/[^/]+\/runs\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "GET") {
         await route.fallback();

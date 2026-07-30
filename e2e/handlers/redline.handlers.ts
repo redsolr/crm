@@ -1,5 +1,5 @@
 /**
- * Mock handler for grounded redline (`POST /v1/legal/matters/:id/suggest_revision`):
+ * Mock handler for grounded redline (`POST /api/legal/matters/:id/suggest_revision`):
  * a suggested revision of a flagged clause, grounded in §448. Register alongside
  * the cite-check handlers — the redline affordance lives in the cite-check modal.
  *
@@ -12,7 +12,7 @@ import { Page } from "@playwright/test";
 export async function setupRedlineHandlers(page: Page) {
   await page.route(
     (url) =>
-      /^\/v1\/legal\/matters\/[^/]+\/suggest_revision$/.test(url.pathname),
+      /^\/api\/legal\/matters\/[^/]+\/suggest_revision$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -40,7 +40,7 @@ export async function setupRedlineHandlers(page: Page) {
 
   // Accept the redline — write it into the document.
   await page.route(
-    (url) => /^\/v1\/legal\/matters\/[^/]+\/apply_revision$/.test(url.pathname),
+    (url) => /^\/api\/legal\/matters\/[^/]+\/apply_revision$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();

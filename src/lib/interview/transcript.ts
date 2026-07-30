@@ -5,7 +5,7 @@
  *  - `formatTranscriptMarkdown` — the call-note description (grouped
  *    by section, signal tally up top, verbatim notes as blockquotes).
  *  - `buildSuggestionPrompt` — the compact transcript wrapped in
- *    instructions for `POST /v1/responses { ask: "text" }`. The ask's
+ *    instructions for `POST /api/responses { ask: "text" }`. The ask's
  *    `input.question` is capped at 8000 chars server-side, so the
  *    transcript is truncated oldest-first to stay under budget.
  */

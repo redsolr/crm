@@ -13,7 +13,7 @@
  *      (`lost`) interception opening TransitionToClosedModal.
  *
  * Mock layer: `setupSalesHandlers` — the stateful sales-pipeline
- * template store plus the stateful `/v1/views` mock added with this
+ * template store plus the stateful `/api/views` mock added with this
  * slice.
  */
 
@@ -261,7 +261,7 @@ test.describe("CRM record table", () => {
     // Persisted server-side (the mock PATCH mutated the store).
     const persistedState = await authedPage.evaluate(async () => {
       const res = await fetch(
-        "http://localhost:8080/v1/work_items?type_key=opportunity&workspace_id=ws-e2e-default",
+        "http://localhost:3100/api/work_items?type_key=opportunity&workspace_id=ws-e2e-default",
         { credentials: "include" },
       );
       const body = (await res.json()) as {

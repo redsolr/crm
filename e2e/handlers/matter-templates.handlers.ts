@@ -1,5 +1,5 @@
 /**
- * Mock handlers for `/v1/matter_templates` — a stateful in-memory store so the
+ * Mock handlers for `/api/matter_templates` — a stateful in-memory store so the
  * Tier-1 (mocked) Matter Templates spec exercises the real create→edit→list
  * flow without a backend. Mirrors the platform wire shape (snake_case, prefixed
  * ids, embedded ordered task spine).
@@ -80,7 +80,7 @@ export async function setupMatterTemplatesHandlers(
 
   // Collection — GET (list) + POST (create).
   await page.route(
-    (url) => url.pathname === "/v1/matter_templates",
+    (url) => url.pathname === "/api/matter_templates",
     async (route, request) => {
       const method = request.method();
       if (method === "GET") {
@@ -125,7 +125,7 @@ export async function setupMatterTemplatesHandlers(
 
   // Item — PATCH (update fields) + DELETE.
   await page.route(
-    (url) => /^\/v1\/matter_templates\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/matter_templates\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       const method = request.method();
       const id = new URL(request.url()).pathname.split("/").pop() ?? "";
@@ -160,7 +160,7 @@ export async function setupMatterTemplatesHandlers(
 
   // Item task-spine — PUT (replace wholesale).
   await page.route(
-    (url) => /^\/v1\/matter_templates\/[^/]+\/tasks$/.test(url.pathname),
+    (url) => /^\/api\/matter_templates\/[^/]+\/tasks$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "PUT") {
         await route.fallback();
@@ -180,7 +180,7 @@ export async function setupMatterTemplatesHandlers(
 
   // Item question-list — PUT (replace wholesale).
   await page.route(
-    (url) => /^\/v1\/matter_templates\/[^/]+\/questions$/.test(url.pathname),
+    (url) => /^\/api\/matter_templates\/[^/]+\/questions$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "PUT") {
         await route.fallback();

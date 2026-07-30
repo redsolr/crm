@@ -1,11 +1,11 @@
 /**
  * Mock handlers for the Lens (matter-scoped tabular document review) surface
- * (`/v1/lens`). Stateful in-memory store: GET assembles the grid from the
+ * (`/api/lens`). Stateful in-memory store: GET assembles the grid from the
  * accumulated review/columns/rows/cells; POST review/column/row append; PUT
  * cell upserts on (row, column); DELETE removes a column/row.
  *
  * Wire shapes mirror the platform DTOs — snake_case, prefixed IDs, under
- * `/v1/`. Pair with `setupWorkspaceHandlers` + `setupMattersLabHandlers`.
+ * `/api/`. Pair with `setupWorkspaceHandlers` + `setupMattersLabHandlers`.
  */
 
 import { Page } from "@playwright/test";
@@ -115,9 +115,9 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     return cell;
   };
 
-  // GET /v1/lens?matter_id=… → assemble the grid for that matter.
+  // GET /api/lens?matter_id=… → assemble the grid for that matter.
   await page.route(
-    (url) => url.pathname === "/v1/lens",
+    (url) => url.pathname === "/api/lens",
     async (route, request) => {
       if (request.method() !== "GET") {
         await route.fallback();
@@ -138,9 +138,9 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // POST /v1/lens/reviews {matter_id, name?} → existing or new review.
+  // POST /api/lens/reviews {matter_id, name?} → existing or new review.
   await page.route(
-    (url) => url.pathname === "/v1/lens/reviews",
+    (url) => url.pathname === "/api/lens/reviews",
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -170,9 +170,9 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // POST /v1/lens/reviews/:reviewId/columns {label, prompt?, format?} → column
+  // POST /api/lens/reviews/:reviewId/columns {label, prompt?, format?} → column
   await page.route(
-    (url) => /^\/v1\/lens\/reviews\/[^/]+\/columns$/.test(url.pathname),
+    (url) => /^\/api\/lens\/reviews\/[^/]+\/columns$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -199,9 +199,9 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // POST /v1/lens/reviews/:reviewId/rows {name, doc_type?, source_page_id?} → row
+  // POST /api/lens/reviews/:reviewId/rows {name, doc_type?, source_page_id?} → row
   await page.route(
-    (url) => /^\/v1\/lens\/reviews\/[^/]+\/rows$/.test(url.pathname),
+    (url) => /^\/api\/lens\/reviews\/[^/]+\/rows$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -228,9 +228,9 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // PUT /v1/lens/reviews/:reviewId/cells {row_id, column_id, value, …} → upsert
+  // PUT /api/lens/reviews/:reviewId/cells {row_id, column_id, value, …} → upsert
   await page.route(
-    (url) => /^\/v1\/lens\/reviews\/[^/]+\/cells$/.test(url.pathname),
+    (url) => /^\/api\/lens\/reviews\/[^/]+\/cells$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "PUT") {
         await route.fallback();
@@ -255,7 +255,7 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // POST /v1/lens/reviews/:reviewId/columns/:columnId/extract → AI auto-fill.
+  // POST /api/lens/reviews/:reviewId/columns/:columnId/extract → AI auto-fill.
   // Mocks the extraction: for each row WITH a linked document, upsert a
   // `filled` cell with a canned value + source excerpt; rows with no document
   // are skipped + reported in `skipped_row_ids` (mirrors the backend's
@@ -263,7 +263,7 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
   // LLM with the verbatim-anchor guard.
   await page.route(
     (url) =>
-      /^\/v1\/lens\/reviews\/[^/]+\/columns\/[^/]+\/extract$/.test(url.pathname),
+      /^\/api\/lens\/reviews\/[^/]+\/columns\/[^/]+\/extract$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -298,14 +298,14 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // POST /v1/lens/reviews/:reviewId/columns/:columnId/extract_async → enqueue.
+  // POST /api/lens/reviews/:reviewId/columns/:columnId/extract_async → enqueue.
   // Mirrors the sync extract's "never invent" gate but on the async lane: write
   // the groundable cells now, create a `running` job, return 202. The poll
   // (below) flips it to `completed` so the FE's enqueue → poll → refresh loop is
   // exercised end-to-end.
   await page.route(
     (url) =>
-      /^\/v1\/lens\/reviews\/[^/]+\/columns\/[^/]+\/extract_async$/.test(
+      /^\/api\/lens\/reviews\/[^/]+\/columns\/[^/]+\/extract_async$/.test(
         url.pathname,
       ),
     async (route, request) => {
@@ -355,10 +355,10 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // GET /v1/lens/extract_jobs/:id → poll the job. First read flips
+  // GET /api/lens/extract_jobs/:id → poll the job. First read flips
   // running → completed (the worker finished; cells were written at enqueue).
   await page.route(
-    (url) => /^\/v1\/lens\/extract_jobs\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/lens\/extract_jobs\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "GET") {
         await route.fallback();
@@ -382,9 +382,9 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // POST/DELETE /v1/lens/cells/:id/verify → toggle human verification.
+  // POST/DELETE /api/lens/cells/:id/verify → toggle human verification.
   await page.route(
-    (url) => /^\/v1\/lens\/cells\/[^/]+\/verify$/.test(url.pathname),
+    (url) => /^\/api\/lens\/cells\/[^/]+\/verify$/.test(url.pathname),
     async (route, request) => {
       const method = request.method();
       if (method !== "POST" && method !== "DELETE") {
@@ -407,9 +407,9 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // GET /v1/lens/reviews/:id/export → CSV (value + status + source per column).
+  // GET /api/lens/reviews/:id/export → CSV (value + status + source per column).
   await page.route(
-    (url) => /^\/v1\/lens\/reviews\/[^/]+\/export$/.test(url.pathname),
+    (url) => /^\/api\/lens\/reviews\/[^/]+\/export$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "GET") {
         await route.fallback();
@@ -445,9 +445,9 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // GET/POST /v1/lens/column_templates → saved column sets.
+  // GET/POST /api/lens/column_templates → saved column sets.
   await page.route(
-    (url) => url.pathname === "/v1/lens/column_templates",
+    (url) => url.pathname === "/api/lens/column_templates",
     async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
@@ -484,9 +484,9 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // DELETE /v1/lens/column_templates/:id → 204.
+  // DELETE /api/lens/column_templates/:id → 204.
   await page.route(
-    (url) => /^\/v1\/lens\/column_templates\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/lens\/column_templates\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "DELETE") {
         await route.fallback();
@@ -499,10 +499,10 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // POST /v1/lens/reviews/:id/apply_column_template → append the set's columns.
+  // POST /api/lens/reviews/:id/apply_column_template → append the set's columns.
   await page.route(
     (url) =>
-      /^\/v1\/lens\/reviews\/[^/]+\/apply_column_template$/.test(url.pathname),
+      /^\/api\/lens\/reviews\/[^/]+\/apply_column_template$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -532,9 +532,9 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // DELETE /v1/lens/columns/:id → 204 (drop the column + its cells)
+  // DELETE /api/lens/columns/:id → 204 (drop the column + its cells)
   await page.route(
-    (url) => /^\/v1\/lens\/columns\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/lens\/columns\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "DELETE") {
         await route.fallback();
@@ -550,9 +550,9 @@ export async function setupLensHandlers(page: Page): Promise<LensMockHandle> {
     },
   );
 
-  // DELETE /v1/lens/rows/:id → 204 (drop the row + its cells)
+  // DELETE /api/lens/rows/:id → 204 (drop the row + its cells)
   await page.route(
-    (url) => /^\/v1\/lens\/rows\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/lens\/rows\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "DELETE") {
         await route.fallback();

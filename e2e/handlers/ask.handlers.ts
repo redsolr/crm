@@ -4,12 +4,12 @@
  * Deliberately a separate file from `chat.handlers.ts` / `sales.handlers.ts`
  * — the Ask panel exercises exactly two chat endpoints and nothing else:
  *
- *   - `POST /v1/chats`                — lazy conversation create on first send
- *   - `POST /v1/chats/:id/responses`  — Anthropic-style SSE stream
+ *   - `POST /api/chats`                — lazy conversation create on first send
+ *   - `POST /api/chats/:id/responses`  — Anthropic-style SSE stream
  *
- * URL discipline: every pattern includes the `/v1/` prefix (via `API_V1`);
+ * URL discipline: every pattern includes the `/api/` prefix (via `API_ROOT`);
  * an unprefixed pattern silently never matches because
- * `BaseApiClient.baseUrl` is `${API_BASE}/v1`.
+ * `BaseApiClient.baseUrl` is `${API_BASE}/api`.
  *
  * The stream handler validates the request body against the backend
  * `CreateResponseDto` essentials (`stream`, `model`, `input`) so contract
@@ -18,7 +18,7 @@
  */
 
 import { Page } from "@playwright/test";
-import { API_V1, createChatResponse } from "./shared";
+import { API_ROOT, createChatResponse } from "./shared";
 import { buildSSEStream } from "../helpers/sse-builder";
 
 export interface AskHandlerOptions {
@@ -47,9 +47,9 @@ export async function setupAskHandlers(
   // while the transcript shows only the user's own text.
   const capturedStreamInputs: string[] = [];
 
-  // POST /v1/chats — the panel creates the conversation lazily on first
+  // POST /api/chats — the panel creates the conversation lazily on first
   // send. GETs (history sidebar etc.) fall through to the fixture mocks.
-  await page.route(`${API_V1}/chats`, async (route, request) => {
+  await page.route(`${API_ROOT}/chats`, async (route, request) => {
     if (request.method() !== "POST") {
       await route.fallback();
       return;
@@ -61,9 +61,9 @@ export async function setupAskHandlers(
     });
   });
 
-  // POST /v1/chats/:id/responses — SSE stream (Anthropic-style events,
+  // POST /api/chats/:id/responses — SSE stream (Anthropic-style events,
   // matching what src/lib/chat/stream.ts parses).
-  const escapedV1 = API_V1.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedV1 = API_ROOT.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   await page.route(
     new RegExp(`${escapedV1}/chats/[^/]+/responses$`),
     async (route, request) => {

@@ -3,7 +3,7 @@ import { freshIdempotencyKey } from "@/lib/idempotency";
 
 /**
  * Presence status client — Slack's Active/Away + custom status, persisted
- * per member per workspace (`/v1/presence/status` + `/v1/presence/statuses`).
+ * per member per workspace (`/api/presence/status` + `/api/presence/statuses`).
  * Distinct from the anonymous heartbeat (`/presence/heartbeat`).
  */
 

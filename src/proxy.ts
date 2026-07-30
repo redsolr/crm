@@ -29,7 +29,7 @@ import { authkitProxy } from "@workos-inc/authkit-nextjs";
  * `/login`. So we disable it and enforce auth ourselves:
  *   - client: `ProtectedRoute` gates every `(app)` route → `/login`
  *     (renders a spinner, never protected content, until auth resolves);
- *   - server: the backend cookie-guards every `/v1/*` call (401 →
+ *   - server: the backend cookie-guards every `/api/*` call (401 →
  *     api-client redirects), so data is never shipped to an anon user.
  * The proxy still runs on every request for SESSION REFRESH + header
  * injection; only the redirect-to-hosted behavior is off — the same

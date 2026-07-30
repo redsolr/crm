@@ -1,13 +1,13 @@
 /**
  * Workflows + workflow_states API Client.
  *
- * `GET /v1/workspaces/:workspaceId/workflows` — workflows in a workspace.
- * `GET /v1/workflows/:workflowId/states` — states inside one workflow.
+ * `GET /api/workspaces/:workspaceId/workflows` — workflows in a workspace.
+ * `GET /api/workflows/:workflowId/states` — states inside one workflow.
  * Workflow state mutations are admin-only; this client only reads.
  *
  * Workspace rename arc (2026-05-27): the per-project URL surface
- * `/v1/projects/:projectId/workflows` was renamed to
- * `/v1/workspaces/:workspaceId/workflows`; the `Workflow.project_id`
+ * `/api/projects/:projectId/workflows` was renamed to
+ * `/api/workspaces/:workspaceId/workflows`; the `Workflow.project_id`
  * field was renamed to `Workflow.workspace_id`. Hook parameter names
  * at call sites that still read `projectId` are JS-locals carrying
  * the active workspace id on the wire.
@@ -55,7 +55,7 @@ class WorkflowsApiClient extends BaseApiClient {
     );
   }
 
-  /** Rename a workflow state (a board lane). `PATCH /v1/workflow_states/:id`. */
+  /** Rename a workflow state (a board lane). `PATCH /api/workflow_states/:id`. */
   async updateState(
     stateId: string,
     patch: { name?: string },

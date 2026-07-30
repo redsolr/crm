@@ -89,9 +89,9 @@ export interface UpdateUsageModeResponse {
 
 class SubscriptionsApi extends BaseApiClient {
   async getPlans(): Promise<SubscriptionPlan[]> {
-    // Hit the PUBLIC `/v1/plans` controller (PlansController) — pricing
+    // Hit the PUBLIC `/api/plans` controller (PlansController) — pricing
     // is unauthenticated by design, so the auth-gated mirror at
-    // `/v1/subscriptions/plans` 401s for visitors who haven't signed
+    // `/api/subscriptions/plans` 401s for visitors who haven't signed
     // in yet (the pricing page's primary audience). Same payload
     // either way; the public route is the right one for this caller.
     return this.request<SubscriptionPlan[]>("/plans");
@@ -151,7 +151,7 @@ class SubscriptionsApi extends BaseApiClient {
   }
 
   /**
-   * `PUT /v1/subscriptions/:id/seats` — owner/billing seat management.
+   * `PUT /api/subscriptions/:id/seats` — owner/billing seat management.
    * Increases invoice the prorated difference immediately; decreases
    * apply at renewal (no refund). 409 `SEATS_BELOW_ROSTER` when the
    * target is below the current seat-consuming member roster.

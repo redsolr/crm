@@ -7,16 +7,16 @@
  * so the journey spec can verify pipeline progression without hitting
  * a real backend.
  *
- * URL contract: every endpoint sits under `/v1/` (`API_V1`). Wire
+ * URL contract: every endpoint sits under `/api/` (`API_ROOT`). Wire
  * shapes use snake_case. List envelopes use the cursor shape
  * `{ data, has_more, next_page_url, previous_page_url }` for
- * `/v1/work_items`; nested-resource lists return `{ data }` (no
+ * `/api/work_items`; nested-resource lists return `{ data }` (no
  * pagination markers).
  */
 
 import { Page } from "@playwright/test";
 import { toStorageEnvelope } from "../../src/lib/attribute-value-envelope";
-import { API_V1, TEST_USER } from "./shared";
+import { API_ROOT, TEST_USER } from "./shared";
 
 // ── Wire types ──────────────────────────────────────────────────────────────
 
@@ -129,7 +129,7 @@ const NOW = () => new Date().toISOString();
 // The sales FE resolves the active workspace from
 // `useAppContextStore.currentWorkspace` — which the auth fixture seeds
 // as `ws-e2e-default`. All sales work_items live in that workspace; the
-// `/v1/workspaces/:id/{workflows,work_item_types}` mocks below match any
+// `/api/workspaces/:id/{workflows,work_item_types}` mocks below match any
 // id, so this constant just stamps the wire `workspace_id` field.
 const SALES_WORKSPACE_ID = "ws-e2e-default";
 
@@ -487,16 +487,16 @@ export async function setupSalesHandlers(page: Page) {
   // ── Routes ────────────────────────────────────────────────────────────
   //
   // Workspace rename arc (2026-05-27): the `project` primitive was
-  // retired, so there is no `/v1/projects/organization/:orgId` mock
+  // retired, so there is no `/api/projects/organization/:orgId` mock
   // here. The sales FE (`useSalesWorkspaceBundle`) resolves the active
   // workspace from `useAppContextStore.currentWorkspace` — seeded by the
-  // auth.fixture's `/v1/workspaces` mock as `ws-e2e-default` — and pulls
+  // auth.fixture's `/api/workspaces` mock as `ws-e2e-default` — and pulls
   // its workflows / types / attribute definitions from the
   // workspace-scoped routes below.
 
-  // GET /v1/workspaces/:id/workflows
+  // GET /api/workspaces/:id/workflows
   await page.route(
-    (url) => /^\/v1\/workspaces\/[^/]+\/workflows$/.test(url.pathname),
+    (url) => /^\/api\/workspaces\/[^/]+\/workflows$/.test(url.pathname),
     async (route) => {
       await route.fulfill({
         status: 200,
@@ -506,12 +506,12 @@ export async function setupSalesHandlers(page: Page) {
     },
   );
 
-  // GET /v1/workflows/:workflowId/states
+  // GET /api/workflows/:workflowId/states
   await page.route(
-    (url) => /^\/v1\/workflows\/[^/]+\/states$/.test(url.pathname),
+    (url) => /^\/api\/workflows\/[^/]+\/states$/.test(url.pathname),
     async (route, request) => {
       const id =
-        request.url().split("/v1/workflows/")[1]?.split("/")[0] ?? "";
+        request.url().split("/api/workflows/")[1]?.split("/")[0] ?? "";
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -520,9 +520,9 @@ export async function setupSalesHandlers(page: Page) {
     },
   );
 
-  // GET /v1/workspaces/:id/work_item_types
+  // GET /api/workspaces/:id/work_item_types
   await page.route(
-    (url) => /^\/v1\/workspaces\/[^/]+\/work_item_types$/.test(url.pathname),
+    (url) => /^\/api\/workspaces\/[^/]+\/work_item_types$/.test(url.pathname),
     async (route) => {
       await route.fulfill({
         status: 200,
@@ -532,15 +532,15 @@ export async function setupSalesHandlers(page: Page) {
     },
   );
 
-  // GET /v1/work_item_types/:id/attribute_definitions
+  // GET /api/work_item_types/:id/attribute_definitions
   await page.route(
     (url) =>
-      /^\/v1\/work_item_types\/[^/]+\/attribute_definitions$/.test(
+      /^\/api\/work_item_types\/[^/]+\/attribute_definitions$/.test(
         url.pathname,
       ),
     async (route, request) => {
       const id =
-        request.url().split("/v1/work_item_types/")[1]?.split("/")[0] ?? "";
+        request.url().split("/api/work_item_types/")[1]?.split("/")[0] ?? "";
       const defs = attributeDefinitions.filter(
         (d) => d.work_item_type_id === id,
       );
@@ -552,11 +552,11 @@ export async function setupSalesHandlers(page: Page) {
     },
   );
 
-  // GET / POST /v1/work_items
-  await page.route(`${API_V1}/work_items*`, async (route, request) => {
+  // GET / POST /api/work_items
+  await page.route(`${API_ROOT}/work_items*`, async (route, request) => {
     const u = new URL(request.url());
 
-    if (request.method() === "GET" && u.pathname === "/v1/work_items") {
+    if (request.method() === "GET" && u.pathname === "/api/work_items") {
       const filtered = workItems.filter((w) => {
         const workspaceId = u.searchParams.get("workspace_id");
         if (workspaceId && w.workspace_id !== workspaceId) return false;
@@ -579,7 +579,7 @@ export async function setupSalesHandlers(page: Page) {
       return;
     }
 
-    if (request.method() === "POST" && u.pathname === "/v1/work_items") {
+    if (request.method() === "POST" && u.pathname === "/api/work_items") {
       const body = request.postDataJSON() as Record<string, unknown>;
       const typeKey = (body.type_key as string | undefined) ?? "task";
       const stateKey =
@@ -642,12 +642,12 @@ export async function setupSalesHandlers(page: Page) {
     await route.fallback();
   });
 
-  // GET / PATCH / DELETE /v1/work_items/:id
+  // GET / PATCH / DELETE /api/work_items/:id
   await page.route(
-    (url) => /^\/v1\/work_items\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/work_items\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       const id =
-        request.url().split("/v1/work_items/")[1]?.split(/[?/]/)[0] ?? "";
+        request.url().split("/api/work_items/")[1]?.split(/[?/]/)[0] ?? "";
       const idx = workItems.findIndex((w) => w.id === id);
       if (idx === -1) {
         await route.fulfill({ status: 404 });
@@ -702,10 +702,10 @@ export async function setupSalesHandlers(page: Page) {
     },
   );
 
-  // GET /v1/work_items/:id/attribute_values + PUT /v1/work_items/:wi/attribute_values/:def
+  // GET /api/work_items/:id/attribute_values + PUT /api/work_items/:wi/attribute_values/:def
   await page.route(
     (url) =>
-      /^\/v1\/work_items\/[^/]+\/attribute_values(\/[^/]+)?$/.test(
+      /^\/api\/work_items\/[^/]+\/attribute_values(\/[^/]+)?$/.test(
         url.pathname,
       ),
     async (route, request) => {
@@ -763,12 +763,12 @@ export async function setupSalesHandlers(page: Page) {
     },
   );
 
-  // POST /v1/work_items/:wi/attribute_values/:def/compute — the
+  // POST /api/work_items/:wi/attribute_values/:def/compute — the
   // attribute-enrichment primitive's sync single-item path. Mirrors the
   // platform's no-clobber contract: a manual row is skipped loudly.
   await page.route(
     (url) =>
-      /^\/v1\/work_items\/[^/]+\/attribute_values\/[^/]+\/compute$/.test(
+      /^\/api\/work_items\/[^/]+\/attribute_values\/[^/]+\/compute$/.test(
         url.pathname,
       ),
     async (route, request) => {
@@ -824,11 +824,11 @@ export async function setupSalesHandlers(page: Page) {
     },
   );
 
-  // GET /v1/activities/entity/:type/:id — the record-page timeline's
+  // GET /api/activities/entity/:type/:id — the record-page timeline's
   // platform-activity stream. Empty is a valid feed; call notes and
   // commitments still populate the merged timeline.
   await page.route(
-    (url) => /^\/v1\/activities\/entity\/[^/]+\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/activities\/entity\/[^/]+\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "GET") {
         await route.fallback();
@@ -842,16 +842,16 @@ export async function setupSalesHandlers(page: Page) {
     },
   );
 
-  // GET / POST /v1/views + PATCH / DELETE /v1/views/:id — stateful
+  // GET / POST /api/views + PATCH / DELETE /api/views/:id — stateful
   // saved-view store for the CRM table surfaces. Overrides the auth
   // fixture's empty `{ data: [] }` default (this registration is later,
   // so it wins). Platform contract: `kind` is always `work_items`; the
   // CRM surface discriminator lives inside the opaque `query` blob.
   await page.route(
-    (url) => /^\/v1\/views(\/[^/]+)?$/.test(url.pathname),
+    (url) => /^\/api\/views(\/[^/]+)?$/.test(url.pathname),
     async (route, request) => {
       const u = new URL(request.url());
-      const viewId = u.pathname.split("/v1/views/")[1]?.split(/[?/]/)[0];
+      const viewId = u.pathname.split("/api/views/")[1]?.split(/[?/]/)[0];
 
       if (request.method() === "GET" && !viewId) {
         const kind = u.searchParams.get("kind");

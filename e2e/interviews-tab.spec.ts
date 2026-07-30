@@ -77,10 +77,10 @@ test.describe("Interviews tab", () => {
     // pipeline reads).
     const created = await authedPage.evaluate(async () => {
       const opps = await fetch(
-        "http://localhost:8080/v1/work_items?type_key=opportunity&workspace_id=ws-e2e-default",
+        "http://localhost:3100/api/work_items?type_key=opportunity&workspace_id=ws-e2e-default",
       ).then((r) => r.json() as Promise<{ data: { id: string; title: string; parent_id?: string }[] }>);
       const accounts = await fetch(
-        "http://localhost:8080/v1/work_items?type_key=account&workspace_id=ws-e2e-default",
+        "http://localhost:3100/api/work_items?type_key=account&workspace_id=ws-e2e-default",
       ).then((r) => r.json() as Promise<{ data: { id: string; title: string }[] }>);
       return {
         opportunity: opps.data[0],
@@ -114,7 +114,7 @@ test.describe("Interviews tab", () => {
     // Seed one through the same mocked create route InterviewMode
     // uses (the full finish→save walk is interview-mode.spec's claim).
     await authedPage.evaluate(async (parentId) => {
-      await fetch("http://localhost:8080/v1/work_items", {
+      await fetch("http://localhost:3100/api/work_items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

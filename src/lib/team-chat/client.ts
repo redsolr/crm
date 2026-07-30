@@ -1,6 +1,6 @@
 /**
- * Team Chat API client — internal lawyer↔lawyer chat (`/v1/team_channels`
- * + `/v1/team_messages`). Mirrors the platform response DTOs
+ * Team Chat API client — internal lawyer↔lawyer chat (`/api/team_channels`
+ * + `/api/team_messages`). Mirrors the platform response DTOs
  * (`src/modules/team-chat/team-chat.response.dto.ts`). Internal-only;
  * never touches the client-facing communications surface.
  */

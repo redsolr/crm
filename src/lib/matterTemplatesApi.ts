@@ -1,5 +1,5 @@
 /**
- * Matter Templates API client — `/v1/matter_templates`.
+ * Matter Templates API client — `/api/matter_templates`.
  *
  * Workspace-shared reusable matter blueprints (name + practice type + AI
  * context + an ordered starter-task spine). The spine is replaced wholesale via

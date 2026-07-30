@@ -2,7 +2,7 @@
 
 /**
  * `legalResearchMemoApi` — the PLATFORM research-memo surface
- * (`POST /v1/legal/matters/:id/research_memo`). Answers a typed legal QUESTION
+ * (`POST /api/legal/matters/:id/research_memo`). Answers a typed legal QUESTION
  * with a memo GROUNDED in a fresh corpus research pass, created as a page in the
  * matter. The one-shot counterpart to `drafting-api` (which grounds in saved
  * findings). Trust posture matches the rest of the workbench: when research

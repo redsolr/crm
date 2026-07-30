@@ -3,9 +3,9 @@
 /**
  * Ask-Jurisimus product support — two transports over one contract:
  *
- *  - `supportApi` (authed, `/v1/support/*`) — the in-app Help panel.
+ *  - `supportApi` (authed, `/api/support/*`) — the in-app Help panel.
  *    Rides `BaseApiClient` (cookies + CSRF) like every authed surface.
- *  - `publicSupportApi` (anonymous, `/v1/public/support/*`) — the
+ *  - `publicSupportApi` (anonymous, `/api/public/support/*`) — the
  *    landing-page widget. Raw `fetch`, same posture as
  *    `publicMatterChatApi`: no session, no CSRF to reflect.
  *
@@ -13,7 +13,7 @@
  */
 
 import { z } from "zod";
-import { API_V1 } from "@/lib/api-base";
+import { API_ROOT } from "@/lib/api-base";
 import { BaseApiClient, buildApiError } from "@/lib/api-client";
 import { freshIdempotencyKey } from "@/lib/idempotency";
 
@@ -94,7 +94,7 @@ async function publicRequest<T>(
   schema: z.ZodType<T>,
   init?: RequestInit,
 ): Promise<T> {
-  const response = await fetch(`${API_V1}/public/support${path}`, {
+  const response = await fetch(`${API_ROOT}/public/support${path}`, {
     headers: { "Content-Type": "application/json" },
     ...init,
   });

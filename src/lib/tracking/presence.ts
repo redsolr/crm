@@ -2,7 +2,7 @@
 
 import { authService } from "@/lib/authTokenManager";
 import { useAuthStore } from "@/stores/auth.store";
-import { API_V1, API_VERSION } from "@/lib/api-base";
+import { API_ROOT } from "@/lib/api-base";
 
 const HEARTBEAT_INTERVAL =
   Number(process.env.NEXT_PUBLIC_PRESENCE_INTERVAL) || 60_000;
@@ -28,11 +28,10 @@ function sendHeartbeat() {
   lastHeartbeatTime = now;
 
   const csrf = authService.getCsrfToken();
-  fetch(`${API_V1}/presence/heartbeat`, {
+  fetch(`${API_ROOT}/presence/heartbeat`, {
     method: "POST",
     credentials: "include",
     headers: {
-      "Jurisimus-Version": API_VERSION,
       ...(csrf !== null ? { "X-CSRF-Token": csrf } : {}),
     },
   }).catch((err) => {

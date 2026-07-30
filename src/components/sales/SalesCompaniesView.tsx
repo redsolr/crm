@@ -5,7 +5,7 @@
  * the Sales workspace, rendered through the reusable CrmRecordTable:
  * click-to-sort headers, a dense filter bar (source/segment by option,
  * name/URL/pain by contains), inline type-aware cell editing (source,
- * segment, company URL, pain summary), and saved views (`/v1/views`,
+ * segment, company URL, pain summary), and saved views (`/api/views`,
  * surface `crm_companies`).
  *
  * Default sort stays "last activity, newest first" — the signal that

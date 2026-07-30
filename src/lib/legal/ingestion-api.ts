@@ -2,7 +2,7 @@
 
 /**
  * `legalIngestionApi` — the PLATFORM document-ingestion surface
- * (`POST /v1/legal/matters/:id/ingest_document`). The file is already in S3
+ * (`POST /api/legal/matters/:id/ingest_document`). The file is already in S3
  * (presign → PUT); this finalizes it: the source is kept (an attachment), its
  * digital text layer is extracted (no OCR), and a matter page + per-page
  * provenance are created. A scanned/image PDF (no text layer) is refused

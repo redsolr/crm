@@ -1,5 +1,5 @@
 /**
- * Mock handler for cite-check (`POST /v1/legal/matters/:id/check_citations`):
+ * Mock handler for cite-check (`POST /api/legal/matters/:id/check_citations`):
  * a verified citation, a not-found one, and a grounded suggestion. Register
  * alongside the lens + ingestion handlers.
  *
@@ -18,7 +18,7 @@ import { Page } from "@playwright/test";
 export async function setupCiteCheckHandlers(page: Page) {
   await page.route(
     (url) =>
-      /^\/v1\/legal\/matters\/[^/]+\/check_citations$/.test(url.pathname),
+      /^\/api\/legal\/matters\/[^/]+\/check_citations$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();

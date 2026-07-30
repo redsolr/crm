@@ -1,7 +1,7 @@
 /**
  * Work Items API Client
  *
- * Hits `/v1/work_items` — the recursive content primitive (replaces
+ * Hits `/api/work_items` — the recursive content primitive (replaces
  * `tasks`, `epics`, etc.). Workflow states are an open set —
  * `WorkItem.status` is a computed mirror of `state.key` for UI code that
  * reads a simple string. `state` carries the full (id, key, name,
@@ -138,7 +138,7 @@ type WorkItemsEnvelope =
 // ============================================================================
 
 /**
- * Filters for `GET /v1/work_items`. All field names are snake_case per
+ * Filters for `GET /api/work_items`. All field names are snake_case per
  * `docs/platform/api-discipline.md` § A3 (Stripe v2 style) — matches
  * the BE `listWorkItemsQuerySchema`. Cursor pagination uses `page_size`
  * and `page_token`. `workspace_id` (a `ws_`-prefixed id) scopes the

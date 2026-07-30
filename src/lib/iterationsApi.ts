@@ -1,7 +1,7 @@
 /**
  * Iterations API Client
  *
- * Hits `/v1/iterations` — sprint primitive scoped to a workspace.
+ * Hits `/api/iterations` — sprint primitive scoped to a workspace.
  */
 
 import { BaseApiClient } from "./api-client";

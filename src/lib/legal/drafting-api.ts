@@ -2,7 +2,7 @@
 
 /**
  * `legalDraftingApi` — the PLATFORM legal drafting surface
- * (`POST /v1/legal/matters/:id/draft`). Synthesizes a memo GROUNDED in the
+ * (`POST /api/legal/matters/:id/draft`). Synthesizes a memo GROUNDED in the
  * matter's findings and creates it as a page in the matter. The trust posture
  * matches `search_legal_corpus` / findings: with no findings the backend
  * abstains (`drafted: false` + a "research first" message) rather than

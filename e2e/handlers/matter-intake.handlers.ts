@@ -1,8 +1,8 @@
 /**
  * Mock handlers for the matter-intake-loop LAWYER surfaces (slice 6):
- * `/v1/communication_threads/*`, `/v1/client_tokens/*`,
- * `/v1/communication_threads/:id/create_matter`,
- * `/v1/matter_intake_jobs/:id`.
+ * `/api/communication_threads/*`, `/api/client_tokens/*`,
+ * `/api/communication_threads/:id/create_matter`,
+ * `/api/matter_intake_jobs/:id`.
  *
  * Stateful in-memory store so the Tier-1 (mocked) spec exercises the real
  * inbox → create-matter → reveal flow without a backend. Mirrors the
@@ -10,12 +10,12 @@
  * "streams": each poll advances one more section from `pending` to
  * `succeeded`, so the reveal's progressive populate is observable.
  *
- * URL discipline: every route includes the `/v1/` prefix via `API_V1`
+ * URL discipline: every route includes the `/api/` prefix via `API_ROOT`
  * (see `e2e/handlers/shared.ts`). Cascades use `route.fallback()`.
  */
 
 import { Page } from "@playwright/test";
-import { API_V1 } from "./shared";
+import { API_ROOT } from "./shared";
 
 const NOW = "2026-06-13T00:00:00.000Z";
 
@@ -178,7 +178,7 @@ export interface MatterIntakeMockOptions {
    * job carrying it instead of the null "never analyzed" default.
    */
   latestJobDetectedMatterType?: string;
-  /** Seed the chat-details "Findings" list (GET /v1/legal/findings). */
+  /** Seed the chat-details "Findings" list (GET /api/legal/findings). */
   threadFindings?: Array<{
     id: string;
     issue: string;
@@ -282,9 +282,9 @@ export async function setupMatterIntakeHandlers(
     return commsByThread.get(threadId)!;
   };
 
-  // ----- GET /v1/communication_threads (inbox / matter threads) ----------
+  // ----- GET /api/communication_threads (inbox / matter threads) ----------
   await page.route(
-    (url) => url.pathname === "/v1/communication_threads",
+    (url) => url.pathname === "/api/communication_threads",
     async (route, request) => {
       if (request.method() === "POST") {
         await route.fulfill({
@@ -360,13 +360,13 @@ export async function setupMatterIntakeHandlers(
     },
   );
 
-  // ----- POST /v1/communication_threads/:id/create_matter ----------------
+  // ----- POST /api/communication_threads/:id/create_matter ----------------
   // `analyze: false` (the chat-panel default) files the matter ONLY —
   // `intake_job` is null; the lawyer runs the AI later via `/analyze`.
   // `analyze: true` (the intake-inbox reveal) create-AND-analyzes: a job
   // is minted + returned for polling.
   await page.route(
-    (url) => /^\/v1\/communication_threads\/[^/]+\/create_matter$/.test(url.pathname),
+    (url) => /^\/api\/communication_threads\/[^/]+\/create_matter$/.test(url.pathname),
     async (route, request) => {
       const threadId =
         new URL(request.url()).pathname.split("/")[3] ?? "cth_intake1";
@@ -396,12 +396,12 @@ export async function setupMatterIntakeHandlers(
     },
   );
 
-  // ----- POST /v1/communication_threads/:id/analyze ----------------------
+  // ----- POST /api/communication_threads/:id/analyze ----------------------
   // On-demand "Analyze conversation" / "Re-analyze": mints a job and kicks
-  // it; the FE then polls GET /v1/matter_intake_jobs/:id for streamed
+  // it; the FE then polls GET /api/matter_intake_jobs/:id for streamed
   // sections (same poll machinery the old create-and-analyze used).
   await page.route(
-    (url) => /^\/v1\/communication_threads\/[^/]+\/analyze$/.test(url.pathname),
+    (url) => /^\/api\/communication_threads\/[^/]+\/analyze$/.test(url.pathname),
     async (route, request) => {
       const threadId =
         new URL(request.url()).pathname.split("/")[3] ?? "cth_intake1";
@@ -416,11 +416,11 @@ export async function setupMatterIntakeHandlers(
     },
   );
 
-  // ----- POST /v1/communication_threads/:id/link_matter ------------------
+  // ----- POST /api/communication_threads/:id/link_matter ------------------
   // "Add to existing matter" — returns the thread now carrying the chosen
   // work_item_id (the manual counterpart to create_matter).
   await page.route(
-    (url) => /^\/v1\/communication_threads\/[^/]+\/link_matter$/.test(url.pathname),
+    (url) => /^\/api\/communication_threads\/[^/]+\/link_matter$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -450,9 +450,9 @@ export async function setupMatterIntakeHandlers(
     },
   );
 
-  // ----- GET /v1/matter_intake_jobs/:id (polling) ------------------------
+  // ----- GET /api/matter_intake_jobs/:id (polling) ------------------------
   await page.route(
-    (url) => /^\/v1\/matter_intake_jobs\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/matter_intake_jobs\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       const jobId = new URL(request.url()).pathname.split("/").pop() ?? "";
       const state = jobs.get(jobId);
@@ -501,7 +501,7 @@ export async function setupMatterIntakeHandlers(
     },
   );
 
-  // ----- GET /v1/communication_threads/:id/latest_intake_job -------------
+  // ----- GET /api/communication_threads/:id/latest_intake_job -------------
   // Replay endpoint for a reopened linked thread. The mocked flows reach a
   // linked matter only via Create Matter (which polls the live job, not
   // this), so null — "never analyzed in this view" — is the safe default.
@@ -509,7 +509,7 @@ export async function setupMatterIntakeHandlers(
   // detected type is returned instead (the Questions-to-ask filter signal).
   await page.route(
     (url) =>
-      /^\/v1\/communication_threads\/[^/]+\/latest_intake_job$/.test(
+      /^\/api\/communication_threads\/[^/]+\/latest_intake_job$/.test(
         url.pathname,
       ),
     async (route, request) => {
@@ -540,9 +540,9 @@ export async function setupMatterIntakeHandlers(
     },
   );
 
-  // ----- GET/POST /v1/communication_threads/:id/communications -----------
+  // ----- GET/POST /api/communication_threads/:id/communications -----------
   await page.route(
-    (url) => /^\/v1\/communication_threads\/[^/]+\/communications$/.test(url.pathname),
+    (url) => /^\/api\/communication_threads\/[^/]+\/communications$/.test(url.pathname),
     async (route, request) => {
       const threadId = new URL(request.url()).pathname.split("/")[3] ?? "";
       const rows = seedComms(threadId);
@@ -588,15 +588,15 @@ export async function setupMatterIntakeHandlers(
 
   // ----- SSE events: refuse so the FE uses its polling fallback ----------
   await page.route(
-    (url) => /^\/v1\/communication_threads\/[^/]+\/events$/.test(url.pathname),
+    (url) => /^\/api\/communication_threads\/[^/]+\/events$/.test(url.pathname),
     async (route) => {
       await route.fulfill({ status: 503, body: "" });
     },
   );
 
-  // ----- GET/POST /v1/communication_threads/:id/client_tokens ------------
+  // ----- GET/POST /api/communication_threads/:id/client_tokens ------------
   await page.route(
-    (url) => /^\/v1\/communication_threads\/[^/]+\/client_tokens$/.test(url.pathname),
+    (url) => /^\/api\/communication_threads\/[^/]+\/client_tokens$/.test(url.pathname),
     async (route, request) => {
       const threadId = new URL(request.url()).pathname.split("/")[3] ?? "";
       const list = tokensByThread.get(threadId) ?? [];
@@ -633,9 +633,9 @@ export async function setupMatterIntakeHandlers(
     },
   );
 
-  // ----- GET /v1/communications/:id/attachments (inline media) -----------
+  // ----- GET /api/communications/:id/attachments (inline media) -----------
   await page.route(
-    (url) => /^\/v1\/communications\/[^/]+\/attachments$/.test(url.pathname),
+    (url) => /^\/api\/communications\/[^/]+\/attachments$/.test(url.pathname),
     async (route, request) => {
       const commId = new URL(request.url()).pathname.split("/")[3] ?? "";
       // The seeded photo message carries one image attachment; others none.
@@ -669,10 +669,10 @@ export async function setupMatterIntakeHandlers(
     },
   );
 
-  // ----- GET /v1/communication_threads/:id/attachments (Shared media) ----
+  // ----- GET /api/communication_threads/:id/attachments (Shared media) ----
   await page.route(
     (url) =>
-      /^\/v1\/communication_threads\/[^/]+\/attachments$/.test(url.pathname),
+      /^\/api\/communication_threads\/[^/]+\/attachments$/.test(url.pathname),
     async (route, request) => {
       const threadId = new URL(request.url()).pathname.split("/")[3] ?? "";
       const data = options.threadAttachmentsEmpty
@@ -716,9 +716,9 @@ export async function setupMatterIntakeHandlers(
     },
   );
 
-  // ----- GET /v1/legal/findings (chat details "Findings") ----------------
+  // ----- GET /api/legal/findings (chat details "Findings") ----------------
   await page.route(
-    (url) => url.pathname === "/v1/legal/findings",
+    (url) => url.pathname === "/api/legal/findings",
     async (route, request) => {
       if (request.method() !== "GET") {
         await route.fallback();
@@ -732,9 +732,9 @@ export async function setupMatterIntakeHandlers(
     },
   );
 
-  // ----- GET /v1/document_families?work_item_id=… ------------------------
+  // ----- GET /api/document_families?work_item_id=… ------------------------
   await page.route(
-    (url) => url.pathname === "/v1/document_families",
+    (url) => url.pathname === "/api/document_families",
     async (route) => {
       await route.fulfill({
         status: 200,
@@ -758,9 +758,9 @@ export async function setupMatterIntakeHandlers(
     },
   );
 
-  // ----- POST /v1/client_tokens/:id/revoke -------------------------------
+  // ----- POST /api/client_tokens/:id/revoke -------------------------------
   await page.route(
-    (url) => /^\/v1\/client_tokens\/[^/]+\/revoke$/.test(url.pathname),
+    (url) => /^\/api\/client_tokens\/[^/]+\/revoke$/.test(url.pathname),
     async (route, request) => {
       const tokenId = new URL(request.url()).pathname.split("/")[3] ?? "";
       let revoked: Record<string, unknown> | null = null;
@@ -822,7 +822,7 @@ function emptyJob(jobId: string, threadId: string): Record<string, unknown> {
   return intakeJob({ id: jobId, thread_id: threadId });
 }
 
-/** Public client-chat mock (`/v1/public/matter_chat/:token/*`). */
+/** Public client-chat mock (`/api/public/matter_chat/:token/*`). */
 export async function setupPublicMatterChatHandlers(
   page: Page,
   opts: {
@@ -853,7 +853,7 @@ export async function setupPublicMatterChatHandlers(
   ];
 
   await page.route(
-    (url) => url.pathname === `/v1/public/matter_chat/${token}`,
+    (url) => url.pathname === `/api/public/matter_chat/${token}`,
     async (route) => {
       await route.fulfill({
         status: 200,
@@ -877,7 +877,7 @@ export async function setupPublicMatterChatHandlers(
   );
 
   await page.route(
-    (url) => url.pathname === `/v1/public/matter_chat/${token}/communications`,
+    (url) => url.pathname === `/api/public/matter_chat/${token}/communications`,
     async (route, request) => {
       const body = (request.postDataJSON() ?? {}) as { body_text?: string };
       const row = {
@@ -898,7 +898,7 @@ export async function setupPublicMatterChatHandlers(
   );
 
   await page.route(
-    (url) => url.pathname === `/v1/public/matter_chat/${token}/events`,
+    (url) => url.pathname === `/api/public/matter_chat/${token}/events`,
     async (route) => {
       // Refuse SSE → the public page uses its polling fallback.
       await route.fulfill({ status: 503, body: "" });
@@ -908,8 +908,8 @@ export async function setupPublicMatterChatHandlers(
   // Unknown token → uniform 404 (the not-found surface).
   await page.route(
     (url) =>
-      url.pathname.startsWith("/v1/public/matter_chat/") &&
-      !url.pathname.startsWith(`/v1/public/matter_chat/${token}`),
+      url.pathname.startsWith("/api/public/matter_chat/") &&
+      !url.pathname.startsWith(`/api/public/matter_chat/${token}`),
     async (route) => {
       await route.fulfill({
         status: 404,
@@ -919,5 +919,5 @@ export async function setupPublicMatterChatHandlers(
     },
   );
 
-  void API_V1;
+  void API_ROOT;
 }

@@ -6,7 +6,7 @@ import { ASK_TOOLS, ASK_TOOLS_BY_NAME } from "./ask-tools";
 
 /**
  * Ask chat over the Anthropic SDK (backend-swap: Ask chat) — the local
- * replacement for the platform's `POST /v1/chats/{id}/responses`
+ * replacement for the platform's `POST /api/chats/{id}/responses`
  * workspace agentic loop.
  *
  * Wire contract: the SSE event shapes `src/lib/chat/stream.ts` parses —

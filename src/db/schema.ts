@@ -13,7 +13,7 @@ import {
 
 /**
  * CRM's own single-tenant schema (backend-swap step 1, strangler over
- * the platform `/v1` surface — see the 2026-07-29 portfolio-split
+ * the platform `/api` surface — see the 2026-07-29 portfolio-split
  * handoff in the platform repo).
  *
  * The tables mirror the SEMANTICS the frontend consumes over the wire
@@ -208,7 +208,7 @@ export const activities = pgTable("activities", {
     .defaultNow(),
 });
 
-/** Ask conversation (backend-swap: Ask chat). One row per `POST /v1/chats`. */
+/** Ask conversation (backend-swap: Ask chat). One row per `POST /api/chats`. */
 export const chats = pgTable("chats", {
   id: text("id").primaryKey(),
   title: text("title"),

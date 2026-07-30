@@ -83,10 +83,10 @@ class PreferencesApiClient extends BaseApiClient {
   }
 
   /**
-   * `/auth/sessions` is mounted OUTSIDE the platform's `/v1/` prefix
+   * `/auth/sessions` is mounted OUTSIDE the platform's `/api/` prefix
    * (see platform `setGlobalPrefix` exclude list). Routing through
    * `requestUnprefixed` ensures we hit `${API_BASE}/auth/sessions`,
-   * not `${API_BASE}/v1/auth/sessions` (which 404s).
+   * not `${API_BASE}/api/auth/sessions` (which 404s).
    */
   async getSessionCount(): Promise<number> {
     const result = await this.requestUnprefixed<SessionCount>(
@@ -113,7 +113,7 @@ class PreferencesApiClient extends BaseApiClient {
 
   /**
    * Update the signed-in user's account profile. Backend route is
-   * `PUT /v1/accounts/{accountId}` with snake-case body
+   * `PUT /api/accounts/{accountId}` with snake-case body
    * (`updateAccountSchema` in `platform/src/modules/accounts/accounts.dto.ts`).
    * The platform identity vocabulary is `account`, not `user`; the
    * `user.user_id` in the FE auth store IS the account id.

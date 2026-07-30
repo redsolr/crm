@@ -1,6 +1,6 @@
 /**
  * Mock handlers for the research-memo surface
- * (`POST /v1/legal/matters/:id/research_memo`).
+ * (`POST /api/legal/matters/:id/research_memo`).
  *
  * Two modes mirror the backend's grounded/abstaining posture:
  *  - `grounded` → returns a memo page (cites only the §§ research surfaced) so
@@ -9,7 +9,7 @@
  *    (research found no controlling authority), so the FE surfaces the notice
  *    instead of opening an empty doc.
  *
- * Register AFTER `setupMattersLabHandlers` so the memo's `GET /v1/pages/:id`
+ * Register AFTER `setupMattersLabHandlers` so the memo's `GET /api/pages/:id`
  * runs first (and falls back to the lab handler for any other page id).
  */
 
@@ -58,7 +58,7 @@ export async function setupResearchMemoHandlers(
 
   await page.route(
     (url) =>
-      /^\/v1\/legal\/matters\/[^/]+\/research_memo$/.test(url.pathname),
+      /^\/api\/legal\/matters\/[^/]+\/research_memo$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -100,7 +100,7 @@ export async function setupResearchMemoHandlers(
   // The memo's own page read — so `selectNote` → MatterNoteEditor opens it with
   // content. Any other page id falls back to the matters-lab handler.
   await page.route(
-    (url) => /^\/v1\/pages\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/pages\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       const id = new URL(request.url()).pathname.split("/").pop() ?? "";
       if (request.method() !== "GET" || id !== MEMO_ID) {

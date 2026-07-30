@@ -14,7 +14,7 @@ import {
  * the full-page `/sales/ask` view — drives the same conversation, and
  * the transcript survives closing/reopening the drawer and moving
  * between the drawer and the page within a session. `chatId` is the
- * lazily-created backend conversation (POST /v1/chats on first send);
+ * lazily-created backend conversation (POST /api/chats on first send);
  * `startNewConversation` aborts any in-flight stream and starts fresh.
  *
  * The active stream's AbortController ALSO lives here (not in a

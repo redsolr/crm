@@ -1,7 +1,7 @@
 /**
  * Comments API Client
  *
- * Hits `/v1/comments` — work-item comments with mention support.
+ * Hits `/api/comments` — work-item comments with mention support.
  */
 
 import { BaseApiClient } from "./api-client";
@@ -44,7 +44,7 @@ export interface UpdateCommentRequest {
 
 /**
  * Author projection joined onto each comment in the
- * `/v1/work_items/{workItemId}/comments` view.
+ * `/api/work_items/{workItemId}/comments` view.
  */
 export interface CommentAuthorPayload {
   id: string;
@@ -58,7 +58,7 @@ export interface CommentWithAuthor {
 }
 
 /**
- * `/v1/work_items/{workItemId}/comments` returns a simple `{ data }` array — no
+ * `/api/work_items/{workItemId}/comments` returns a simple `{ data }` array — no
  * pagination markers (BE bounds the per-work-item comment list).
  */
 export interface CommentsByWorkItemResponse {

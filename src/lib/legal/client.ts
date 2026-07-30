@@ -3,7 +3,7 @@
 /**
  * `legalApi` — client for the Legal Library + intelligent legal search.
  *
- * Talks the platform's eventual `/v1/legal/*` contract (snake_case wire),
+ * Talks the platform's eventual `/api/legal/*` contract (snake_case wire),
  * so adopting the platform module is a base-URL swap: today it points at
  * the proven sandbox engine (`D:\Jurisimus\crawler`, the Hono dev API on
  * :8787); flip `NEXT_PUBLIC_LEGAL_API_URL` to the platform host and the
@@ -212,33 +212,33 @@ const qs = (params: Record<string, string | number | undefined>): string => {
 
 export const legalApi = {
   /** Codes in the corpus (Library nav). */
-  codes: () => getJson("/v1/legal/codes", z.array(LegalCodeSchema)),
+  codes: () => getJson("/api/legal/codes", z.array(LegalCodeSchema)),
 
   /** Browse / filter sections in a code. */
   sections: (opts: { code?: string; q?: string; limit?: number; offset?: number } = {}) =>
     getJson(
-      `/v1/legal/sections${qs({ code: opts.code, q: opts.q, limit: opts.limit, offset: opts.offset })}`,
+      `/api/legal/sections${qs({ code: opts.code, q: opts.q, limit: opts.limit, offset: opts.offset })}`,
       LegalSectionsResponseSchema,
     ).then((r) => r.sections),
 
   /** One section: authoritative Thai + English gloss + citing cases + cross-refs. */
   section: (code: string, no: string) =>
     getJson(
-      `/v1/legal/sections/${encodeURIComponent(code)}/${encodeURIComponent(no)}`,
+      `/api/legal/sections/${encodeURIComponent(code)}/${encodeURIComponent(no)}`,
       LegalSectionDetailSchema,
     ),
 
   /** Intelligent search (exact anchor + lexical + semantic, banded by basis). */
   search: (q: string, opts: { limit?: number } = {}) =>
     getJson(
-      `/v1/legal/sections/search${qs({ q, limit: opts.limit })}`,
+      `/api/legal/sections/search${qs({ q, limit: opts.limit })}`,
       LegalSearchResponseSchema,
     ),
 
   /** Tabular Review: a set of documents → a grid of findings (one group per doc). */
   review: (documents: LegalReviewDocument[], riskProfile?: LegalRiskProfile) =>
     postJson(
-      "/v1/legal/review",
+      "/api/legal/review",
       { documents, risk_profile: riskProfile },
       LegalReviewResponseSchema,
     ).then((r) => r.rows),
@@ -252,14 +252,14 @@ export const legalApi = {
     column: { label: string; prompt: string; format: LegalColumnFormat },
   ) =>
     postJson(
-      "/v1/legal/extract-column",
+      "/api/legal/extract-column",
       { documents, label: column.label, prompt: column.prompt, format: column.format },
       LegalExtractColumnResponseSchema,
     ).then((r) => r.values),
 
   /** Matter chat: a cross-document question answered over the supplied docs. */
   ask: (question: string, documents: LegalReviewDocument[]) =>
-    postJson("/v1/legal/ask", { question, documents }, LegalAskResponseSchema),
+    postJson("/api/legal/ask", { question, documents }, LegalAskResponseSchema),
 };
 
 // ---------------------------------------------------------------------------

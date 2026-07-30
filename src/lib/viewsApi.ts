@@ -1,7 +1,7 @@
 /**
  * Saved Views API Client
  *
- * Hits `/v1/views` — durable, user-created saved query specs for the
+ * Hits `/api/views` — durable, user-created saved query specs for the
  * board / backlog surfaces (NOT the per-folder implicit `view_settings`,
  * which live behind `folderViewsApi`). The platform stores `query`
  * opaquely; the consumer (here) owns its shape. For `kind: 'work_items'`
@@ -14,7 +14,7 @@ import { freshIdempotencyKey } from "./idempotency";
 
 export type ViewVisibility = "private" | "shared";
 
-/** A saved view row, mirroring the `/v1/views` wire shape (snake_case). */
+/** A saved view row, mirroring the `/api/views` wire shape (snake_case). */
 export interface SavedView {
   id: string;
   name: string;

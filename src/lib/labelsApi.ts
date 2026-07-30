@@ -2,11 +2,11 @@
  * Labels API Client
  *
  * Workspace-scoped taxonomy primitive. Hits:
- *   - POST   /v1/workspaces/:workspaceId/labels
- *   - GET    /v1/workspaces/:workspaceId/labels
- *   - GET    /v1/labels/:id
- *   - PATCH  /v1/labels/:id
- *   - DELETE /v1/labels/:id
+ *   - POST   /api/workspaces/:workspaceId/labels
+ *   - GET    /api/workspaces/:workspaceId/labels
+ *   - GET    /api/labels/:id
+ *   - PATCH  /api/labels/:id
+ *   - DELETE /api/labels/:id
  *
  * Cross-workspace label attachments to work items reject with
  * `label_wrong_workspace`. Labels can opt into workspace-level templates
@@ -14,8 +14,8 @@
  * mutating them returns 409 `template_inherited_read_only`.
  *
  * Workspace rename arc (2026-05-27): the per-project URL surface
- * `/v1/projects/:projectId/labels` was renamed to
- * `/v1/workspaces/:workspaceId/labels`; the `Label.project_id` field
+ * `/api/projects/:projectId/labels` was renamed to
+ * `/api/workspaces/:workspaceId/labels`; the `Label.project_id` field
  * was renamed to `Label.workspace_id`. Hook parameter names at call
  * sites that still read `projectId` are JS-locals carrying the active
  * workspace id on the wire — broader consumer-side rename is the
@@ -66,7 +66,7 @@ export interface UpdateLabelRequest {
 // Response Types
 // ============================================================================
 
-// Label responses — `/v1/workspaces/:workspaceId/labels` returns a
+// Label responses — `/api/workspaces/:workspaceId/labels` returns a
 // simple `{ data }` shape (no pagination markers; labels are bounded
 // per workspace).
 export interface LabelsListResponse {

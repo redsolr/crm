@@ -9,7 +9,7 @@ interface PresignedUrlResponse {
 
 /**
  * A finalized-upload reference (post presign + PUT) — the exact snake_case
- * shape a `POST /v1/attachments` finalize (or an inline attachment ref on an
+ * shape a `POST /api/attachments` finalize (or an inline attachment ref on an
  * outbound reply) takes. Shared by every composer that attaches files.
  */
 export interface AttachmentUploadRef {

@@ -3,7 +3,7 @@
  *
  * The legal API is a SEPARATE host from the platform (`NEXT_PUBLIC_LEGAL_API_URL`,
  * default `http://localhost:8787` — the sandbox engine), so these mocks match
- * a host-agnostic `**​/v1/legal/**` glob rather than `API_V1`. One route with
+ * a host-agnostic `**​/api/legal/**` glob rather than `API_ROOT`. One route with
  * internal path-branching avoids Playwright's last-registered-wins ordering
  * between `/sections`, `/sections/search`, and `/sections/:code/:no`.
  *
@@ -84,13 +84,13 @@ function reviewFinding(sectionNo: string, basis: string, confidence: number) {
 }
 
 export async function setupLegalHandlers(page: Page) {
-  await page.route("**/v1/legal/**", async (route) => {
+  await page.route("**/api/legal/**", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
     const method = route.request().method();
 
-    // POST /v1/legal/findings/:id/work_item — the platform bridge (persist→link)
-    const wiMatch = path.match(/\/v1\/legal\/findings\/([^/]+)\/work_item$/);
+    // POST /api/legal/findings/:id/work_item — the platform bridge (persist→link)
+    const wiMatch = path.match(/\/api\/legal\/findings\/([^/]+)\/work_item$/);
     if (method === "POST" && wiMatch) {
       const finding = {
         id: decodeURIComponent(wiMatch[1]),
@@ -102,8 +102,8 @@ export async function setupLegalHandlers(page: Page) {
       return jsonRoute(route, { finding, work_item_id: "wi_e2e_linked" });
     }
 
-    // POST /v1/legal/findings — persist a finding (platform)
-    if (method === "POST" && path.endsWith("/v1/legal/findings")) {
+    // POST /api/legal/findings — persist a finding (platform)
+    if (method === "POST" && path.endsWith("/api/legal/findings")) {
       const b = (route.request().postDataJSON() ?? {}) as { issue?: string };
       return jsonRoute(route, {
         finding: {
@@ -116,8 +116,8 @@ export async function setupLegalHandlers(page: Page) {
       });
     }
 
-    // POST /v1/legal/review — batch grid (rows = documents)
-    if (method === "POST" && path.endsWith("/v1/legal/review")) {
+    // POST /api/legal/review — batch grid (rows = documents)
+    if (method === "POST" && path.endsWith("/api/legal/review")) {
       const body = (route.request().postDataJSON() ?? {}) as {
         documents?: Array<{ id?: string; name?: string; text?: string }>;
       };
@@ -137,8 +137,8 @@ export async function setupLegalHandlers(page: Page) {
       return jsonRoute(route, { rows });
     }
 
-    // POST /v1/legal/extract-column — custom column (grounded extraction)
-    if (method === "POST" && path.endsWith("/v1/legal/extract-column")) {
+    // POST /api/legal/extract-column — custom column (grounded extraction)
+    if (method === "POST" && path.endsWith("/api/legal/extract-column")) {
       const body = (route.request().postDataJSON() ?? {}) as {
         documents?: Array<{ id?: string; name?: string; text?: string }>;
         prompt?: string;
@@ -151,8 +151,8 @@ export async function setupLegalHandlers(page: Page) {
       return jsonRoute(route, { values });
     }
 
-    // POST /v1/legal/ask — matter chat (grounded answer)
-    if (method === "POST" && path.endsWith("/v1/legal/ask")) {
+    // POST /api/legal/ask — matter chat (grounded answer)
+    if (method === "POST" && path.endsWith("/api/legal/ask")) {
       const body = (route.request().postDataJSON() ?? {}) as {
         question?: string;
         documents?: Array<{ name?: string }>;
@@ -165,13 +165,13 @@ export async function setupLegalHandlers(page: Page) {
       });
     }
 
-    // GET /v1/legal/codes
-    if (path.endsWith("/v1/legal/codes")) {
+    // GET /api/legal/codes
+    if (path.endsWith("/api/legal/codes")) {
       return jsonRoute(route, CODES);
     }
 
-    // GET /v1/legal/sections/search?q=
-    if (path.endsWith("/v1/legal/sections/search")) {
+    // GET /api/legal/sections/search?q=
+    if (path.endsWith("/api/legal/sections/search")) {
       const q = (url.searchParams.get("q") ?? "").trim();
       const hits =
         q.length < 2
@@ -190,8 +190,8 @@ export async function setupLegalHandlers(page: Page) {
       return jsonRoute(route, { query: q, hits });
     }
 
-    // GET /v1/legal/sections/:code/:no
-    const detailMatch = path.match(/\/v1\/legal\/sections\/([^/]+)\/([^/]+)$/);
+    // GET /api/legal/sections/:code/:no
+    const detailMatch = path.match(/\/api\/legal\/sections\/([^/]+)\/([^/]+)$/);
     if (detailMatch) {
       const no = decodeURIComponent(detailMatch[2]);
       const found = SECTIONS.find((s) => s.section_no === no);
@@ -199,8 +199,8 @@ export async function setupLegalHandlers(page: Page) {
       return jsonRoute(route, found);
     }
 
-    // GET /v1/legal/sections?code=&q=
-    if (path.endsWith("/v1/legal/sections")) {
+    // GET /api/legal/sections?code=&q=
+    if (path.endsWith("/api/legal/sections")) {
       const code = url.searchParams.get("code") ?? "CCC";
       const q = (url.searchParams.get("q") ?? "").trim();
       const sections = SECTIONS.filter(

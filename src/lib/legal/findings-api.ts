@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * `legalFindingsApi` — the PLATFORM legal-findings surface (`/v1/legal/findings`),
+ * `legalFindingsApi` — the PLATFORM legal-findings surface (`/api/legal/findings`),
  * authenticated via `BaseApiClient` (unlike `legalApi` in ./client, which hits
  * the sandbox corpus/RAG host). This is the durable read→act bridge: persist a
  * finding, then turn it into a tracked work_item with the link recorded both
@@ -29,7 +29,7 @@ const BridgeSchema = z.object({
 });
 export type LegalFindingBridge = z.infer<typeof BridgeSchema>;
 
-/** A finding row as returned by `GET /v1/legal/findings` (list). */
+/** A finding row as returned by `GET /api/legal/findings` (list). */
 const FindingListItemSchema = z.object({
   id: z.string(),
   issue: z.string(),

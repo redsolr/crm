@@ -27,11 +27,11 @@ export interface Subscription {
 
 /**
  * Account-level consolidated spend rollup — mirrors the platform's
- * `AccountUsageSummaryResponseDto` envelope at `GET /v1/accounts/me/
+ * `AccountUsageSummaryResponseDto` envelope at `GET /api/accounts/me/
  * usage/summary`. Sums every owned org's per-org usage and surfaces
  * the per-org breakdown for chargeback. The page-level "Usage by
  * model" + "limits" views ship through per-org endpoints (currently
- * `GET /v1/organizations/:id/usage/summary` for the budget view), not
+ * `GET /api/organizations/:id/usage/summary` for the budget view), not
  * this consolidated shape.
  */
 export interface UsageSummary {
@@ -81,7 +81,7 @@ export interface CreateFolderRequest {
 }
 
 /**
- * Re-issued auth envelope returned by `POST /v1/accounts/me:switch_organization`.
+ * Re-issued auth envelope returned by `POST /api/accounts/me:switch_organization`.
  * Same shape as the WorkOS exchange response — re-mints the access /
  * refresh token pair bound to the target organization.
  */
@@ -113,13 +113,13 @@ class AccountApiClient extends BaseApiClient {
   // "Active organization resolution"). Memberships are JWT-bound;
   // switching re-mints the token pair against the target org.
 
-  /** `GET /v1/accounts/me/organizations` — every org the caller is an
+  /** `GET /api/accounts/me/organizations` — every org the caller is an
    *  active member of, with the membership row inline. */
   async listMyOrganizations(): Promise<AccountMembershipList> {
     return this.request<AccountMembershipList>("/accounts/me/organizations");
   }
 
-  /** `POST /v1/accounts/me:switch_organization` — AIP-136 custom action;
+  /** `POST /api/accounts/me:switch_organization` — AIP-136 custom action;
    *  rebinds the active org. Caller must replace stored tokens with the
    *  pair returned. 403 `organization_membership_required` if the target
    *  isn't an active membership. */
@@ -162,7 +162,7 @@ class AccountApiClient extends BaseApiClient {
   }
 
   // Usage — account-level consolidated summary across every org the
-  // caller owns. Backed by `GET /v1/accounts/me/usage/summary` which
+  // caller owns. Backed by `GET /api/accounts/me/usage/summary` which
   // resolves the account from the auth token; `account_id` is
   // accepted-and-ignored here so existing call sites don't have to
   // refactor their signature.
@@ -188,7 +188,7 @@ class AccountApiClient extends BaseApiClient {
   }
 
   /**
-   * `DELETE /v1/accounts/me` — soft-delete cascade. Cancels every
+   * `DELETE /api/accounts/me` — soft-delete cascade. Cancels every
    * owned org's subscription, revokes api-keys, emits
    * `organization.deleted`, soft-deletes orgs, then soft-deletes the
    * account. Returns `{ deleted: true }`. Required body shape:

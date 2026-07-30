@@ -3,7 +3,7 @@
 /**
  * `legalPlaybooksApi` — the firm's codified standards (Legora "Playbooks").
  * Workspace-level CRUD plus the check
- * (`POST /v1/legal/matters/:id/check_playbook`) that runs a matter document
+ * (`POST /api/legal/matters/:id/check_playbook`) that runs a matter document
  * against a playbook: each rule comes back compliant / deviation / missing /
  * not_applicable / unclear, every deviation anchored to a VERBATIM document
  * excerpt. The sibling of cite-check with the grounding source swapped — law

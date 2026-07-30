@@ -4,7 +4,7 @@
  * `docs/platform/api-discipline.md` § C4.
  *
  * The version is the optimistic-concurrency token the platform requires
- * on every PATCH/DELETE against `/v1/work-items/:id`. A missing or stale
+ * on every PATCH/DELETE against `/api/work-items/:id`. A missing or stale
  * `If-Match` header is rejected (428 / 412), so before mutating we look
  * the WorkItem up in the react-query cache and pull `.version` off it.
  *

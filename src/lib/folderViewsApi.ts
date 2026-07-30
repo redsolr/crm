@@ -1,7 +1,7 @@
 /**
  * Folder Views API Client
  *
- * Hits `/v1/folders/:id/views/*`. Views are implicit on folders —
+ * Hits `/api/folders/:id/views/*`. Views are implicit on folders —
  * `Folder` and the view envelopes (`FolderBoardView`, `FolderBacklogView`,
  * `FolderCalendarView`) come from the generated OpenAPI types —
  * snake_case wire shape per `docs/platform/api-discipline.md`.

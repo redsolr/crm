@@ -3,7 +3,7 @@ import { BaseApiClient } from "./api-client";
 import { freshIdempotencyKey } from "./idempotency";
 
 /**
- * Client for the platform's `/v1/responses` LLM-native reasoning
+ * Client for the platform's `/api/responses` LLM-native reasoning
  * endpoint. The endpoint is a discriminated union on `ask`; V0.1
  * supports `ask: "text"` (free-form question over `context_refs`)
  * and `ask: "founder_brief"` (execution-intelligence brief over the
@@ -96,7 +96,7 @@ export interface CreateFounderBriefRequest {
 
 class ResponsesApiClient extends BaseApiClient {
   /**
-   * `POST /v1/responses { ask: "founder_brief" }`.
+   * `POST /api/responses { ask: "founder_brief" }`.
    *
    * Hits the platform endpoint, validates the response with Zod, and
    * surfaces the typed shape. Idempotency-Key is set per call so a
@@ -121,7 +121,7 @@ class ResponsesApiClient extends BaseApiClient {
   }
 
   /**
-   * `POST /v1/responses { ask: "text" }`.
+   * `POST /api/responses { ask: "text" }`.
    *
    * Free-form question (≤8000 chars server-side), plain-text answer.
    * Same Idempotency-Key discipline as the founder brief: a fresh key

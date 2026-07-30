@@ -97,8 +97,9 @@ const portalWebServer = {
     // Honor API_BASE_URL override so e.g. host.docker.internal works the
     // same in the portal as in the spec; falling through to localhost
     // matches the rest of the e2e config's default.
+    // The CRM serves its own backend — default to self.
     NEXT_PUBLIC_API_BASE_URL:
-      process.env.API_BASE_URL ?? "http://localhost:8080",
+      process.env.API_BASE_URL ?? "http://localhost:3100",
   },
 };
 

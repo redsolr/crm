@@ -1,9 +1,9 @@
 ﻿/**
  * Route handler factories for work-item management endpoints.
- * Mocks `/v1/work_items` for board/backlog/calendar E2E tests.
+ * Mocks `/api/work_items` for board/backlog/calendar E2E tests.
  *
  * Wire contract (matches `platform/src/modules/work-items/work-items.response.dto.ts`):
- *   - URL: `/v1/work_items` (snake_case path, NOT `/work-items`)
+ *   - URL: `/api/work_items` (snake_case path, NOT `/work-items`)
  *   - Field names: snake_case throughout (Stripe v2 style)
  *   - List envelope: `{ data, has_more, next_page_url }` — cursor pagination
  *   - Single envelope: `{ work_item }`
@@ -15,7 +15,7 @@
  */
 
 import { Page } from "@playwright/test";
-import { API_V1, TEST_USER } from "./shared";
+import { API_ROOT, TEST_USER } from "./shared";
 
 // ============================================================================
 // Factory Functions
@@ -221,8 +221,8 @@ export async function setupTaskHandlers(
   let workItems = options.workItems ?? createMockWorkItems();
   let idCounter = workItems.length;
 
-  // POST /v1/work_items/bulk — bulk update
-  await page.route(`${API_V1}/work_items/bulk`, async (route, request) => {
+  // POST /api/work_items/bulk — bulk update
+  await page.route(`${API_ROOT}/work_items/bulk`, async (route, request) => {
     if (request.method() === "POST") {
       const body = JSON.parse(request.postData() ?? "{}") as {
         work_item_ids?: string[];
@@ -246,17 +246,17 @@ export async function setupTaskHandlers(
     await route.fallback();
   });
 
-  // GET /v1/work_items* — list / POST /v1/work_items — create
-  await page.route(`${API_V1}/work_items**`, async (route, request) => {
+  // GET /api/work_items* — list / POST /api/work_items — create
+  await page.route(`${API_ROOT}/work_items**`, async (route, request) => {
     const u = new URL(request.url());
-    // Defer to the more-specific routes for /v1/work_items/bulk
-    // and /v1/work_items/:id — those handlers run first because
+    // Defer to the more-specific routes for /api/work_items/bulk
+    // and /api/work_items/:id — those handlers run first because
     // Playwright matches last-registered-first within a single
     // routing pass, but globs are non-anchored so we still need
     // explicit path checks here to avoid double-handling.
     if (
-      u.pathname === "/v1/work_items/bulk" ||
-      /^\/v1\/work_items\/[^/]+$/.test(u.pathname)
+      u.pathname === "/api/work_items/bulk" ||
+      /^\/api\/work_items\/[^/]+$/.test(u.pathname)
     ) {
       await route.fallback();
       return;
@@ -347,9 +347,9 @@ export async function setupTaskHandlers(
     await route.fallback();
   });
 
-  // PATCH/DELETE/GET /v1/work_items/:id — individual work-item operations
+  // PATCH/DELETE/GET /api/work_items/:id — individual work-item operations
   await page.route(
-    (url) => /^\/v1\/work_items\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/work_items\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       const method = request.method();
       const url = request.url();
@@ -412,9 +412,9 @@ export async function setupTaskHandlers(
     },
   );
 
-  // POST /v1/comments — create a comment (test-author shape; specs that
+  // POST /api/comments — create a comment (test-author shape; specs that
   // care about comments mock this more thoroughly)
-  await page.route(`${API_V1}/comments`, async (route, request) => {
+  await page.route(`${API_ROOT}/comments`, async (route, request) => {
     if (request.method() === "POST") {
       const body = JSON.parse(request.postData() ?? "{}") as Record<
         string,
@@ -441,9 +441,9 @@ export async function setupTaskHandlers(
     await route.fallback();
   });
 
-  // GET /v1/work_items/:id/comments — list comments for a work item
+  // GET /api/work_items/:id/comments — list comments for a work item
   await page.route(
-    (url) => /^\/v1\/work_items\/[^/]+\/comments$/.test(url.pathname),
+    (url) => /^\/api\/work_items\/[^/]+\/comments$/.test(url.pathname),
     async (route) => {
       await route.fulfill({
         status: 200,
@@ -457,16 +457,16 @@ export async function setupTaskHandlers(
     },
   );
 
-  // GET /v1/work_items/:id/subtasks — list subtasks of a work item.
+  // GET /api/work_items/:id/subtasks — list subtasks of a work item.
   // FE expects { workItems: WorkItem[] } (see workItemsApi.getSubWorkItems).
   // Subtasks are work_items whose parent_id === the requested id; we look
   // them up from the in-memory workItems array so the same handler covers
   // both empty + populated cases.
   await page.route(
-    (url) => /^\/v1\/work_items\/[^/]+\/subtasks$/.test(url.pathname),
+    (url) => /^\/api\/work_items\/[^/]+\/subtasks$/.test(url.pathname),
     async (route, request) => {
       const u = new URL(request.url());
-      const m = u.pathname.match(/^\/v1\/work_items\/([^/]+)\/subtasks$/);
+      const m = u.pathname.match(/^\/api\/work_items\/([^/]+)\/subtasks$/);
       const parentId = m?.[1] ?? "";
       const children = workItems.filter((w) => w.parent_id === parentId);
       await route.fulfill({
@@ -477,10 +477,10 @@ export async function setupTaskHandlers(
     },
   );
 
-  // GET /v1/activities/entity/:type/:id — entity activities (used by detail panel)
+  // GET /api/activities/entity/:type/:id — entity activities (used by detail panel)
   await page.route(
     (url) =>
-      /^\/v1\/activities\/entity\/[^/]+\/[^/]+$/.test(url.pathname),
+      /^\/api\/activities\/entity\/[^/]+\/[^/]+$/.test(url.pathname),
     async (route) => {
       await route.fulfill({
         status: 200,
@@ -490,9 +490,9 @@ export async function setupTaskHandlers(
     },
   );
 
-  // GET /v1/workspaces/:id/labels (+ legacy bare /v1/labels) — sample
+  // GET /api/workspaces/:id/labels (+ legacy bare /api/labels) — sample
   // labels. Post workspace-rename arc the list lives under
-  // `/v1/workspaces/:workspaceId/labels`; the bare `/v1/labels` form is
+  // `/api/workspaces/:workspaceId/labels`; the bare `/api/labels` form is
   // kept for any FE path still hitting the flat list.
   const labelsBody = () => {
     const now = new Date().toISOString();
@@ -525,7 +525,7 @@ export async function setupTaskHandlers(
   };
 
   await page.route(
-    (url) => /^\/v1\/workspaces\/[^/]+\/labels$/.test(url.pathname),
+    (url) => /^\/api\/workspaces\/[^/]+\/labels$/.test(url.pathname),
     async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
@@ -539,7 +539,7 @@ export async function setupTaskHandlers(
     },
   );
 
-  await page.route(`${API_V1}/labels**`, async (route) => {
+  await page.route(`${API_ROOT}/labels**`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -547,11 +547,11 @@ export async function setupTaskHandlers(
     });
   });
 
-  // GET /v1/iterations* — empty iterations by default. Specs that need
+  // GET /api/iterations* — empty iterations by default. Specs that need
   // populated iterations should call setupSprintHandlers() too — that
   // handler's mock runs last and wins per Playwright's
   // last-registered-first ordering.
-  await page.route(`${API_V1}/iterations**`, async (route, request) => {
+  await page.route(`${API_ROOT}/iterations**`, async (route, request) => {
     if (request.method() === "GET") {
       await route.fulfill({
         status: 200,
@@ -578,7 +578,7 @@ export async function setupTaskHandlers(
   // DEFAULT_WORKFLOW_STATUSES, so columns are identical but the create
   // affordance resolves. Registered after setupWorkspaceHandlers → wins (LIFO).
   await page.route(
-    (url) => /^\/v1\/workspaces\/[^/]+\/workflows$/.test(url.pathname),
+    (url) => /^\/api\/workspaces\/[^/]+\/workflows$/.test(url.pathname),
     async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
@@ -605,7 +605,7 @@ export async function setupTaskHandlers(
   );
 
   await page.route(
-    (url) => /^\/v1\/workflows\/[^/]+\/states$/.test(url.pathname),
+    (url) => /^\/api\/workflows\/[^/]+\/states$/.test(url.pathname),
     async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({

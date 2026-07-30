@@ -2,7 +2,7 @@
 
 /**
  * `channelConnectionsApi` — the self-serve "Connect a channel" surface
- * (`/v1/channel_connections`). A firm (or a Jurisimus operator setting it up
+ * (`/api/channel_connections`). A firm (or a Jurisimus operator setting it up
  * for them) connects its own LINE OA: paste the channel secret + access
  * token, the server validates the token against LINE, seals both in the
  * vault, and returns the webhook URL to paste back into LINE.

@@ -2,7 +2,7 @@
 
 /**
  * `matterGraphApi` — the PLATFORM matter authority graph
- * (`GET /v1/legal/matters/:id/graph`), authenticated via `BaseApiClient`. The
+ * (`GET /api/legal/matters/:id/graph`), authenticated via `BaseApiClient`. The
  * matter graph is the law sections + Supreme Court rulings this matter's
  * findings touch, wired by the corpus citation graph.
  *

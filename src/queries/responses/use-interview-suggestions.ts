@@ -14,7 +14,7 @@ import {
  *
  * Modeled as a mutation, NOT a query, for the same reason as the
  * founder brief: every call is a paid LLM spend on the platform side
- * (`POST /v1/responses { ask: "text" }`). Suggestions fire only on an
+ * (`POST /api/responses { ask: "text" }`). Suggestions fire only on an
  * explicit "Suggest" tap — never on mount, never on refocus — and the
  * result is moment-specific, so there is no cache to manage.
  */

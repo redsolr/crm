@@ -4,7 +4,7 @@
  * app's auth + onboarding routes:
  *
  *   1. `use-onboarding.ts` was POSTing to kebab-case
- *      `/v1/user-preferences/onboarding` (snake-case backend → 404).
+ *      `/api/user-preferences/onboarding` (snake-case backend → 404).
  *   2. The same POSTs sent `roles`/`responseLength` — backend expects
  *      `role` (singular) + `response_length` (snake).
  *   3. `preferencesApi.getSessionCount()` routed `/auth/sessions`
@@ -77,7 +77,7 @@ beforeEach(() => {
 });
 
 describe("preferencesApi.submitOnboarding — wire shape", () => {
-  it("POSTs to snake_case /v1/user_preferences/onboarding (not kebab)", async () => {
+  it("POSTs to snake_case /api/user_preferences/onboarding (not kebab)", async () => {
     nextPayload = { data: { id: "up_1" } };
     await preferencesApiClient.submitOnboarding({
       role: "Software Engineer, Founder",
@@ -88,7 +88,7 @@ describe("preferencesApi.submitOnboarding — wire shape", () => {
 
     expect(captured).toHaveLength(1);
     expect(captured[0].url).toBe(
-      `${API_BASE}/v1/user_preferences/onboarding`,
+      `${API_BASE}/api/user_preferences/onboarding`,
     );
     expect(captured[0].url).not.toContain("user-preferences");
   });
@@ -117,19 +117,19 @@ describe("preferencesApi.submitOnboarding — wire shape", () => {
   });
 });
 
-describe("preferencesApi.getSessionCount — bypasses /v1 prefix", () => {
-  it("hits unprefixed /auth/sessions, not /v1/auth/sessions", async () => {
+describe("preferencesApi.getSessionCount — bypasses /api prefix", () => {
+  it("hits unprefixed /auth/sessions, not /api/auth/sessions", async () => {
     nextPayload = { count: 3 };
     const count = await preferencesApiClient.getSessionCount();
 
     expect(count).toBe(3);
     expect(captured).toHaveLength(1);
     expect(captured[0].url).toBe(`${API_BASE}/auth/sessions`);
-    expect(captured[0].url).not.toContain("/v1/auth/");
+    expect(captured[0].url).not.toContain("/api/auth/");
   });
 });
 
-describe("preferencesApi.revokeAllSessions — bypasses /v1 prefix + snake_case path", () => {
+describe("preferencesApi.revokeAllSessions — bypasses /api prefix + snake_case path", () => {
   it("POSTs to unprefixed /auth/sessions/revoke_all (snake), not revoke-all", async () => {
     nextPayload = { success: true };
     await preferencesApiClient.revokeAllSessions("idem-key-1");
@@ -141,7 +141,7 @@ describe("preferencesApi.revokeAllSessions — bypasses /v1 prefix + snake_case 
     expect(captured[0].method).toBe("POST");
     // Negative assertions — both the prefix bug AND the kebab/snake
     // bug must stay fixed.
-    expect(captured[0].url).not.toContain("/v1/auth/");
+    expect(captured[0].url).not.toContain("/api/auth/");
     expect(captured[0].url).not.toContain("revoke-all");
   });
 });

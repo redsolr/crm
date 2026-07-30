@@ -90,7 +90,7 @@ interface ApiKeyEnvelope {
   name: string;
   token_prefix: string;
   token_last4: string;
-  /** Raw key — populated only on POST /v1/api_keys + :rotate. */
+  /** Raw key — populated only on POST /api/api_keys + :rotate. */
   token?: string;
 }
 
@@ -155,7 +155,7 @@ export async function bootstrapAcme(
   let organizationId = login.organization_id;
 
   if (organizationId === undefined) {
-    (await expectOk("POST", `${base}/v1/organizations`, {
+    (await expectOk("POST", `${base}/api/organizations`, {
       body: {
         name: ORG_NAME,
         owner_email: OWNER_EMAIL,
@@ -176,22 +176,22 @@ export async function bootstrapAcme(
   }
 
   // Post workspace-rename arc: bootstrap auto-creates ONE workspace
-  // named `Default` (key `DEF`) per signup. There is no `/v1/projects`
+  // named `Default` (key `DEF`) per signup. There is no `/api/projects`
   // and no per-project env — the workspace is the sole grouping +
   // isolation boundary, bound on the owner's JWT.
-  const workspacesList = (await expectOk("GET", `${base}/v1/workspaces`, {
+  const workspacesList = (await expectOk("GET", `${base}/api/workspaces`, {
     token: accessToken,
   })) as WorkspaceListResponse;
   if (workspacesList.workspaces.length === 0) {
     throw new Error(
-      "[canny-bootstrap] GET /v1/workspaces returned no rows — bootstrapTenantRows regression"
+      "[canny-bootstrap] GET /api/workspaces returned no rows — bootstrapTenantRows regression"
     );
   }
   const workspace =
     workspacesList.workspaces.find((w) => w.key === "DEF") ??
     workspacesList.workspaces[0];
 
-  const existingKeys = (await expectOk("GET", `${base}/v1/api_keys`, {
+  const existingKeys = (await expectOk("GET", `${base}/api/api_keys`, {
     token: accessToken,
   })) as ApiKeyEnvelope[];
   const existingKey = existingKeys.find(
@@ -200,7 +200,7 @@ export async function bootstrapAcme(
 
   let apiKey: ApiKeyEnvelope;
   if (existingKey === undefined) {
-    apiKey = (await expectOk("POST", `${base}/v1/api_keys`, {
+    apiKey = (await expectOk("POST", `${base}/api/api_keys`, {
       token: accessToken,
       body: { workspace_id: workspace.id, name: API_KEY_NAME },
       expectStatus: [200, 201],
@@ -208,7 +208,7 @@ export async function bootstrapAcme(
   } else {
     apiKey = (await expectOk(
       "POST",
-      `${base}/v1/api_keys/${existingKey.id}:rotate`,
+      `${base}/api/api_keys/${existingKey.id}:rotate`,
       { token: accessToken, body: {}, expectStatus: [200, 201] }
     )) as ApiKeyEnvelope;
   }
@@ -220,14 +220,14 @@ export async function bootstrapAcme(
 
   const sites = (await expectOk(
     "GET",
-    `${base}/v1/organizations/${organizationId}/sites`,
+    `${base}/api/organizations/${organizationId}/sites`,
     { token: accessToken }
   )) as SiteListResponse;
   let site = sites.data.find((s) => s.slug === SITE_SLUG);
   if (site === undefined) {
     const created = (await expectOk(
       "POST",
-      `${base}/v1/organizations/${organizationId}/sites`,
+      `${base}/api/organizations/${organizationId}/sites`,
       {
         token: accessToken,
         body: { workspace_id: workspace.id, slug: SITE_SLUG, enabled: true },
@@ -241,7 +241,7 @@ export async function bootstrapAcme(
     };
   }
 
-  await expectOk("PUT", `${base}/v1/sites/${site.id}/feature_request_board`, {
+  await expectOk("PUT", `${base}/api/sites/${site.id}/feature_request_board`, {
     token: accessToken,
     body: {
       feedback_workspace_id: workspace.id,
@@ -255,13 +255,13 @@ export async function bootstrapAcme(
 
   const existingFrs = (await expectOk(
     "GET",
-    `${base}/v1/public/${SITE_SLUG}/feature_requests?page_size=10`
+    `${base}/api/public/${SITE_SLUG}/feature_requests?page_size=10`
   )) as PublicFeatureRequestListResponse;
   const existingTitles = new Set(existingFrs.data.map((f) => f.title));
   const toSeed = SEED_TITLES.filter((t) => !existingTitles.has(t));
   await Promise.all(
     toSeed.map((title) =>
-      expectOk("POST", `${base}/v1/public/${SITE_SLUG}/feature_requests`, {
+      expectOk("POST", `${base}/api/public/${SITE_SLUG}/feature_requests`, {
         body: { title },
         expectStatus: [200, 201],
       })

@@ -2,7 +2,7 @@
 
 /**
  * `legalWorkflowsApi` — the firm-facing "save a reusable legal automation and
- * re-run it on new matters" surface (`/v1/legal/workflows`; Harvey "Workflow /
+ * re-run it on new matters" surface (`/api/legal/workflows`; Harvey "Workflow /
  * Agent Builder", Legora "Workflows"). A workflow is a saved, ordered list of
  * legal STEPS drawn from a CLOSED, curated set (research a question, draft from
  * findings, analyze documents, cite-check, playbook-check) — deliberately NOT an

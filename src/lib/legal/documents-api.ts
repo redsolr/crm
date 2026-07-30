@@ -2,7 +2,7 @@
 
 /**
  * `legalDocumentsApi` — the PLATFORM legal-documents surface
- * (`/v1/legal/documents/*`): paginated court-ready documents authored in
+ * (`/api/legal/documents/*`): paginated court-ready documents authored in
  * the in-app editor. Content is ProseMirror JSON (NOT markdown — redline
  * marks, page breaks, and typography don't survive markdown); the
  * platform validates it against the legal-document node vocabulary at
@@ -17,7 +17,7 @@
  */
 import { z } from "zod";
 import { BaseApiClient, buildApiError } from "../api-client";
-import { API_V1, API_VERSION } from "@/lib/api-base";
+import { API_ROOT } from "@/lib/api-base";
 import { authService } from "../authTokenManager";
 import { freshIdempotencyKey } from "../idempotency";
 
@@ -312,13 +312,12 @@ class LegalDocumentsApiClient extends BaseApiClient {
   ): Promise<Blob> {
     const csrf = authService.getCsrfToken();
     const response = await fetch(
-      `${API_V1}/legal/documents/${encodeURIComponent(documentId)}/export`,
+      `${API_ROOT}/legal/documents/${encodeURIComponent(documentId)}/export`,
       {
         method: "POST",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          "Jurisimus-Version": API_VERSION,
           "Jurisimus-Workspace-Id": workspaceId,
           // Export is a read-shaped POST, but it rides the platform's
           // uniform write-idempotency contract like every other POST.

@@ -4,7 +4,7 @@
  * Client checklists — per-matter "what we need from you" lists
  * (engagement letter / KYC / retainer), managed from the matter panel and
  * surfaced read-only in the public client chat. CRUD over
- * `/v1/matter_checklists` (platform `src/modules/matter-checklists/`;
+ * `/api/matter_checklists` (platform `src/modules/matter-checklists/`;
  * spec `docs/platform/client-checklists-spec-2026-07-06.md`).
  */
 

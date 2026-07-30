@@ -3,12 +3,12 @@
  * Covers: chat CRUD, streaming, history, branches.
  *
  * Wire contract (matches `platform/src/modules/chat-completion/chat.response.dto.ts`):
- *   - URL prefix: `/v1/` (Stripe v2 discipline). Chat resource lives at
- *     `/v1/chats/...` (plural). Streaming is `POST /v1/chats/{id}/responses`
- *     (the legacy `/v1/chat/stream` action endpoint was removed when the
+ *   - URL prefix: `/api/` (Stripe v2 discipline). Chat resource lives at
+ *     `/api/chats/...` (plural). Streaming is `POST /api/chats/{id}/responses`
+ *     (the legacy `/api/chat/stream` action endpoint was removed when the
  *     platform adopted the Anthropic-style nested-resource shape — see
  *     `src/lib/chat/stream.ts` § "Stream a chat response from
- *     POST /v1/chats/{id}/responses").
+ *     POST /api/chats/{id}/responses").
  *   - List envelopes use the standard cursor shape:
  *     `{ data, has_more, next_page_url, previous_page_url? }`
  *   - The chat-history envelope is the legacy `{ chats, total, grouped }`
@@ -20,7 +20,7 @@
 import { Page } from "@playwright/test";
 import {
   API_BASE,
-  API_V1,
+  API_ROOT,
   createChatResponse,
   createChatMessagesResponse,
 } from "./shared";
@@ -38,7 +38,7 @@ export interface ChatHandlerOptions {
 
 /**
  * Required fields on the backend `CreateResponseDto` (POST
- * /v1/chats/:id/responses). Mirrors the wire shape that
+ * /api/chats/:id/responses). Mirrors the wire shape that
  * `src/lib/chat/stream.ts#toResponsesRequest` builds — snake_case keys,
  * a sparse body (only `stream` + `model` are unconditional; `input` is
  * present on every first-turn call, absent on tool-result continuations).
@@ -62,7 +62,7 @@ const ALLOWED_RESPONSES_FIELDS = new Set<string>([
 ]);
 
 /**
- * Validate the body of a POST /v1/chats/:id/responses request against the
+ * Validate the body of a POST /api/chats/:id/responses request against the
  * backend `CreateResponseDto` shape. Throws with a precise message on drift
  * — caught by Playwright as a test failure rather than silently fulfilling
  * with mock data.
@@ -143,11 +143,11 @@ export async function setupChatHandlers(
     content: string;
   }> = [...(options?.existingMessages ?? [])];
 
-  // POST /v1/chats/:id/responses — SSE streaming.
+  // POST /api/chats/:id/responses — SSE streaming.
   // Catches every chat id (the FE may create a chat first, then stream on
-  // its real id). Registered BEFORE the more general /v1/chats/:id route
+  // its real id). Registered BEFORE the more general /api/chats/:id route
   // below so the suffix-match wins.
-  const escapedV1 = API_V1.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedV1 = API_ROOT.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   await page.route(
     new RegExp(`${escapedV1}/chats/[^/]+/responses$`),
     async (route, request) => {
@@ -187,8 +187,8 @@ export async function setupChatHandlers(
     },
   );
 
-  // POST /v1/chats — create chat
-  await page.route(`${API_V1}/chats`, async (route, request) => {
+  // POST /api/chats — create chat
+  await page.route(`${API_ROOT}/chats`, async (route, request) => {
     if (request.method() === "POST") {
       await route.fulfill({
         status: 201,
@@ -203,11 +203,11 @@ export async function setupChatHandlers(
   // Note: chats/history* and chats/my* are handled by auth.fixture.ts as
   // background sidebar routes. Domain-specific overrides can be layered on top.
 
-  // GET /v1/chats/:id/messages — get chat messages.
+  // GET /api/chats/:id/messages — get chat messages.
   // Returns the accumulated `messageLog`. POST (tool-result pre-flight
   // append) → just echo a success with no body since the stream FE only
   // checks .ok.
-  await page.route(`${API_V1}/chats/*/messages`, async (route, request) => {
+  await page.route(`${API_ROOT}/chats/*/messages`, async (route, request) => {
     const url = route.request().url();
     const urlChatId = url.match(/\/chats\/([^/]+)\/messages/)?.[1] ?? chatId;
     if (request.method() === "POST") {
@@ -232,8 +232,8 @@ export async function setupChatHandlers(
     });
   });
 
-  // GET /v1/chats/:id/branches
-  await page.route(`${API_V1}/chats/*/branches`, async (route) => {
+  // GET /api/chats/:id/branches
+  await page.route(`${API_ROOT}/chats/*/branches`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -241,8 +241,8 @@ export async function setupChatHandlers(
     });
   });
 
-  // PUT /v1/chats/:id/title — update chat title
-  await page.route(`${API_V1}/chats/*/title`, async (route) => {
+  // PUT /api/chats/:id/title — update chat title
+  await page.route(`${API_ROOT}/chats/*/title`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -250,7 +250,7 @@ export async function setupChatHandlers(
     });
   });
 
-  // PATCH/DELETE /v1/chats/:id — update or delete chat (exclude known
+  // PATCH/DELETE /api/chats/:id — update or delete chat (exclude known
   // sub-paths like /responses, /messages, /branches, /title, etc.).
   await page.route(
     new RegExp(`${escapedV1}/chats/(?!history|my)[^/]+$`),
@@ -275,7 +275,7 @@ export async function setupChatHandlers(
   );
 
   // Reference API_BASE so it's clear we're intentionally NOT using it here;
-  // every chat route lives under /v1/.
+  // every chat route lives under /api/.
   void API_BASE;
 
   return { chatId };
@@ -288,7 +288,7 @@ export async function setupChatStreamError(
   page: Page,
   errorMessage = "Internal server error",
 ) {
-  const escapedV1 = API_V1.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedV1 = API_ROOT.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   await page.route(
     new RegExp(`${escapedV1}/chats/[^/]+/responses$`),
     async (route, request) => {
@@ -316,7 +316,7 @@ export async function setupSlowChatStream(
   content: string,
   delayMs = 3000,
 ) {
-  const escapedV1 = API_V1.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedV1 = API_ROOT.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   await page.route(
     new RegExp(`${escapedV1}/chats/[^/]+/responses$`),
     async (route, request) => {
@@ -342,7 +342,7 @@ export async function setupSlowChatStream(
  * Override the stream handler to return an HTTP error status.
  */
 export async function setupChatStreamHttpError(page: Page, status: number) {
-  const escapedV1 = API_V1.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedV1 = API_ROOT.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   await page.route(
     new RegExp(`${escapedV1}/chats/[^/]+/responses$`),
     async (route, request) => {
@@ -385,8 +385,8 @@ export async function setupChatHistory(page: Page, chats: MockChat[]) {
     updated_at: new Date().toISOString(),
   }));
 
-  // Mock /v1/chats/history* (used by useResearchChatsQuery in sidebar)
-  await page.route(`${API_V1}/chats/history*`, async (route) => {
+  // Mock /api/chats/history* (used by useResearchChatsQuery in sidebar)
+  await page.route(`${API_ROOT}/chats/history*`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -398,8 +398,8 @@ export async function setupChatHistory(page: Page, chats: MockChat[]) {
     });
   });
 
-  // Mock /v1/chats/my* (used by other chat history queries)
-  await page.route(`${API_V1}/chats/my*`, async (route) => {
+  // Mock /api/chats/my* (used by other chat history queries)
+  await page.route(`${API_ROOT}/chats/my*`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -409,8 +409,8 @@ export async function setupChatHistory(page: Page, chats: MockChat[]) {
 }
 
 /**
- * Mutable chat history — DELETE /v1/chats/:id removes from the list,
- * subsequent GET /v1/chats/my* reflects the change.
+ * Mutable chat history — DELETE /api/chats/:id removes from the list,
+ * subsequent GET /api/chats/my* reflects the change.
  */
 export async function setupMutableChatHistory(
   page: Page,
@@ -439,8 +439,8 @@ export async function setupMutableChatHistory(
     return { chats: items, total: items.length, grouped: {} };
   };
 
-  // Mock /v1/chats/history* (used by useResearchChatsQuery)
-  await page.route(`${API_V1}/chats/history*`, async (route) => {
+  // Mock /api/chats/history* (used by useResearchChatsQuery)
+  await page.route(`${API_ROOT}/chats/history*`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -448,8 +448,8 @@ export async function setupMutableChatHistory(
     });
   });
 
-  // Mock /v1/chats/my* (fallback for other chat queries)
-  await page.route(`${API_V1}/chats/my*`, async (route) => {
+  // Mock /api/chats/my* (fallback for other chat queries)
+  await page.route(`${API_ROOT}/chats/my*`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -457,7 +457,7 @@ export async function setupMutableChatHistory(
     });
   });
 
-  const escapedV1 = API_V1.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedV1 = API_ROOT.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const chatCrudPattern = new RegExp(
     `${escapedV1}/chats/(?!stream|history|my)[^/]+$`,
   );

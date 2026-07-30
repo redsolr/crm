@@ -42,9 +42,9 @@ export interface InboxBuckets {
 
 /**
  * Combines:
- *   GET /v1/work_items?workspace_id=…&type_key=commitment
- *   GET /v1/work_items/:id/attribute_values  (for each commitment — due_date, promised_to)
- *   GET /v1/work_items/:parentId  (for each unique parent opportunity)
+ *   GET /api/work_items?workspace_id=…&type_key=commitment
+ *   GET /api/work_items/:id/attribute_values  (for each commitment — due_date, promised_to)
+ *   GET /api/work_items/:parentId  (for each unique parent opportunity)
  *
  * Returns a per-bucket grouping ready for direct render.
  */

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * TanStack Query hooks for the connect API (`/v1/channel_connections`) — the
+ * TanStack Query hooks for the connect API (`/api/channel_connections`) — the
  * settings "Channels" panel. Server state lives here; mutations invalidate
  * the list so the panel reflects connect / verify / disconnect immediately.
  */

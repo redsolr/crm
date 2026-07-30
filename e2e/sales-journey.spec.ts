@@ -257,7 +257,7 @@ test.describe("Sales journey", () => {
     // page's perspective is the source of truth for category.
     const opportunityState = await authedPage.evaluate(async (id) => {
       const res = await fetch(
-        `http://localhost:8080/v1/work_items/${id}`,
+        `http://localhost:3100/api/work_items/${id}`,
         { credentials: "include" },
       );
       const body = (await res.json()) as {
@@ -271,7 +271,7 @@ test.describe("Sales journey", () => {
     // ── 8) Account stays on Memory workflow (category === 'active') ─
     const accountState = await authedPage.evaluate(async () => {
       const res = await fetch(
-        `http://localhost:8080/v1/work_items?type_key=account&workspace_id=ws-e2e-default`,
+        `http://localhost:3100/api/work_items?type_key=account&workspace_id=ws-e2e-default`,
         { credentials: "include" },
       );
       const body = (await res.json()) as {
@@ -423,7 +423,7 @@ test.describe("Sales journey", () => {
     // the lost_reason attribute persisted server-side.
     const result = await authedPage.evaluate(async () => {
       const res = await fetch(
-        `http://localhost:8080/v1/work_items?type_key=opportunity&workspace_id=ws-e2e-default`,
+        `http://localhost:3100/api/work_items?type_key=opportunity&workspace_id=ws-e2e-default`,
         { credentials: "include" },
       );
       const body = (await res.json()) as {
@@ -434,7 +434,7 @@ test.describe("Sales journey", () => {
       };
       const opp = body.data[0]!;
       const av = await fetch(
-        `http://localhost:8080/v1/work_items/${opp.id}/attribute_values`,
+        `http://localhost:3100/api/work_items/${opp.id}/attribute_values`,
         { credentials: "include" },
       );
       const avBody = (await av.json()) as {

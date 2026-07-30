@@ -3,7 +3,7 @@
  *
  * Walks every TS/TSX file under `src/` and finds every platform write
  * call (`POST` / `PUT` / `PATCH` / `DELETE` to `BaseApiClient.request`
- * or raw `fetch` with an `API_V1` / `API_BASE` / `baseUrl` token).
+ * or raw `fetch` with an `API_ROOT` / `API_BASE` / `baseUrl` token).
  * Each write must include an `Idempotency-Key` header in its options
  * object, OR the call must be on a path the backend explicitly
  * exempts (SSE streams, OAuth bypass routes, webhook receivers).
@@ -55,20 +55,20 @@ const IDEMPOTENCY_EXEMPTIONS: ReadonlyArray<{
 }> = [
   // SSE streaming — replays would re-stream cached bytes; the
   // backend interceptor short-circuits these via path prefix and
-  // Content-Type. `/v1/chats/{}/responses` is the public native
+  // Content-Type. `/api/chats/{}/responses` is the public native
   // streaming endpoint (chat-surface-design.md § 2); it has its
   // own service-level idempotency on `Idempotency-Key` (§ 9), so a
   // dev who wants transparent retries supplies the key themselves.
   // The legacy `/chat/stream` consumer-app endpoint stays exempt
   // for first-party flows that still use it server-side.
   {
-    match: "/v1/chats/{}/responses",
+    match: "/api/chats/{}/responses",
     mode: "prefix",
     reason:
       "SSE — replay re-streams cached bytes; service-level Idempotency-Key opt-in",
   },
   {
-    match: "/v1/chat/stream",
+    match: "/api/chat/stream",
     mode: "prefix",
     reason: "SSE — replay re-streams cached bytes; BE interceptor exempts",
   },
@@ -118,7 +118,7 @@ const IDEMPOTENCY_EXEMPTIONS: ReadonlyArray<{
   // Idempotency-Key would just bloat the Redis dedupe cache for a
   // high-frequency, naturally-idempotent surface.
   {
-    match: "/v1/presence/heartbeat",
+    match: "/api/presence/heartbeat",
     mode: "exact",
     reason: "High-frequency heartbeat; latest beat wins; replay is a no-op",
   },
@@ -202,10 +202,10 @@ function resolveTemplatePath(
 ): { path: string | null; isPlatform: boolean } {
   if (ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr)) {
     // Bare string used with `this.request("/path", ...)` is a platform
-    // call (BaseApiClient adds `/v1`). With `requestUnprefixed`, no
+    // call (BaseApiClient adds `/api`). With `requestUnprefixed`, no
     // prefix added.
     return {
-      path: isUnprefixedRequest ? expr.text : `/v1${expr.text}`,
+      path: isUnprefixedRequest ? expr.text : `/api${expr.text}`,
       isPlatform: true,
     };
   }
@@ -220,10 +220,10 @@ function resolveTemplatePath(
             ? span.expression.text
             : span.expression.name.text
           : null;
-      if (exprText === "API_V1" || exprText === "baseUrl") {
-        s += "/v1";
+      if (exprText === "API_ROOT" || exprText === "baseUrl") {
+        s += "/api";
         isPlatform = true;
-        inferredPrefix = "/v1";
+        inferredPrefix = "/api";
       } else if (exprText === "API_BASE") {
         isPlatform = true;
       } else {

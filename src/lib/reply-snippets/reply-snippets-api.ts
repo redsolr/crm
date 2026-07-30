@@ -3,7 +3,7 @@
 /**
  * Reply snippets — the firm's saved replies (Intercom "macros") for the
  * Communications composer's `/` menu. Workspace-shared CRUD over
- * `/v1/reply_snippets` (platform `src/modules/reply-snippets/`).
+ * `/api/reply_snippets` (platform `src/modules/reply-snippets/`).
  */
 
 import { z } from "zod";

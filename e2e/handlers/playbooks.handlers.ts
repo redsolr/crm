@@ -7,7 +7,7 @@
  * this is a UI-render smoke.
  *
  * Wire shapes mirror the platform DTOs — snake_case, prefixed IDs, under
- * `/v1/`. Includes suggest_revision / apply_revision returning a
+ * `/api/`. Includes suggest_revision / apply_revision returning a
  * `playbook_rule` grounding (the deviation→fix path), so do NOT also register
  * the cite-check `redline.handlers` in the same spec.
  */
@@ -50,9 +50,9 @@ export async function setupPlaybookHandlers(page: Page) {
       .filter((r) => r.playbook_id === playbookId)
       .sort((a, b) => a.position - b.position);
 
-  // GET/POST /v1/legal/playbooks
+  // GET/POST /api/legal/playbooks
   await page.route(
-    (url) => url.pathname === "/v1/legal/playbooks",
+    (url) => url.pathname === "/api/legal/playbooks",
     async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
@@ -88,9 +88,9 @@ export async function setupPlaybookHandlers(page: Page) {
     },
   );
 
-  // GET/DELETE /v1/legal/playbooks/:id (detail / delete)
+  // GET/DELETE /api/legal/playbooks/:id (detail / delete)
   await page.route(
-    (url) => /^\/v1\/legal\/playbooks\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/legal\/playbooks\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       const id = new URL(request.url()).pathname.split("/").pop() ?? "";
       if (request.method() === "GET") {
@@ -119,9 +119,9 @@ export async function setupPlaybookHandlers(page: Page) {
     },
   );
 
-  // POST /v1/legal/playbooks/:id/rules
+  // POST /api/legal/playbooks/:id/rules
   await page.route(
-    (url) => /^\/v1\/legal\/playbooks\/[^/]+\/rules$/.test(url.pathname),
+    (url) => /^\/api\/legal\/playbooks\/[^/]+\/rules$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -154,10 +154,10 @@ export async function setupPlaybookHandlers(page: Page) {
     },
   );
 
-  // DELETE /v1/legal/playbooks/:playbookId/rules/:ruleId
+  // DELETE /api/legal/playbooks/:playbookId/rules/:ruleId
   await page.route(
     (url) =>
-      /^\/v1\/legal\/playbooks\/[^/]+\/rules\/[^/]+$/.test(url.pathname),
+      /^\/api\/legal\/playbooks\/[^/]+\/rules\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "DELETE") {
         await route.fallback();
@@ -170,13 +170,13 @@ export async function setupPlaybookHandlers(page: Page) {
     },
   );
 
-  // POST /v1/legal/matters/:id/check_playbook → a canned report: one
+  // POST /api/legal/matters/:id/check_playbook → a canned report: one
   // deviation (anchored to a verbatim excerpt of the ingested mock document),
   // one compliant, one missing. The deviation's rule_id matches the first rule
   // of the picked playbook so the redline path is reachable.
   await page.route(
     (url) =>
-      /^\/v1\/legal\/matters\/[^/]+\/check_playbook$/.test(url.pathname),
+      /^\/api\/legal\/matters\/[^/]+\/check_playbook$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -250,7 +250,7 @@ export async function setupPlaybookHandlers(page: Page) {
   // POST suggest_revision → a playbook-grounded revision.
   await page.route(
     (url) =>
-      /^\/v1\/legal\/matters\/[^/]+\/suggest_revision$/.test(url.pathname),
+      /^\/api\/legal\/matters\/[^/]+\/suggest_revision$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -282,7 +282,7 @@ export async function setupPlaybookHandlers(page: Page) {
 
   // POST apply_revision → written into the document.
   await page.route(
-    (url) => /^\/v1\/legal\/matters\/[^/]+\/apply_revision$/.test(url.pathname),
+    (url) => /^\/api\/legal\/matters\/[^/]+\/apply_revision$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();

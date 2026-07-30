@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth.store";
-import { API_V1, API_VERSION } from "@/lib/api-base";
+import { API_ROOT } from "@/lib/api-base";
 import { authService } from "@/lib/authTokenManager";
 import { freshIdempotencyKey } from "@/lib/idempotency";
 import { INVITE_CODE_STORAGE_KEY } from "@/queries/auth/auth-bridge";
@@ -30,8 +30,7 @@ export default function InviteAcceptPage() {
   useEffect(() => {
     async function validate() {
       try {
-        const res = await fetch(`${API_V1}/invite/${code}`, {
-          headers: { "Jurisimus-Version": API_VERSION },
+        const res = await fetch(`${API_ROOT}/invite/${code}`, {
         });
         if (!res.ok) {
           const data = await res.json().catch(() => null);
@@ -78,12 +77,11 @@ export default function InviteAcceptPage() {
 
     try {
       const csrf = authService.getCsrfToken();
-      const res = await fetch(`${API_V1}/invite/${code}/accept`, {
+      const res = await fetch(`${API_ROOT}/invite/${code}/accept`, {
         method: "POST",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          "Jurisimus-Version": API_VERSION,
           "Idempotency-Key": freshIdempotencyKey(),
           ...(csrf !== null ? { "X-CSRF-Token": csrf } : {}),
         },

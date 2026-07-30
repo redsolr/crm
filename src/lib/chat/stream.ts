@@ -1,5 +1,5 @@
 /**
- * Anthropic-style SSE streaming for `POST /v1/chats/{id}/responses`.
+ * Anthropic-style SSE streaming for `POST /api/chats/{id}/responses`.
  *
  * This module is the **entire** chat-stream state machine. It owns:
  *
@@ -21,8 +21,8 @@
  * `tool_results` set on the request. The new endpoint splits durable
  * appends from model invocation per
  * `docs/platform/chat-surface-design.md` § 2: we POST each tool
- * result to `/v1/chats/{id}/messages` (durable, no model call), then
- * POST `/v1/chats/{id}/responses` with no `input` to continue the
+ * result to `/api/chats/{id}/messages` (durable, no model call), then
+ * POST `/api/chats/{id}/responses` with no `input` to continue the
  * conversation against the now-extended history.
  */
 
@@ -43,7 +43,7 @@ import type {
 
 /**
  * Anthropic-style SSE event payload sent by the backend's
- * `POST /v1/chats/{id}/responses` endpoint. Only the fields actually
+ * `POST /api/chats/{id}/responses` endpoint. Only the fields actually
  * consumed by `dispatchStreamEvent` are typed — the backend may send
  * additional fields that are intentionally ignored.
  */
@@ -121,11 +121,11 @@ function isAbortError(err: unknown): boolean {
 }
 
 /**
- * Build the snake_case body for `POST /v1/chats/{id}/responses`.
+ * Build the snake_case body for `POST /api/chats/{id}/responses`.
  *
  * `input` is the new user content for first-turn calls; tool-result
  * continuation calls leave `input` unset (the durable tool_result
- * messages are pre-flighted via `POST /v1/chats/{id}/messages`
+ * messages are pre-flighted via `POST /api/chats/{id}/messages`
  * before this function runs).
  */
 function toResponsesRequest(
@@ -161,7 +161,7 @@ function toResponsesRequest(
 }
 
 /**
- * Pre-flight POST `/v1/chats/{id}/messages` for each tool result so the
+ * Pre-flight POST `/api/chats/{id}/messages` for each tool result so the
  * new turn's history is durably extended before we POST `/responses`.
  * Each tool_result is serialized as a JSON-array-of-blocks string —
  * matches how the backend persists tool_result content blocks today
@@ -206,7 +206,7 @@ async function appendToolResultMessages(
 }
 
 /**
- * Handles a non-2xx response from `POST /v1/chats/{id}/responses` by
+ * Handles a non-2xx response from `POST /api/chats/{id}/responses` by
  * invoking the appropriate callback (`onError` or
  * `onUsageLimitExceeded`) and returning. Centralises the 401 / 402 /
  * 429 / generic-error branches so the streaming function can stay
@@ -331,7 +331,7 @@ async function handleStreamErrorResponse(
     { status: response.status, body: body.slice(0, 500) },
   );
   console.error(
-    `[chatApi] POST /v1/chats/{id}/responses failed: HTTP ${response.status} ${response.statusText}`,
+    `[chatApi] POST /api/chats/{id}/responses failed: HTTP ${response.status} ${response.statusText}`,
     body,
   );
   options.onError(
@@ -492,12 +492,12 @@ function dispatchStreamEvent(
 // ============================================================================
 
 /**
- * Stream a chat response from `POST /v1/chats/{id}/responses` using
+ * Stream a chat response from `POST /api/chats/{id}/responses` using
  * Anthropic-style SSE events. The chat row must exist before this
- * call — callers create it via `POST /v1/chats` if needed.
+ * call — callers create it via `POST /api/chats` if needed.
  *
  * High-level flow:
- *   1. (Tool continuation only) Pre-flight `POST /v1/chats/{id}/messages`
+ *   1. (Tool continuation only) Pre-flight `POST /api/chats/{id}/messages`
  *      for each `tool_results` entry so the durable history is
  *      extended before model invocation.
  *   2. POST the snake_case responses body, honouring `signal` for
@@ -521,7 +521,7 @@ export async function startChatStream(
   const chatId = request.chat_id;
   if (!chatId) {
     onError(
-      "startChatStream: chat_id is required (callers must create the chat first via POST /v1/chats)",
+      "startChatStream: chat_id is required (callers must create the chat first via POST /api/chats)",
     );
     return;
   }
@@ -560,7 +560,7 @@ export async function startChatStream(
     headers: {
       "Content-Type": "application/json",
       ...(csrf !== null ? { "X-CSRF-Token": csrf } : {}),
-      // No `Idempotency-Key` — `POST /v1/chats/{id}/responses` runs the
+      // No `Idempotency-Key` — `POST /api/chats/{id}/responses` runs the
       // model and streams the result; replays would either re-stream
       // cached bytes (unsafe — the assistant turn may already be
       // partially persisted) or hit service-level idempotency dedupe

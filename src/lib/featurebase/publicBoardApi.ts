@@ -1,6 +1,6 @@
 /**
  * Public-board client — typed surface over the platform's anonymous
- * `/v1/public/{slug}/feature_requests` + `/v1/public/{slug}/changelog`
+ * `/api/public/{slug}/feature_requests` + `/api/public/{slug}/changelog`
  * routes.
  *
  * Singleton `featureRequestsApi` is configured with
@@ -8,7 +8,6 @@
  * platform's `AnonymousPrincipalMiddleware` round-trips correctly —
  * the cookie is the durable upvote identity for anonymous users.
  */
-import { API_VERSION } from "@/lib/api-base";
 import {
   Configuration,
   FeatureRequestsApi,
@@ -18,7 +17,6 @@ import {
 const apiConfig = new Configuration({
   basePath: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080",
   credentials: "include",
-  headers: { "Jurisimus-Version": API_VERSION },
 });
 
 export const featureRequestsApi = new FeatureRequestsApi(apiConfig);

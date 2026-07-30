@@ -1,7 +1,7 @@
 /**
  * Mock handlers for document analysis ("which CCC sections apply?"): the
- * `POST /v1/legal/matters/:id/analyze_document` result + the `POST
- * /v1/legal/findings` create the "Add to findings" button fires. Register
+ * `POST /api/legal/matters/:id/analyze_document` result + the `POST
+ * /api/legal/findings` create the "Add to findings" button fires. Register
  * alongside the lens + ingestion handlers.
  */
 
@@ -20,7 +20,7 @@ export async function setupAnalysisHandlers(
 
   await page.route(
     (url) =>
-      /^\/v1\/legal\/matters\/[^/]+\/analyze_document$/.test(url.pathname),
+      /^\/api\/legal\/matters\/[^/]+\/analyze_document$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -58,9 +58,9 @@ export async function setupAnalysisHandlers(
     },
   );
 
-  // "Add to findings" → POST /v1/legal/findings.
+  // "Add to findings" → POST /api/legal/findings.
   await page.route(
-    (url) => url.pathname === "/v1/legal/findings",
+    (url) => url.pathname === "/api/legal/findings",
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();

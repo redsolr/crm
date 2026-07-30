@@ -1,14 +1,14 @@
 /**
  * Route handler factories for usage validation endpoints.
  *
- * Wire contract: `POST /v1/organizations/:organizationId/usage/validate`
+ * Wire contract: `POST /api/organizations/:organizationId/usage/validate`
  * (per `chatApiClient.validateChatPermission` in `src/lib/chat/client.ts`).
  * Returns the `ChatPermission` shape (snake_case). The response body is
  * built by `createUsageValidationResponse` in `shared.ts`, which validates
  * against `ChatPermissionSchema`.
  *
  * History: an earlier version of this file routed against
- * `/v1/accounts/:accountId/usage/validate`. That path never existed on the
+ * `/api/accounts/:accountId/usage/validate`. That path never existed on the
  * platform — the multi-tenant rename moved the endpoint under
  * `organizations/*`. The mock silently never matched, so every chat spec
  * saw "Failed to validate usage permissions" instead of the configured
@@ -16,7 +16,7 @@
  */
 
 import { Page } from "@playwright/test";
-import { API_V1, TEST_USER, createUsageValidationResponse } from "./shared";
+import { API_ROOT, TEST_USER, createUsageValidationResponse } from "./shared";
 
 /**
  * Set up usage validation handler with configurable responses.
@@ -30,9 +30,9 @@ export async function setupUsageHandlers(
     warning_message?: string | undefined;
   },
 ) {
-  // POST /v1/organizations/:organizationId/usage/validate
+  // POST /api/organizations/:organizationId/usage/validate
   await page.route(
-    `${API_V1}/organizations/${TEST_USER.organization_id}/usage/validate`,
+    `${API_ROOT}/organizations/${TEST_USER.organization_id}/usage/validate`,
     async (route) => {
       await route.fulfill({
         status: 200,
@@ -48,7 +48,7 @@ export async function setupUsageHandlers(
  */
 export async function setupUsageLimitExceeded(page: Page) {
   await page.route(
-    `${API_V1}/organizations/${TEST_USER.organization_id}/usage/validate`,
+    `${API_ROOT}/organizations/${TEST_USER.organization_id}/usage/validate`,
     async (route) => {
       await route.fulfill({
         status: 200,

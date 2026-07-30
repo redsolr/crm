@@ -5,11 +5,11 @@
  * attribute definitions/values, comments and the workspace activity feed. This
  * mocks all of them so a Tier-1 (mocked) Playwright run exercises the lab
  * without a backend. Wire shapes mirror the platform DTOs (snake_case, under
- * `/v1/`); pair with `setupWorkspaceHandlers` for the workspace context.
+ * `/api/`); pair with `setupWorkspaceHandlers` for the workspace context.
  */
 
 import { Page } from "@playwright/test";
-import { API_V1, TEST_USER } from "./shared";
+import { API_ROOT, TEST_USER } from "./shared";
 
 const NOW = "2026-06-01T00:00:00.000Z";
 const MATTER_ID = "wi-matter-acme";
@@ -123,7 +123,7 @@ export async function setupMattersLabHandlers(page: Page) {
   // refetch — the list reflects what was moved, like the real backend.
   const stateOverride = new Map<string, string>();
   const titleOverride = new Map<string, string>();
-  // Matters + tasks CREATED during the run (POST /v1/work_items). Seeded matter
+  // Matters + tasks CREATED during the run (POST /api/work_items). Seeded matter
   // (`MATTER`) + tasks (`TASKS`) stay constant; these accumulate so a created
   // matter shows up in the tree and its lifecycle (work → finish) round-trips.
   const createdMatters: Record<string, unknown>[] = [];
@@ -159,10 +159,10 @@ export async function setupMattersLabHandlers(page: Page) {
     );
   };
 
-  // GET /v1/work_items?type_key=matter|task (list) — exact path, discriminate by query.
+  // GET /api/work_items?type_key=matter|task (list) — exact path, discriminate by query.
   await mockGet(
     page,
-    (url) => /^\/v1\/workspaces\/[^/]+\/work_item_types$/.test(url.pathname),
+    (url) => /^\/api\/workspaces\/[^/]+\/work_item_types$/.test(url.pathname),
     () => ({
       data: [
         {
@@ -193,7 +193,7 @@ export async function setupMattersLabHandlers(page: Page) {
 
   await mockGet(
     page,
-    (url) => /^\/v1\/workflows\/[^/]+\/states$/.test(url.pathname),
+    (url) => /^\/api\/workflows\/[^/]+\/states$/.test(url.pathname),
     () => ({
       data: Object.values(STATE_BY_KEY).map((state, index) => ({
         ...state,
@@ -206,7 +206,7 @@ export async function setupMattersLabHandlers(page: Page) {
   );
 
   await page.route(
-    (url) => url.pathname === "/v1/work_items",
+    (url) => url.pathname === "/api/work_items",
     async (route, request) => {
       // POST → create a matter or task; append to the in-memory store so it
       // shows up on the next list refetch (mirrors the real backend).
@@ -262,9 +262,9 @@ export async function setupMattersLabHandlers(page: Page) {
     },
   );
 
-  // PATCH /v1/work_items/:id — record a state_key move; echo the updated item.
+  // PATCH /api/work_items/:id — record a state_key move; echo the updated item.
   await page.route(
-    (url) => /^\/v1\/work_items\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/work_items\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "PATCH") {
         await route.fallback();
@@ -290,17 +290,17 @@ export async function setupMattersLabHandlers(page: Page) {
     },
   );
 
-  // GET /v1/work_items/:id/comments → empty
+  // GET /api/work_items/:id/comments → empty
   await mockGet(
     page,
-    (url) => /^\/v1\/work_items\/[^/]+\/comments$/.test(url.pathname),
+    (url) => /^\/api\/work_items\/[^/]+\/comments$/.test(url.pathname),
     () => ({ data: [] }),
   );
 
-  // GET /v1/work_items/:id/attribute_values → the matter's client/practice/type
+  // GET /api/work_items/:id/attribute_values → the matter's client/practice/type
   await mockGet(
     page,
-    (url) => /^\/v1\/work_items\/[^/]+\/attribute_values$/.test(url.pathname),
+    (url) => /^\/api\/work_items\/[^/]+\/attribute_values$/.test(url.pathname),
     () => ({
       data: [
         { id: "av-1", work_item_id: MATTER_ID, definition_id: "ad-type", value: { value: "litigation" }, created_at: NOW, updated_at: NOW },
@@ -309,12 +309,12 @@ export async function setupMattersLabHandlers(page: Page) {
     }),
   );
 
-  // PUT /v1/work_items/:id/attribute_values/:def → upsert (create-matter writes
+  // PUT /api/work_items/:id/attribute_values/:def → upsert (create-matter writes
   // matter_type + client here). Echo a value row so the best-effort write is a
   // clean 200 rather than an unhandled fall-through.
   await page.route(
     (url) =>
-      /^\/v1\/work_items\/[^/]+\/attribute_values\/[^/]+$/.test(url.pathname),
+      /^\/api\/work_items\/[^/]+\/attribute_values\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "PUT") {
         await route.fallback();
@@ -341,11 +341,11 @@ export async function setupMattersLabHandlers(page: Page) {
     },
   );
 
-  // GET /v1/work_item_types/:id/attribute_definitions → matter attribute defs
+  // GET /api/work_item_types/:id/attribute_definitions → matter attribute defs
   await mockGet(
     page,
     (url) =>
-      /^\/v1\/work_item_types\/[^/]+\/attribute_definitions$/.test(url.pathname),
+      /^\/api\/work_item_types\/[^/]+\/attribute_definitions$/.test(url.pathname),
     () => ({
       data: [
         { id: "ad-type", key: "matter_type", name: "Matter Type", data_type: "select", required: true, config: {}, position: 0 },
@@ -354,8 +354,8 @@ export async function setupMattersLabHandlers(page: Page) {
     }),
   );
 
-  // GET /v1/legal/findings → one finding under the matter
-  await mockGet(page, `${API_V1}/legal/findings*`, () => ({
+  // GET /api/legal/findings → one finding under the matter
+  await mockGet(page, `${API_ROOT}/legal/findings*`, () => ({
     findings: [
       {
         id: "lfn-1",
@@ -369,16 +369,16 @@ export async function setupMattersLabHandlers(page: Page) {
     ],
   }));
 
-  // GET /v1/matter_templates → empty (the explorer's create dialog reads it for
+  // GET /api/matter_templates → empty (the explorer's create dialog reads it for
   // custom templates; the lab spec doesn't exercise any, so keep it empty).
   await mockGet(
     page,
-    (url) => url.pathname === "/v1/matter_templates",
+    (url) => url.pathname === "/api/matter_templates",
     () => ({ matter_templates: [] }),
   );
 
-  // GET /v1/activities/workspace → empty feed
-  await mockGet(page, `${API_V1}/activities/workspace`, () => ({
+  // GET /api/activities/workspace → empty feed
+  await mockGet(page, `${API_ROOT}/activities/workspace`, () => ({
     activities: [],
   }));
 
@@ -389,7 +389,7 @@ export async function setupMattersLabHandlers(page: Page) {
   const matterNotes: Record<string, unknown>[] = [];
 
   await page.route(
-    (url) => url.pathname === "/v1/folders",
+    (url) => url.pathname === "/api/folders",
     async (route, request) => {
       const matterId = new URL(request.url()).searchParams.get("matter_id");
       if (request.method() === "GET") {
@@ -429,7 +429,7 @@ export async function setupMattersLabHandlers(page: Page) {
   );
 
   await page.route(
-    (url) => url.pathname === "/v1/pages",
+    (url) => url.pathname === "/api/pages",
     async (route, request) => {
       const matterId = new URL(request.url()).searchParams.get("matter_id");
       if (request.method() === "GET") {
@@ -470,10 +470,10 @@ export async function setupMattersLabHandlers(page: Page) {
     },
   );
 
-  // GET/PUT /v1/pages/:id — open + save a single note (the matter note editor).
+  // GET/PUT /api/pages/:id — open + save a single note (the matter note editor).
   // Content round-trips through the in-memory note so an edit survives a reopen.
   await page.route(
-    (url) => /^\/v1\/pages\/[^/]+$/.test(url.pathname),
+    (url) => /^\/api\/pages\/[^/]+$/.test(url.pathname),
     async (route, request) => {
       const id = new URL(request.url()).pathname.split("/").pop() ?? "";
       const note = matterNotes.find((n) => n.id === id);
@@ -523,12 +523,12 @@ export async function setupMattersLabHandlers(page: Page) {
   // dialog opens cleanly (no real grants needed for the open-flow test).
   await mockGet(
     page,
-    (url) => url.pathname.startsWith("/v1/sharing/resource/"),
+    (url) => url.pathname.startsWith("/api/sharing/resource/"),
     () => [],
   );
   await mockGet(
     page,
-    (url) => /^\/v1\/organizations\/[^/]+\/members$/.test(url.pathname),
+    (url) => /^\/api\/organizations\/[^/]+\/members$/.test(url.pathname),
     () => [],
   );
 

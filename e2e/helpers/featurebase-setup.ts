@@ -95,7 +95,7 @@ export async function setupPublicProject(
   // post workspace-rename arc). Org create auto-provisions it with the
   // starter template, so downstream work-item operations have the
   // default `task` type + workflow registered.
-  const wsRes = await authedFetch("/v1/workspaces", accessToken);
+  const wsRes = await authedFetch("/api/workspaces", accessToken);
   if (!wsRes.ok) {
     throw new Error(`list workspaces failed: ${wsRes.status}`);
   }
@@ -109,11 +109,11 @@ export async function setupPublicProject(
 
   // Public surfaces are backed by `control.sites` (sites are a separate
   // primitive, bound to a workspace). Create a site bound to the
-  // bootstrap workspace; the slug is what `/v1/public/{slug}/...`
+  // bootstrap workspace; the slug is what `/api/public/{slug}/...`
   // controllers resolve against.
   const publicSlug = `fb-e2e-${workerSuffix}-${stamp}`;
   const siteRes = await authedFetch(
-    `/v1/organizations/${organizationId}/sites`,
+    `/api/organizations/${organizationId}/sites`,
     accessToken,
     {
       method: "POST",
@@ -132,12 +132,12 @@ export async function setupPublicProject(
   const siteId = ((await siteRes.json()) as { site: { id: string } }).site.id;
 
   // Attach a feature-request board config to the site so the
-  // `/v1/public/{slug}/feature_requests` surface resolves. Without
+  // `/api/public/{slug}/feature_requests` surface resolves. Without
   // this row the platform 404s with "Site has no
   // feature_request_board attached" (see
   // `FeatureRequestBoardsService.resolvePublicSurfaceOrThrow`).
   const frbcRes = await authedFetch(
-    `/v1/sites/${siteId}/feature_request_board`,
+    `/api/sites/${siteId}/feature_request_board`,
     accessToken,
     {
       method: "PUT",
@@ -158,7 +158,7 @@ export async function setupPublicProject(
   // Seed an FR via the anonymous public surface so it carries the
   // production code path's `metadata.source='public_surface'` stamp.
   const frRes = await fetch(
-    `${API_BASE}/v1/public/${publicSlug}/feature_requests`,
+    `${API_BASE}/api/public/${publicSlug}/feature_requests`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -194,7 +194,7 @@ export async function teardownPublicProject(
   fixture: PublicProjectFixture,
 ): Promise<void> {
   await authedFetch(
-    `/v1/organizations/${fixture.organizationId}`,
+    `/api/organizations/${fixture.organizationId}`,
     fixture.accessToken,
     { method: "DELETE" },
   );

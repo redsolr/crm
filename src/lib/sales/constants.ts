@@ -9,7 +9,7 @@
 /** Value of `control.projects.metadata.template_key` for the Sales
  *  Pipeline project — records what bundle seeded the container.
  *  Used by `useProvisionSalesProject` when minting a new container
- *  via `POST /v1/projects { template_key }`. NOT the resolution
+ *  via `POST /api/projects { template_key }`. NOT the resolution
  *  key — that's `SALES_MODULE_KEY` (more stable across template
  *  renames). */
 export const SALES_TEMPLATE_KEY = "sales-pipeline";

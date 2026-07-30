@@ -1,8 +1,8 @@
 /**
  * Attributes API Client.
  *
- * Hits `/v1/work_item_types/:wit/attribute_definitions` for the
- * type-level custom-field declarations, and `/v1/work_items/:wi/
+ * Hits `/api/work_item_types/:wit/attribute_definitions` for the
+ * type-level custom-field declarations, and `/api/work_items/:wi/
  * attribute_values` for the per-row values. Per-row mutations go
  * through `PUT /work_items/:wi/attribute_values/:def` (upsert) and
  * `DELETE` (unset).

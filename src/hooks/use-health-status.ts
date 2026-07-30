@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { API_BASE, API_VERSION } from "@/lib/api-base";
+import { API_BASE } from "@/lib/api-base";
 
 type ServiceStatus = "operational" | "degraded" | "down" | "not_configured";
 type OverallStatus = "operational" | "degraded" | "outage";
@@ -48,14 +48,13 @@ export function useHealthStatus() {
         return;
       }
       try {
-        // `/health/*` is mounted OUTSIDE the platform's `/v1/` prefix
+        // `/health/*` is mounted OUTSIDE the platform's `/api/` prefix
         // (per platform `setGlobalPrefix` exclude list — same shape as
         // `/auth/*`). The route serves the LB health check and is
         // intentionally version-free; consumer-app online/offline
         // detection rides the same surface.
         const res = await fetch(`${API_BASE}/health/status`, {
           cache: "no-store",
-          headers: { "Jurisimus-Version": API_VERSION },
         });
         if (res.ok) {
           setHealth(await res.json());

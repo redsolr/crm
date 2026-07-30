@@ -56,7 +56,7 @@ test.describe("Auth Cookie + CSRF (Real Backend)", () => {
     expect(csrf?.httpOnly, "jurisimus_csrf must NOT be HttpOnly").toBe(false);
   });
 
-  test("a /v1/* request from page-context succeeds with no Authorization header", async ({
+  test("a /api/* request from page-context succeeds with no Authorization header", async ({
     integrationPage,
   }) => {
     await integrationPage.goto("/");
@@ -108,7 +108,7 @@ test.describe("Auth Cookie + CSRF (Real Backend)", () => {
     await integrationPage.goto("/");
 
     // Trigger a real cookie-auth mutation from page context. We hit
-    // PUT /v1/organizations/:id with the org id resolved from
+    // PUT /api/organizations/:id with the org id resolved from
     // /auth/me — proves the full transport (cookie + CSRF +
     // mutation) works end-to-end through a real Set-Cookie /
     // document.cookie / X-CSRF-Token round-trip.
@@ -122,7 +122,7 @@ test.describe("Auth Cookie + CSRF (Real Backend)", () => {
         .find((c) => c.startsWith("jurisimus_csrf="))
         ?.substring("jurisimus_csrf=".length);
 
-      const res = await fetch(`${apiBase}/v1/organizations/${me.organization_id}`, {
+      const res = await fetch(`${apiBase}/api/organizations/${me.organization_id}`, {
         method: "PUT",
         credentials: "include",
         headers: {
@@ -154,7 +154,7 @@ test.describe("Auth Cookie + CSRF (Real Backend)", () => {
         credentials: "include",
       }).then((r) => r.json());
 
-      const res = await fetch(`${apiBase}/v1/organizations/${me.organization_id}`, {
+      const res = await fetch(`${apiBase}/api/organizations/${me.organization_id}`, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

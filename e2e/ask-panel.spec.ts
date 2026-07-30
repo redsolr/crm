@@ -18,7 +18,7 @@
  *
  * Mock layer: `setupSalesHandlers` mounts the sales workspace bundle so
  * the shell renders; `setupAskHandlers` mounts the two chat endpoints the
- * surface touches (POST /v1/chats + POST /v1/chats/:id/responses SSE)
+ * surface touches (POST /api/chats + POST /api/chats/:id/responses SSE)
  * and captures every stream request's `input` for wire assertions.
  */
 
@@ -218,7 +218,7 @@ test.describe("Ask surface", () => {
     // already happened).
     const pipelineRefetch = authedPage.waitForRequest(
       (req) =>
-        req.method() === "GET" && req.url().includes("/v1/work_items"),
+        req.method() === "GET" && req.url().includes("/api/work_items"),
       { timeout: 15_000 },
     );
 

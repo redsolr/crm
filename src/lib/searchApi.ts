@@ -3,7 +3,7 @@ import { BaseApiClient } from "./api-client";
 /**
  * Global-search client — keyword (FTS-only) lane.
  *
- * Wire contract: `GET /v1/search?q=...` returning the platform's
+ * Wire contract: `GET /api/search?q=...` returning the platform's
  * `HybridSearchResponseDto` (snake_case per platform convention — see
  * `platform/src/modules/search/search.response.dto.ts`, the single
  * source of truth for these shapes).

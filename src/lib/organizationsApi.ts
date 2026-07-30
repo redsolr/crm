@@ -1,7 +1,7 @@
 /**
  * Organizations API Client
  *
- * Hits `/v1/organizations` — the primary tenant / RLS boundary.
+ * Hits `/api/organizations` — the primary tenant / RLS boundary.
  */
 
 import { BaseApiClient } from "./api-client";
@@ -26,7 +26,7 @@ export interface Organization {
   updated_at: string;
 }
 
-// Organization responses — bare array; `/v1/organizations` returns
+// Organization responses — bare array; `/api/organizations` returns
 // `OrganizationList` (a JSON array), not a `{data, meta}` wrapper.
 export type OrganizationsListResponse = Organization[];
 

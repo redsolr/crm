@@ -1,21 +1,21 @@
 ﻿/**
  * Route handler factories for workspace endpoints (settings, account, plan, folders, pages).
  *
- * Wire contract: all endpoints live under `/v1/` (Stripe v2 discipline) with
+ * Wire contract: all endpoints live under `/api/` (Stripe v2 discipline) with
  * snake_case URL paths and snake_case field names. List envelopes use the
  * cursor shape `{ data, has_more, next_page_url, previous_page_url? }`.
  *
  * Workspace rename arc (2026-05-27): the `project` primitive was retired —
- * the sole grouping is `workspace` (`/v1/workspaces`, see below). No
- * `/v1/projects*` mocks live here.
+ * the sole grouping is `workspace` (`/api/workspaces`, see below). No
+ * `/api/projects*` mocks live here.
  */
 
 import { Page } from "@playwright/test";
-import { API_V1, TEST_USER } from "./shared";
+import { API_ROOT, TEST_USER } from "./shared";
 
 export async function setupWorkspaceHandlers(page: Page) {
-  // GET /v1/accounts/:id/settings
-  await page.route(`${API_V1}/accounts/*/settings`, async (route) => {
+  // GET /api/accounts/:id/settings
+  await page.route(`${API_ROOT}/accounts/*/settings`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -33,11 +33,11 @@ export async function setupWorkspaceHandlers(page: Page) {
     });
   });
 
-  // GET /v1/subscriptions/current — `{ subscription, organization }`
+  // GET /api/subscriptions/current — `{ subscription, organization }`
   // envelope, seat-based SubscriptionResponseDto shape (no `source`,
   // no `scheduled_plan_type`; `seat_count` is the billed quantity).
   // THB-first pricing: subscriptions bill in baht (satang on the wire).
-  await page.route(`${API_V1}/subscriptions/current`, async (route) => {
+  await page.route(`${API_ROOT}/subscriptions/current`, async (route) => {
     const now = new Date().toISOString();
     await route.fulfill({
       status: 200,
@@ -68,13 +68,13 @@ export async function setupWorkspaceHandlers(page: Page) {
   });
 
 
-  // GET /v1/subscriptions/plans — seat-based catalog (free + team),
+  // GET /api/subscriptions/plans — seat-based catalog (free + team),
   // mirroring docs/platform/seat-based-pricing-2026-07-06.md +
   // scripts/seed-subscription-plans.ts. THB-first: `currency: 'THB'`,
   // seat prices in satang (฿890/mo, ฿8,900/yr); the LLM allowance stays
   // USD cents (metering currency). Wire shape carries no Stripe price
   // ids (server-side concern only).
-  await page.route(`${API_V1}/subscriptions/plans`, async (route) => {
+  await page.route(`${API_ROOT}/subscriptions/plans`, async (route) => {
     const now = new Date().toISOString();
     await route.fulfill({
       status: 200,
@@ -117,8 +117,8 @@ export async function setupWorkspaceHandlers(page: Page) {
     });
   });
 
-  // GET /v1/usage/:accountId/summary
-  await page.route(`${API_V1}/usage/*/summary*`, async (route) => {
+  // GET /api/usage/:accountId/summary
+  await page.route(`${API_ROOT}/usage/*/summary*`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -131,8 +131,8 @@ export async function setupWorkspaceHandlers(page: Page) {
     });
   });
 
-  // GET /v1/token_packages/balance
-  await page.route(`${API_V1}/token_packages/balance`, async (route) => {
+  // GET /api/token_packages/balance
+  await page.route(`${API_ROOT}/token_packages/balance`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -140,11 +140,11 @@ export async function setupWorkspaceHandlers(page: Page) {
     });
   });
 
-  // GET /v1/workspaces — workspace rename arc (2026-05-27): listed
+  // GET /api/workspaces — workspace rename arc (2026-05-27): listed
   // per organization, returned from the JWT-bound org. Envelope shape
   // is `{ workspaces: [...] }` (NOT `{ data: [...] }`) per platform
   // openapi.yaml WorkspaceListResponse.
-  await page.route(`${API_V1}/workspaces`, async (route, request) => {
+  await page.route(`${API_ROOT}/workspaces`, async (route, request) => {
     if (request.method() === "GET") {
       await route.fulfill({
         status: 200,
@@ -173,7 +173,7 @@ export async function setupWorkspaceHandlers(page: Page) {
     }
   });
 
-  // GET /v1/workspaces/:id/workflows + /v1/workspaces/:id/work_item_types
+  // GET /api/workspaces/:id/workflows + /api/workspaces/:id/work_item_types
   // — empty by default. The board/backlog views read workflow states via
   // `useWorkflowStatuses`, which falls back to DEFAULT_WORKFLOW_STATUSES
   // (Backlog/Todo/In Progress/In Review/Done/Cancelled) when no custom
@@ -182,7 +182,7 @@ export async function setupWorkspaceHandlers(page: Page) {
   // Suites needing custom statuses (e.g. sales) register their own
   // workspace-scoped mocks, which win via Playwright's LIFO ordering.
   await page.route(
-    (url) => /^\/v1\/workspaces\/[^/]+\/workflows$/.test(url.pathname),
+    (url) => /^\/api\/workspaces\/[^/]+\/workflows$/.test(url.pathname),
     async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
@@ -196,7 +196,7 @@ export async function setupWorkspaceHandlers(page: Page) {
     },
   );
   await page.route(
-    (url) => /^\/v1\/workspaces\/[^/]+\/work_item_types$/.test(url.pathname),
+    (url) => /^\/api\/workspaces\/[^/]+\/work_item_types$/.test(url.pathname),
     async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
@@ -210,11 +210,11 @@ export async function setupWorkspaceHandlers(page: Page) {
     },
   );
 
-  // GET /v1/file_system/nodes — MUST return the `{ data, meta }` envelope
+  // GET /api/file_system/nodes — MUST return the `{ data, meta }` envelope
   // (useFoldersQuery does `response.data.filter(...)`). A bare `[]` makes
   // `response.data` undefined → the query throws "data cannot be undefined",
   // which surfaces as a console error + an occasional first-render flake.
-  await page.route(`${API_V1}/file_system/nodes*`, async (route) => {
+  await page.route(`${API_ROOT}/file_system/nodes*`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -222,8 +222,8 @@ export async function setupWorkspaceHandlers(page: Page) {
     });
   });
 
-  // GET /v1/file_system
-  await page.route(`${API_V1}/file_system*`, async (route) => {
+  // GET /api/file_system
+  await page.route(`${API_ROOT}/file_system*`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -231,8 +231,8 @@ export async function setupWorkspaceHandlers(page: Page) {
     });
   });
 
-  // GET /v1/fs/tree
-  await page.route(`${API_V1}/fs/tree*`, async (route) => {
+  // GET /api/fs/tree
+  await page.route(`${API_ROOT}/fs/tree*`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -240,8 +240,8 @@ export async function setupWorkspaceHandlers(page: Page) {
     });
   });
 
-  // GET /v1/tasks
-  await page.route(`${API_V1}/tasks*`, async (route) => {
+  // GET /api/tasks
+  await page.route(`${API_ROOT}/tasks*`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -252,11 +252,11 @@ export async function setupWorkspaceHandlers(page: Page) {
   // Mutable sprint state — single handler discriminates by URL + method
   let activeSprint: Record<string, unknown> | null = null;
 
-  await page.route(`${API_V1}/sprints**`, async (route, request) => {
+  await page.route(`${API_ROOT}/sprints**`, async (route, request) => {
     const method = request.method();
     const url = request.url();
 
-    // GET /v1/sprints/project/*/active
+    // GET /api/sprints/project/*/active
     if (method === "GET" && url.includes("/active")) {
       if (activeSprint) {
         await route.fulfill({
@@ -274,7 +274,7 @@ export async function setupWorkspaceHandlers(page: Page) {
       return;
     }
 
-    // GET /v1/sprints/*/tasks
+    // GET /api/sprints/*/tasks
     if (method === "GET" && url.includes("/tasks")) {
       await route.fulfill({
         status: 200,
@@ -284,7 +284,7 @@ export async function setupWorkspaceHandlers(page: Page) {
       return;
     }
 
-    // GET /v1/sprints/*/metrics
+    // GET /api/sprints/*/metrics
     if (method === "GET" && url.includes("/metrics")) {
       await route.fulfill({
         status: 200,
@@ -294,7 +294,7 @@ export async function setupWorkspaceHandlers(page: Page) {
       return;
     }
 
-    // POST /v1/sprints — create sprint
+    // POST /api/sprints — create sprint
     if (method === "POST" && !url.includes("/start") && !url.includes("/complete")) {
       const body = request.postDataJSON() as Record<string, unknown>;
       const newSprint = {
@@ -316,7 +316,7 @@ export async function setupWorkspaceHandlers(page: Page) {
       return;
     }
 
-    // POST /v1/sprints/*/start
+    // POST /api/sprints/*/start
     if ((method === "POST" || method === "PUT") && url.includes("/start")) {
       const sprintId = url.split("/sprints/")[1]?.split("/start")[0] ?? "";
       activeSprint = {
@@ -352,8 +352,8 @@ export async function setupWorkspaceHandlers(page: Page) {
     });
   });
 
-  // GET /v1/user_preferences/me
-  await page.route(`${API_V1}/user_preferences/me`, async (route) => {
+  // GET /api/user_preferences/me
+  await page.route(`${API_ROOT}/user_preferences/me`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -369,10 +369,10 @@ export async function setupWorkspaceHandlers(page: Page) {
   });
 
   // Presence heartbeat
-  await page.route(`${API_V1}/api/presence/heartbeat`, async (route) => {
+  await page.route(`${API_ROOT}/api/presence/heartbeat`, async (route) => {
     await route.fulfill({ status: 204 });
   });
-  await page.route(`${API_V1}/presence/heartbeat`, async (route) => {
+  await page.route(`${API_ROOT}/presence/heartbeat`, async (route) => {
     await route.fulfill({ status: 204 });
   });
 }

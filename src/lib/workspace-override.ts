@@ -5,7 +5,7 @@
  * workspace is reached by stamping `Jurisimus-Workspace-Id` on the
  * request (api-discipline.md § Workspace switcher). The CRM's sidebar
  * switcher selects among per-product workspaces (ADR-001), so the
- * BaseApiClient stamps this on every `/v1/*` call.
+ * BaseApiClient stamps this on every `/api/*` call.
  *
  * A mutable module (not the Zustand store) so `api-client.ts` can read
  * it without importing the app-context store — the store's type

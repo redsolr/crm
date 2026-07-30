@@ -9,7 +9,7 @@ import type { WorkItem } from "@/lib/generated/api/models";
  * workItems family over the CRM's own Postgres (backend-swap step 2).
  *
  * Serves the exact wire shape the untouched frontend consumes from the
- * platform's `/v1/work_items` — snake_case fields, inline `state` /
+ * platform's `/api/work_items` — snake_case fields, inline `state` /
  * `type` payloads, Stripe-v2 cursor envelope, `If-Match` optimistic
  * concurrency. Single-tenant: `workspace_id` filters are ignored (the
  * stub workspace is the only universe) and iterations / folders /

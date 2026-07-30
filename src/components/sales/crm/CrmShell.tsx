@@ -4,7 +4,7 @@
  * CRM shell — the Sales face's own app chrome.
  *
  * crm-web is the company's internal CRM (ADR-001) — its own product on
- * the same `/v1/*` platform primitives: dedicated sidebar (see
+ * the same `/api/*` platform primitives: dedicated sidebar (see
  * `CrmSidebar`), global topbar (see `CrmTopbar`), dark-dense token
  * scope (`.crm-app` in globals.css), zero customer-app chrome. This
  * file owns ONLY the module gate, the workspace re-point, the layout

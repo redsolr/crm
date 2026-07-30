@@ -2,8 +2,8 @@
  * File System API Client
  *
  * Unified access to folders and pages in the sidebar / file explorer.
- * Wraps the platform `/v1/file_system/*` endpoints plus the underlying
- * `/v1/folders` and `/v1/pages` CRUD.
+ * Wraps the platform `/api/file_system/*` endpoints plus the underlying
+ * `/api/folders` and `/api/pages` CRUD.
  *
  * Wire shapes (`Folder`, `Page`) are imported from the generated OpenAPI
  * types — snake_case end-to-end per `docs/platform/api-discipline.md`.
@@ -325,7 +325,7 @@ class FileSystemApiClient extends BaseApiClient {
   // Matter subtree — folders + notes that live inside a matter (work_item).
   // ============================================================================
 
-  /** Folders owned by a matter (`GET /v1/folders?matter_id=`). */
+  /** Folders owned by a matter (`GET /api/folders?matter_id=`). */
   async listFoldersByMatter(matterId: string): Promise<FileNode[]> {
     const res = await this.request<{ data: Folder[] }>(
       `/folders?matter_id=${matterId}`,
@@ -333,7 +333,7 @@ class FileSystemApiClient extends BaseApiClient {
     return res.data.map((f) => this.mapFolderToNode(f));
   }
 
-  /** Notes owned directly by a matter (`GET /v1/pages?matter_id=`). */
+  /** Notes owned directly by a matter (`GET /api/pages?matter_id=`). */
   async listPagesByMatter(matterId: string): Promise<FileNode[]> {
     const res = await this.request<{ data: Page[] }>(
       `/pages?matter_id=${matterId}`,

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * `lensApi` — the PLATFORM Lens surface (`/v1/lens`), the matter-scoped tabular
+ * `lensApi` — the PLATFORM Lens surface (`/api/lens`), the matter-scoped tabular
  * document review (Legora "Tabular Review" / Harvey "Review Tables"). Rows are
  * documents, columns are extraction prompts, cells are the extracted value
  * (+ optional `source_excerpt`). Authenticated via `BaseApiClient`; workspace

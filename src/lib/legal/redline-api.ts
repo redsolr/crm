@@ -2,7 +2,7 @@
 
 /**
  * `legalRedlineApi` — propose a GROUNDED revision of one clause from a matter
- * document (`POST /v1/legal/matters/:id/suggest_revision`). The "edit docs"
+ * document (`POST /api/legal/matters/:id/suggest_revision`). The "edit docs"
  * pillar, completing cite-check: cite-check flags a clause; this proposes the
  * rewrite, grounded in a real CCC section or abstaining. Suggestion only — the
  * document is never modified. Workspace context as `Jurisimus-Workspace-Id`.

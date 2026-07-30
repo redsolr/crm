@@ -7,9 +7,9 @@ import { queryKeys } from "../query-keys";
 
 /**
  * Invite links live on the organization
- * (`/v1/organizations/:id/invite_links`) — the production-true invite
+ * (`/api/organizations/:id/invite_links`) — the production-true invite
  * mechanism. There is no email-based invite endpoint; joining is
- * link-accept (`POST /v1/invite/:code/accept`).
+ * link-accept (`POST /api/invite/:code/accept`).
  */
 
 export function useInviteLinksQuery() {

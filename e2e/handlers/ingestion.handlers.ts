@@ -1,9 +1,9 @@
 /**
  * Mock handlers for document ingestion: the presign → S3 PUT → ingest flow used
  * by Lens "Upload PDF / Word…". Mirrors the platform contract:
- *  - `POST /v1/uploads/presign` → `{ upload_url, file_url, key }`
+ *  - `POST /api/uploads/presign` → `{ upload_url, file_url, key }`
  *  - a direct PUT to the (mock) S3 `upload_url`
- *  - `POST /v1/legal/matters/:id/ingest_document` → `{ page, source }`
+ *  - `POST /api/legal/matters/:id/ingest_document` → `{ page, source }`
  *
  * The ingested page id is fed back so `useLens` adds a Lens row linked to it
  * (the existing lens handler creates the row). Register alongside the lens +
@@ -18,7 +18,7 @@ const INGESTED_PAGE_ID = "pg-ingested-1";
 export async function setupIngestionHandlers(page: Page) {
   // 1. Presign — hand back a mock S3 PUT URL + a key.
   await page.route(
-    (url) => url.pathname === "/v1/uploads/presign",
+    (url) => url.pathname === "/api/uploads/presign",
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
@@ -49,7 +49,7 @@ export async function setupIngestionHandlers(page: Page) {
 
   // 3. Ingest — return the created matter page + provenance source block.
   await page.route(
-    (url) => /^\/v1\/legal\/matters\/[^/]+\/ingest_document$/.test(url.pathname),
+    (url) => /^\/api\/legal\/matters\/[^/]+\/ingest_document$/.test(url.pathname),
     async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();

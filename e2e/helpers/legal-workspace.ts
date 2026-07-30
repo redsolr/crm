@@ -2,7 +2,7 @@
  * Shared integration-tier setup for the legal Matters Lab journeys.
  *
  * A fresh workspace has no `matter` work_item_type — the supported way to add
- * it over the wire is `POST /v1/workspaces/:id/apply_template { legal-matter }`.
+ * it over the wire is `POST /api/workspaces/:id/apply_template { legal-matter }`.
  * Both real-backend specs (the full lawyer journey + the grounded-research spec)
  * provision the same way, so the GET-default-workspace + apply-template dance
  * lives here once. See `docs/handoff/2026-06-10-legal-workbench.md`.
@@ -27,7 +27,7 @@ export async function provisionLegalWorkspace(
   request: APIRequestContext,
   authHeaders: Record<string, string>,
 ): Promise<WorkspaceRow> {
-  const wsRes = await request.get(`${API_BASE}/v1/workspaces`, {
+  const wsRes = await request.get(`${API_BASE}/api/workspaces`, {
     headers: authHeaders,
   });
   expect(wsRes.ok()).toBeTruthy();
@@ -36,7 +36,7 @@ export async function provisionLegalWorkspace(
   expect(workspace).toBeTruthy();
 
   const applyRes = await request.post(
-    `${API_BASE}/v1/workspaces/${workspace.id}/apply_template`,
+    `${API_BASE}/api/workspaces/${workspace.id}/apply_template`,
     { headers: authHeaders, data: { template_key: "legal-matter" } },
   );
   expect(

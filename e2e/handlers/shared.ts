@@ -132,22 +132,24 @@ export const TEST_TOKEN = "e2e-test-jwt-token-for-playwright";
 
 /**
  * Backend host — matches `src/lib/api-base.ts` `API_BASE`. Use this
- * directly for routes the platform excludes from the `/v1/` prefix
+ * directly for routes the platform excludes from the `/api/` prefix
  * (per `platform/src/main.ts`: `/auth/*`, `/oauth/*`, `/.well-known/*`,
  * `/mcp/*`, `/payments/webhooks/*`, `/subscriptions/webhook/*`,
  * `/collaboration`, `/health`, `/health/*`). Every other endpoint
- * lives under `/v1/` — use `API_V1` for those.
+ * lives under `/api/` — use `API_ROOT` for those.
  */
-export const API_BASE = "http://localhost:8080";
+// Must mirror src/lib/api-base.ts's fallback — the app serves its own
+// backend, so the mocked tier intercepts on the app's own origin.
+export const API_BASE = "http://localhost:3100";
 
 /**
- * Versioned API root. Mirrors `src/lib/api-base.ts` `API_V1`. Every
+ * Versioned API root. Mirrors `src/lib/api-base.ts` `API_ROOT`. Every
  * mock that intercepts a platform API call MUST use this (or include
- * `/v1/` in the literal path); the FE's `BaseApiClient.baseUrl` is
- * `${API_BASE}/v1` and Playwright's `page.route` is glob-matched, so
- * a pattern missing the `/v1` segment silently never intercepts.
+ * `/api/` in the literal path); the FE's `BaseApiClient.baseUrl` is
+ * `${API_BASE}/api` and Playwright's `page.route` is glob-matched, so
+ * a pattern missing the `/api` segment silently never intercepts.
  */
-export const API_V1 = `${API_BASE}/v1`;
+export const API_ROOT = `${API_BASE}/api`;
 
 // ============================================================================
 // Schema-validated factory functions

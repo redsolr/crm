@@ -57,7 +57,7 @@ export interface ChatMessage {
 
 /**
  * One completed server-side tool execution, surfaced live to the chat UI
- * via the `tool_step` SSE event from `POST /v1/chats/{id}/responses` when
+ * via the `tool_step` SSE event from `POST /api/chats/{id}/responses` when
  * the chat is matter-scoped (the agentic loop ran a matter tool).
  */
 export interface ChatToolStep {

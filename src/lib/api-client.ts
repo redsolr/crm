@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { authService } from "./authTokenManager";
-import { API_BASE, API_V1, API_VERSION } from "@/lib/api-base";
+import { API_BASE, API_ROOT } from "@/lib/api-base";
 import { getWorkspaceOverride } from "./workspace-override";
 
 const NON_MUTATING_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -124,19 +124,13 @@ export async function buildApiError(response: Response): Promise<ApiError> {
  * 204 No Content, and standard error responses.
  *
  * All domain API clients should extend this class. The `baseUrl` is
- * pinned to `${API_BASE}/v1` per the platform's `/v1/` URL discipline
- * (`docs/platform/api-discipline.md` § B2); subclasses pass paths like
- * `/work_items` and the prefix is applied transparently. Endpoints
- * explicitly excluded from `/v1/` (auth, oauth, webhooks, health, ...)
- * must use `API_BASE` directly — see the `auth/refresh` call below for
- * the canonical pattern.
- *
- * Every request also carries `Jurisimus-Version: ${API_VERSION}` so the
- * platform's date-stamped minor version is pinned explicitly rather than
- * floating on the platform default.
+ * `${API_BASE}/api` — the CRM's own route handlers; subclasses pass
+ * paths like `/work_items` and the prefix is applied transparently.
+ * Endpoints outside the prefix (auth) use `API_BASE` directly — see
+ * the `auth/refresh` call below for the canonical pattern.
  */
 export class BaseApiClient {
-  protected baseUrl = API_V1;
+  protected baseUrl = API_ROOT;
 
   private static refreshPromise: Promise<"ok" | "dead" | "transient"> | null =
     null;
@@ -159,7 +153,7 @@ export class BaseApiClient {
 
     BaseApiClient.refreshPromise = (async () => {
       try {
-        // `/auth/*` is excluded from the `/v1/` prefix on the backend
+        // `/auth/*` is excluded from the `/api/` prefix on the backend
         // (see platform/src/main.ts setGlobalPrefix exclude list), so
         // hit `API_BASE` directly here, not `this.baseUrl`.
         //
@@ -214,12 +208,12 @@ export class BaseApiClient {
 
   /**
    * Variant of `request()` for endpoints intentionally mounted OUTSIDE
-   * the `/v1/` prefix (currently `/auth/*`, `/oauth/*`, `/webhooks/*`,
+   * the `/api/` prefix (currently `/auth/*`, `/oauth/*`, `/webhooks/*`,
    * `/health` per the platform's `setGlobalPrefix` exclude list).
    *
    * Same retry / refresh / error-envelope logic as `request()` — the
    * only difference is `${API_BASE}${endpoint}` instead of
-   * `${API_BASE}/v1${endpoint}`. Inline `fetch` calls to these routes
+   * `${API_BASE}/api${endpoint}`. Inline `fetch` calls to these routes
    * lose 429/503 backoff and the 401-refresh-then-retry behavior.
    */
   protected async requestUnprefixed<T>(
@@ -248,14 +242,13 @@ export class BaseApiClient {
   ): Promise<T> {
     // The JWT binds a default workspace at login; the CRM's sidebar
     // switcher selects among per-product workspaces (ADR-001), so
-    // every `/v1/*` call carries the selected workspace via
+    // every `/api/*` call carries the selected workspace via
     // `Jurisimus-Workspace-Id` (api-discipline § Workspace switcher —
     // honored on JWT/PAT requests). Without it, RLS keeps serving the
     // JWT-bound workspace no matter which workspace_id the path/query
     // names. Explicit per-call headers still win (Object.assign last).
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "Jurisimus-Version": API_VERSION,
       ...buildCsrfHeader(options.method),
     };
     const workspaceOverride = getWorkspaceOverride();
@@ -311,7 +304,6 @@ export class BaseApiClient {
           // differs from the prior).
           const retryHeaders: HeadersInit = {
             "Content-Type": "application/json",
-            "Jurisimus-Version": API_VERSION,
             ...buildCsrfHeader(options.method),
             ...options.headers,
           };

@@ -8,7 +8,7 @@
  *   - `applyTableFilters` — select columns match exactly, text columns
  *     match case-insensitive contains.
  *   - `applyTableSort` — string/number compare, nulls always last.
- *   - `buildViewQuery` / `parseViewQuery` — the saved-view (`/v1/views`)
+ *   - `buildViewQuery` / `parseViewQuery` — the saved-view (`/api/views`)
  *     opaque `query` blob. The platform only accepts `kind:
  *     'work_items'`, so the CRM surface discriminator lives INSIDE the
  *     blob (`surface: 'crm_companies' | 'crm_pipeline'`).
@@ -130,7 +130,7 @@ export function applyTableSort<Row>(
 
 export const CRM_TABLE_VIEW_VERSION = 1;
 
-/** Which CRM table a saved view belongs to. The platform's `/v1/views`
+/** Which CRM table a saved view belongs to. The platform's `/api/views`
  *  `kind` enum only has `work_items`, so this discriminator rides
  *  inside the opaque `query` payload. */
 export type CrmTableSurface = "crm_companies" | "crm_pipeline";

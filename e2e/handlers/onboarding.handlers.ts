@@ -1,16 +1,16 @@
 /**
  * Route handler factories for onboarding endpoints.
  *
- * Wire contract: all endpoints live under `/v1/` (snake_case paths +
+ * Wire contract: all endpoints live under `/api/` (snake_case paths +
  * snake_case field names per Stripe v2 discipline).
  */
 
 import { Page } from "@playwright/test";
-import { API_V1, TEST_USER } from "./shared";
+import { API_ROOT, TEST_USER } from "./shared";
 
 export async function setupOnboardingHandlers(page: Page) {
-  // POST /v1/organizations — create org
-  await page.route(`${API_V1}/organizations`, async (route, request) => {
+  // POST /api/organizations — create org
+  await page.route(`${API_ROOT}/organizations`, async (route, request) => {
     if (request.method() === "POST") {
       const body = JSON.parse((await request.postData()) || "{}");
       await route.fulfill({
@@ -33,8 +33,8 @@ export async function setupOnboardingHandlers(page: Page) {
     }
   });
 
-  // PUT /v1/accounts/{id} — save display name (profile step)
-  await page.route(`${API_V1}/accounts/*`, async (route, request) => {
+  // PUT /api/accounts/{id} — save display name (profile step)
+  await page.route(`${API_ROOT}/accounts/*`, async (route, request) => {
     if (request.method() === "PUT") {
       await route.fulfill({
         status: 200,
@@ -46,8 +46,8 @@ export async function setupOnboardingHandlers(page: Page) {
     }
   });
 
-  // POST /v1/organizations/{id}/invite_links — invite step "Copy link"
-  await page.route(`${API_V1}/organizations/*/invite_links`, async (route) => {
+  // POST /api/organizations/{id}/invite_links — invite step "Copy link"
+  await page.route(`${API_ROOT}/organizations/*/invite_links`, async (route) => {
     await route.fulfill({
       status: 201,
       contentType: "application/json",
@@ -57,9 +57,9 @@ export async function setupOnboardingHandlers(page: Page) {
     });
   });
 
-  // POST /v1/user_preferences/onboarding — save preferences
+  // POST /api/user_preferences/onboarding — save preferences
   await page.route(
-    `${API_V1}/user_preferences/onboarding`,
+    `${API_ROOT}/user_preferences/onboarding`,
     async (route) => {
       await route.fulfill({
         status: 201,

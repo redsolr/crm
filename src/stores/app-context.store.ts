@@ -54,7 +54,7 @@ export const useAppContextStore = create<AppContextState & AppContextActions>()(
       setWorkspaces: (workspaces) =>
         set({ workspaces }, false, "setWorkspaces"),
       setCurrentWorkspace: (workspace) => {
-        // Every `/v1/*` call from now on carries this workspace via the
+        // Every `/api/*` call from now on carries this workspace via the
         // `Jurisimus-Workspace-Id` header (api-discipline § Workspace
         // switcher) — selection without the header only re-points
         // workspace-scoped PATHS, while RLS keeps serving the

@@ -14,7 +14,7 @@
  *     cancels; the commit callback per column owns the mutation.
  *
  * Sort + filter state is CONTROLLED by the owner so saved views
- * (`/v1/views`) can serialize/restore it. Row projection is the pure
+ * (`/api/views`) can serialize/restore it. Row projection is the pure
  * `applyTableFilters` / `applyTableSort` from table-model.ts.
  */
 

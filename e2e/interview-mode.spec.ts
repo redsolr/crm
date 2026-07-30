@@ -9,7 +9,7 @@
  *      with answers intact ("Resumed draft").
  *   4. Scripted branching: picking "LINE chat" pulls in the retrieval
  *      follow-up question.
- *   5. AI rail: "Suggest follow-ups" hits `/v1/responses` (mocked
+ *   5. AI rail: "Suggest follow-ups" hits `/api/responses` (mocked
  *      here) and "Ask this" inserts the suggestion as the next
  *      question.
  *   6. Finish → review → save creates a call note under the
@@ -18,7 +18,7 @@
 
 import { test, expect } from "./fixtures/auth.fixture";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
-import { API_V1 } from "./handlers/shared";
+import { API_ROOT } from "./handlers/shared";
 import { ensureBoardMode } from "./helpers/sales-ui";
 
 const STEP_TIMEOUT = 15_000;
@@ -37,7 +37,7 @@ test.describe("Interview mode", () => {
 
     // Mock the platform's reasoning endpoint for AI suggestions.
     let responsesCalls = 0;
-    await authedPage.route(`${API_V1}/responses`, async (route, request) => {
+    await authedPage.route(`${API_ROOT}/responses`, async (route, request) => {
       if (request.method() !== "POST") {
         await route.fallback();
         return;

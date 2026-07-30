@@ -1,7 +1,7 @@
 /**
  * Route handler factory for the global-search endpoint.
  *
- * Wire contract: `GET /v1/search?q=...` returning the platform's
+ * Wire contract: `GET /api/search?q=...` returning the platform's
  * `HybridSearchResponseDto` — snake_case fields per
  * `platform/src/modules/search/search.response.dto.ts` (`results[]`
  * of `SearchHitResponseDto`, plus `query` / `total_results` /
@@ -15,7 +15,7 @@
  */
 
 import { Page } from "@playwright/test";
-import { API_V1 } from "./shared";
+import { API_ROOT } from "./shared";
 
 /** Wire shape of one hit — mirrors `SearchHitResponseDto`. */
 export interface MockSearchHit {
@@ -71,7 +71,7 @@ export function makeWorkItemHit(overrides: {
 }
 
 /**
- * Mock `GET /v1/search*`. Queries containing "acme" return one
+ * Mock `GET /api/search*`. Queries containing "acme" return one
  * decoy company, the seeded company (pass `accountId` so opening it
  * lands on a work item the sales.handlers store can actually serve),
  * one deal, and one call note; anything else returns no hits.
@@ -115,7 +115,7 @@ export async function setupGlobalSearchHandlers(
     }),
   ];
 
-  await page.route(`${API_V1}/search**`, async (route, request) => {
+  await page.route(`${API_ROOT}/search**`, async (route, request) => {
     if (request.method() !== "GET") {
       await route.fallback();
       return;

@@ -2,7 +2,7 @@
 
 /**
  * `legalAnalysisApi` — "which CCC sections apply to this document?"
- * (`POST /v1/legal/matters/:id/analyze_document`). Reads an ingested document
+ * (`POST /api/legal/matters/:id/analyze_document`). Reads an ingested document
  * (a matter `page`) and returns the applicable sections, grounded + cited, or
  * `abstained: true` when none ground ("no controlling authority found"). The
  * document-driven counterpart to typed-question research. Workspace context is

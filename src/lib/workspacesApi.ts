@@ -1,7 +1,7 @@
 /**
  * Workspaces API client.
  *
- * Talks to the platform's `/v1/workspaces` surface (CRUD). Contract mirrors
+ * Talks to the platform's `/api/workspaces` surface (CRUD). Contract mirrors
  * `WorkspaceResponseDto` in platform `src/modules/workspaces/workspaces.response.dto.ts`.
  *
  * Workspaces are the platform's SOLE data-isolation boundary — every API

@@ -6,7 +6,7 @@
  * sidebar filter (`SidebarSearch`).
  *
  * Attio/Linear-class record finding over the platform's keyword (FTS)
- * search lane: 200ms-debounced `GET /v1/search` on every keystroke,
+ * search lane: 200ms-debounced `GET /api/search` on every keystroke,
  * hits grouped by record kind (Companies / Deals / Contacts / Call
  * notes / Other). Keyword-only by design — the semantic lanes cost
  * model spend per keystroke and the navbar-keyword-only decision is

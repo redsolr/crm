@@ -1,23 +1,14 @@
-/** Single source of truth for the backend host. */
+/** Single source of truth for the backend host — this app serves its
+ *  own backend, so the fallback is self. */
 export const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3100";
 
 /**
- * Pinned platform API version per `docs/platform/api-discipline.md` § B2.
- *
- * Sent as the `Jurisimus-Version` header on every request through
- * `BaseApiClient`. Pinning explicitly (rather than floating on the
- * platform default) means new dated versions can ship without silently
- * changing this app's behavior — when we want a newer version, we bump
- * this constant and exercise the diff intentionally.
+ * API root. The CRM serves its own backend from in-repo route handlers
+ * mounted under `/api/` — one app, one deploy, both sides of the wire
+ * owned here, so there is no URL versioning (the platform-inherited
+ * `/v1` prefix and pinned `Jurisimus-Version` header were dropped
+ * 2026-07-30). Auth routes (`/auth/*`, `/callback`, …) live outside
+ * the prefix; use `API_BASE` directly for those.
  */
-export const API_VERSION = "2026-04-24.basil";
-
-/**
- * Versioned API root. All public platform endpoints are mounted under
- * `/v1/`; only the explicitly-excluded paths (auth, oauth, .well-known,
- * mcp, webhooks, payments/webhooks, subscriptions/webhook,
- * collaboration, health) bypass the prefix. Use `API_BASE` directly for
- * those, and `API_V1` for everything else.
- */
-export const API_V1 = `${API_BASE}/v1`;
+export const API_ROOT = `${API_BASE}/api`;

@@ -2,7 +2,7 @@
 
 /**
  * `legalCiteCheckApi` — verify the citations a document CONTAINS against the CCC
- * corpus (`POST /v1/legal/matters/:id/check_citations`). Each citation comes
+ * corpus (`POST /api/legal/matters/:id/check_citations`). Each citation comes
  * back `verified` (exists) or `not_found` (verify manually — never silently
  * blessed), plus grounded alternatives the corpus surfaces for the same claim
  * (the "did you mean / also relevant" signal). Workspace context as

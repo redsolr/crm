@@ -11,8 +11,8 @@
  *   - the full-page `/sales/ask` view (`SalesAskView`).
  *
  * Wire contract (unchanged from the original drawer implementation):
- *   - POST /v1/chats                 — lazy conversation create on first send
- *   - POST /v1/chats/{id}/responses  — Anthropic-style SSE streaming
+ *   - POST /api/chats                 — lazy conversation create on first send
+ *   - POST /api/chats/{id}/responses  — Anthropic-style SSE streaming
  * Both ride `chatApiClient`, so every call carries the CRM workspace via
  * the `Jurisimus-Workspace-Id` override.
  *

@@ -5,7 +5,7 @@
  * feed for a record page (Attio "new activity timeline" class, Jun 2026):
  *
  *   1. platform activity rows for the record itself (stage changes,
- *      creates, edits — `GET /v1/activities/entity/work_item/:id`),
+ *      creates, edits — `GET /api/activities/entity/work_item/:id`),
  *   2. child call_notes (timeline position = `call_date`, fallback
  *      `created_at`),
  *   3. child commitments (position = `created_at`, due date on the entry).

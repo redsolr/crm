@@ -14,7 +14,7 @@ export const queryKeys = {
       [...queryKeys.knowledgeGraph.all, "entity", entity_id] as const,
   },
 
-  // Legal documents (paginated court-ready documents — platform /v1/legal/documents)
+  // Legal documents (paginated court-ready documents — platform /api/legal/documents)
   legalDocuments: {
     all: ["legalDocuments"] as const,
     list: (workspaceId: string, matterId?: string) =>
@@ -138,7 +138,7 @@ export const queryKeys = {
       [...queryKeys.folderViews.all, "timeline", folder_id] as const,
   },
 
-  // Saved views (/v1/views) — explicit, user-created saved query specs
+  // Saved views (/api/views) — explicit, user-created saved query specs
   // (filters + groupBy) over a surface. Distinct from folderViews above
   // (which are per-folder implicit view_settings).
   savedViews: {
@@ -194,7 +194,7 @@ export const queryKeys = {
       [...queryKeys.findings.all, "chat", chatId] as const,
   },
 
-  // /v1/responses — LLM-native reasoning front door.
+  // /api/responses — LLM-native reasoning front door.
   responses: {
     all: ["responses"] as const,
     founderBrief: (horizon: "this_week") =>

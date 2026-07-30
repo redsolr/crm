@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * Saved-view switcher — the compact `/v1/views` control in a CRM table
+ * Saved-view switcher — the compact `/api/views` control in a CRM table
  * header. Lists the caller's saved views for one CRM surface, applies
  * one on pick, saves the current filter+sort state under a name, and
  * deletes the active view.
  *
- * Platform contract: `/v1/views` only accepts `kind: 'work_items'`;
+ * Platform contract: `/api/views` only accepts `kind: 'work_items'`;
  * the CRM surface discriminator (`crm_companies` / `crm_pipeline`)
  * lives inside the opaque `query` blob (see table-model.ts
  * `buildViewQuery` / `parseViewQuery`). Views from other surfaces —
