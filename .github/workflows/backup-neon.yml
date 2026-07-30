@@ -1,0 +1,51 @@
+# Nightly logical backup of the prod Neon DB to Cloudflare R2.
+#
+# Provider-independent pg_dump is the safety layer that makes free-tier
+# prod acceptable (portfolio cloud-DB doctrine) — REQUIRED before real
+# tour data enters the deployment. Inert until this repo lands on GitHub
+# and the four secrets exist:
+#
+#   NEON_DIRECT_DATABASE_URL   direct (non -pooler) Neon URL
+#   R2_ACCOUNT_ID              Cloudflare account id
+#   R2_ACCESS_KEY_ID           R2 API token (S3 auth) key id
+#   R2_SECRET_ACCESS_KEY       R2 API token secret
+#
+# Bucket: crm-db-backups (create in Cloudflare R2 first). Local fallback
+# while the repo has no remote: scripts/backup-neon-to-r2.ps1.
+name: backup-neon
+on:
+  schedule:
+    # 19:00 UTC = 02:00 Asia/Bangkok — nightly, off tour hours.
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+jobs:
+  pg-dump-to-r2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Install postgresql-client 16
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-16
+
+      - name: pg_dump
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DIRECT_DATABASE_URL }}
+        run: |
+          STAMP="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+          pg_dump --format=custom --no-owner --file="crm-$STAMP.dump" "$DATABASE_URL"
+          ls -la crm-"$STAMP".dump
+
+      - name: Upload to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          aws s3 cp "crm-$STAMP.dump" "s3://crm-db-backups/crm/crm-$STAMP.dump" \
+            --endpoint-url "https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
+
+      # Restore drill (manual): download a dump, then
+      #   pg_restore --clean --if-exists --no-owner -d "$FRESH_DB_URL" crm-<stamp>.dump
