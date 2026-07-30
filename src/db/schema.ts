@@ -208,6 +208,37 @@ export const activities = pgTable("activities", {
     .defaultNow(),
 });
 
+/** Ask conversation (backend-swap: Ask chat). One row per `POST /v1/chats`. */
+export const chats = pgTable("chats", {
+  id: text("id").primaryKey(),
+  title: text("title"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * Durable Ask history — user text + final assistant text per turn.
+ * Intra-turn tool traffic (tool_use/tool_result) is deliberately NOT
+ * persisted: the transcript UI lives client-side and follow-up turns
+ * only need the conversational thread.
+ */
+export const chatMessages = pgTable("chat_messages", {
+  id: text("id").primaryKey(),
+  chatId: text("chat_id")
+    .notNull()
+    .references(() => chats.id, { onDelete: "cascade" }),
+  /** `user` | `assistant`. */
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const comments = pgTable("comments", {
   id: text("id").primaryKey(),
   workItemId: text("work_item_id")

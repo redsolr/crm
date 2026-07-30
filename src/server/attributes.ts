@@ -163,6 +163,72 @@ export async function upsertValue(
   return created[0]!;
 }
 
+/**
+ * Enrichment upsert — a suggestion with provenance, never a clobber:
+ * an existing `manual` value stays untouched (caller reports
+ * `skipped_manual_override`).
+ */
+export async function upsertComputedValue(
+  workItemId: string,
+  definitionId: string,
+  bareValue: unknown,
+  model: string,
+): Promise<{ outcome: "computed" | "skipped_manual_override"; row: ValueRow }> {
+  const now = new Date();
+  const existing = await db
+    .select()
+    .from(attributeValues)
+    .where(
+      and(
+        eq(attributeValues.workItemId, workItemId),
+        eq(attributeValues.definitionId, definitionId),
+      ),
+    )
+    .limit(1);
+
+  if (existing[0] && existing[0].source === "manual") {
+    return { outcome: "skipped_manual_override", row: existing[0] };
+  }
+
+  if (existing[0]) {
+    await db
+      .update(attributeValues)
+      .set({
+        value: bareValue,
+        source: "computed",
+        computedAt: now,
+        computedModel: model,
+        updatedAt: now,
+      })
+      .where(eq(attributeValues.id, existing[0].id));
+    const updated = await db
+      .select()
+      .from(attributeValues)
+      .where(eq(attributeValues.id, existing[0].id))
+      .limit(1);
+    return { outcome: "computed", row: updated[0]! };
+  }
+
+  const id = mintId("av");
+  await db.insert(attributeValues).values({
+    id,
+    workItemId,
+    definitionId,
+    value: bareValue,
+    source: "computed",
+    computedAt: now,
+    computedModel: model,
+    createdAt: now,
+    updatedAt: now,
+  });
+  const created = await db
+    .select()
+    .from(attributeValues)
+    .where(eq(attributeValues.id, id))
+    .limit(1);
+  return { outcome: "computed", row: created[0]! };
+}
+
 export async function deleteValue(
   workItemId: string,
   definitionId: string,
