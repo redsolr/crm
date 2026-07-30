@@ -27,7 +27,6 @@ import { test as base, Page } from "@playwright/test";
 import { TEST_USER, TEST_TOKEN, API_BASE, API_V1 } from "../handlers/shared";
 import { setupAuthHandlers } from "../handlers/auth.handlers";
 import { setupUsageHandlers } from "../handlers/usage.handlers";
-import { setupTermsHandlers } from "../handlers/terms.handlers";
 
 export const test = base.extend<{
   authedPage: Page;
@@ -204,11 +203,6 @@ export const test = base.extend<{
     // Set up auth API route handlers (these live under /auth/*, NOT /v1/)
     await setupAuthHandlers(page);
     await setupUsageHandlers(page);
-    // Terms-acceptance gate: default to the fully-accepted state so the
-    // chat send path's ai_ack pre-flight (GET /v1/terms/status) never
-    // trips the tripwire or opens the modal in unrelated suites.
-    // terms-gate.spec.ts registers gated states (later-wins).
-    await setupTermsHandlers(page);
 
     // ------------------------------------------------------------------
     // Background fetches that fire on every authenticated page load.

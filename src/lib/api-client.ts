@@ -2,7 +2,6 @@ import * as Sentry from "@sentry/nextjs";
 import { authService } from "./authTokenManager";
 import { API_BASE, API_V1, API_VERSION } from "@/lib/api-base";
 import { getWorkspaceOverride } from "./workspace-override";
-import { notifyTermsGate403 } from "./terms/gate-events";
 
 const NON_MUTATING_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
@@ -80,14 +79,6 @@ export class ApiError extends Error {
  *
  * Exported so the duplicate fetch wrappers in `chat/client.ts` and
  * `findingsApi.ts` can use the same pattern without re-implementing it.
- *
- * Terms-acceptance gate: a 403 with `terms_acceptance_required` means
- * the platform blocks the whole `/v1/*` surface until acceptance. The
- * detection lives HERE — the one choke point every error path shares
- * (BaseApiClient AND the raw-fetch wrappers: ui-layout hydrate, chat
- * history, findings) — so any gated call routes the user to
- * `/accept-terms` via `TermsGateListener` (or opens the ai_ack modal
- * when the 403 is solely the first-AI-use acknowledgment).
  */
 export async function buildApiError(response: Response): Promise<ApiError> {
   let body: unknown = null;
@@ -96,10 +87,6 @@ export async function buildApiError(response: Response): Promise<ApiError> {
   } catch {
     // Body was not JSON or already consumed by an earlier read — fall through
     // and synthesize an error from the status alone.
-  }
-
-  if (response.status === 403) {
-    notifyTermsGate403(body);
   }
 
   const b = (body ?? {}) as Record<string, unknown>;
@@ -356,9 +343,6 @@ export class BaseApiClient {
       // the backend's `{ error: { type, code, message, request_id } }`
       // envelope. Callers branch on `err.status` / `err.code` (ApiError
       // extends Error, so `err.message` still works for legacy handlers).
-      // Terms-gate 403s are detected inside buildApiError (the shared
-      // choke point) — the error still propagates so callers render
-      // their own failure state while navigation happens.
       const err = await buildApiError(response);
 
       // Capture 5xx server errors to Sentry with request context.

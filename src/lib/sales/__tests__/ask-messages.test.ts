@@ -5,17 +5,13 @@
  *   - sending shows the question immediately and opens a streaming bubble;
  *   - streamed tokens accumulate into that bubble in order;
  *   - stray chunks after completion/reset can never corrupt the list;
- *   - aborting/erroring before any token leaves no hollow bubble behind;
- *   - the terms-gate error strings map to the panel's honest copy, and
- *     every other error passes through verbatim.
+ *   - aborting/erroring before any token leaves no hollow bubble behind.
  */
 
 import {
-  ASK_TERMS_GATE_MESSAGE,
   askReducer,
   buildAskWireText,
   initialAskState,
-  toAskErrorMessage,
   type AskConversationState,
 } from "../ask-messages";
 
@@ -173,39 +169,6 @@ describe("askReducer", () => {
     });
 
     expect(after).toEqual(state);
-  });
-});
-
-describe("toAskErrorMessage", () => {
-  it("maps the stream's full terms-gate sentence to the panel copy", () => {
-    expect(
-      toAskErrorMessage(
-        "The Terms of Service must be accepted before using AI features.",
-      ),
-    ).toBe(ASK_TERMS_GATE_MESSAGE);
-  });
-
-  it("maps the ai_ack sentence to the panel copy", () => {
-    expect(
-      toAskErrorMessage(
-        "Please acknowledge the AI notice, then send your message again.",
-      ),
-    ).toBe(ASK_TERMS_GATE_MESSAGE);
-  });
-
-  it("maps the raw envelope code (non-stream create path) to the panel copy", () => {
-    expect(toAskErrorMessage("terms_acceptance_required")).toBe(
-      ASK_TERMS_GATE_MESSAGE,
-    );
-  });
-
-  it("passes every other error through verbatim", () => {
-    expect(toAskErrorMessage("HTTP 500 Internal Server Error")).toBe(
-      "HTTP 500 Internal Server Error",
-    );
-    expect(toAskErrorMessage("Usage limit exceeded")).toBe(
-      "Usage limit exceeded",
-    );
   });
 });
 

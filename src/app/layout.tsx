@@ -9,8 +9,6 @@ import { E2EAuthInit } from "@/components/E2EAuthInit";
 import { ThemeInit } from "@/components/ThemeInit";
 import { TrackingProvider } from "@/components/TrackingProvider";
 import { AppSplash } from "@/components/AppSplash";
-import { TermsGateListener } from "@/components/terms/TermsGateListener";
-import { AiAckModalHost } from "@/components/terms/AiAckModalHost";
 import { BRAND, BRAND_KEYWORDS } from "@/lib/brand";
 import { THEME_PRE_HYDRATION_SCRIPT } from "@/lib/theme";
 
@@ -108,11 +106,6 @@ export default function RootLayout({
         <ThemeInit />
         <TrackingProvider />
         <AppSplash />
-        {/* Terms-acceptance gate (spec § 6): the 403 interceptor's
-            navigation listener + the first-AI-use acknowledgment modal.
-            Mounted at the root so the gate fires from every surface. */}
-        <TermsGateListener />
-        <AiAckModalHost />
         {isMockAuth ? (
           <QueryProvider>
             <E2EAuthInit />

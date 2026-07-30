@@ -127,30 +127,6 @@ export function askReducer(
 }
 
 /**
- * Map a raw stream/API error string onto the panel's user-facing copy.
- *
- * The chat stream's 403 handler (`handleStreamErrorResponse`) already
- * emits honest human sentences for the terms-acceptance gate; this
- * translates them (and the raw envelope code, for the non-stream create
- * path) into the Ask panel's single explanatory line. Everything else
- * passes through verbatim — never swallow a real error.
- */
-export const ASK_TERMS_GATE_MESSAGE =
-  "AI access needs terms acceptance in the main Jurisimus app — accept the terms there, then try again.";
-
-const TERMS_GATE_PATTERNS: readonly RegExp[] = [
-  /terms of service must be accepted/i,
-  /acknowledge the ai notice/i,
-  /terms_acceptance_required/i,
-];
-
-export function toAskErrorMessage(message: string): string {
-  return TERMS_GATE_PATTERNS.some((p) => p.test(message))
-    ? ASK_TERMS_GATE_MESSAGE
-    : message;
-}
-
-/**
  * Compose the text actually sent on the wire for an Ask message.
  *
  * When the drawer is opened over a CRM view, the current page is the

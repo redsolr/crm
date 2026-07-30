@@ -33,8 +33,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/stores/use-auth";
 import { useAskPanel } from "@/stores/use-ask-panel";
 import { chatApiClient } from "@/lib/chat/client";
-import { ApiError } from "@/lib/api-client";
-import { buildAskWireText, toAskErrorMessage } from "@/lib/sales/ask-messages";
+import { buildAskWireText } from "@/lib/sales/ask-messages";
 import { queryKeys } from "@/queries/query-keys";
 
 /**
@@ -191,11 +190,9 @@ export function AskConversation({ pageContext }: AskConversationProps) {
             err,
           );
           const message =
-            err instanceof ApiError && err.code === "terms_acceptance_required"
-              ? toAskErrorMessage(err.code)
-              : err instanceof Error
-                ? err.message
-                : "Failed to start the conversation.";
+            err instanceof Error
+              ? err.message
+              : "Failed to start the conversation.";
           dispatchConversation({ type: "error", message });
           return;
         }
@@ -237,10 +234,7 @@ export function AskConversation({ pageContext }: AskConversationProps) {
           },
           onError: (message) => {
             console.error("[AskConversation] stream error:", message);
-            dispatchConversation({
-              type: "error",
-              message: toAskErrorMessage(message),
-            });
+            dispatchConversation({ type: "error", message });
           },
           onComplete: () => {
             dispatchConversation({ type: "complete" });

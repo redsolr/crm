@@ -558,52 +558,6 @@ const FIRST_PARTY_EXCEPTIONS: ReadonlyArray<FirstPartyException> = [
   // console-summary dashboard tile, plugin marketplace UX, page-trash
   // bin, sidebar file-system tree. External integrations build their
   // own composites from granular platform endpoints.
-  //
-  // Terms-acceptance gate (2026-07-12): the clickwrap surface is
-  // interactive-sessions-only by design (machine principals get
-  // `terms_clickwrap_requires_session`), so the platform registers
-  // /v1/terms on `internalPaths` (terms.openapi.ts) — first-party by
-  // construction, never part of the public contract.
-  {
-    method: "GET",
-    path: "/v1/terms/status",
-    category: "consumer_app_ux",
-    owner: "platform",
-    reason:
-      "terms-gate bootstrap — callable while 403-gated; clickwrap is a first-party interactive surface (spec § 4)",
-    ticket_or_doc: "platform docs/legal/terms-acceptance-gate-spec-2026-07-11.md",
-    review_phase: "documented_first_party",
-  },
-  {
-    method: "POST",
-    path: "/v1/terms/tos_acceptances",
-    category: "consumer_app_ux",
-    owner: "platform",
-    reason:
-      "gate-screen clickwrap acceptance — interactive JWT sessions only; machines are structurally refused (spec § 4)",
-    ticket_or_doc: "platform docs/legal/terms-acceptance-gate-spec-2026-07-11.md",
-    review_phase: "documented_first_party",
-  },
-  {
-    method: "POST",
-    path: "/v1/terms/ai_acknowledgments",
-    category: "consumer_app_ux",
-    owner: "platform",
-    reason:
-      "first-AI-use acknowledgment modal — interactive JWT sessions only (spec §§ 4, 6.2)",
-    ticket_or_doc: "platform docs/legal/terms-acceptance-gate-spec-2026-07-11.md",
-    review_phase: "documented_first_party",
-  },
-  {
-    method: "POST",
-    path: "/v1/terms/privacy_receipts",
-    category: "consumer_app_ux",
-    owner: "platform",
-    reason:
-      "standalone privacy-update acknowledgment prompt — interactive JWT sessions only (spec § 4)",
-    ticket_or_doc: "platform docs/legal/terms-acceptance-gate-spec-2026-07-11.md",
-    review_phase: "documented_first_party",
-  },
   {
     method: "POST",
     path: "/v1/organizations/{}/invite_links",
@@ -1668,7 +1622,7 @@ const FIRST_PARTY_EXCEPTIONS: ReadonlyArray<FirstPartyException> = [
  * (e.g. the chat surface design landed), drain its entries and lower
  * this number in the same PR.
  */
-const APPROVED_EXCEPTION_COUNT = 138;
+const APPROVED_EXCEPTION_COUNT = 134;
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

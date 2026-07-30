@@ -28,7 +28,6 @@
 
 import { authService } from "../authTokenManager";
 import { freshIdempotencyKey } from "../idempotency";
-import { isAiAckOnly, notifyTermsGate403 } from "../terms/gate-events";
 import { chatBreadcrumb } from "./breadcrumbs";
 import type {
   ByokCredentialMissingInfo,
@@ -275,27 +274,11 @@ async function handleStreamErrorResponse(
   }
 
   if (response.status === 403) {
-    // Terms-acceptance gate: the LLM seam 403s with
-    // `terms_acceptance_required` when the account's first-AI-use
-    // acknowledgment (ai_ack) is missing — or the full gate when the
-    // ToS lapsed mid-session. `notifyTermsGate403` dispatches the
-    // matching window event (ai_ack modal vs /accept-terms redirect);
-    // here we just surface a human message instead of a raw envelope.
     let body: unknown = null;
     try {
       body = await response.json();
     } catch (err) {
       console.error("[chatApi] Failed to parse 403 response body:", err);
-    }
-    const termsMeta = notifyTermsGate403(body);
-    if (termsMeta !== null) {
-      chatBreadcrumb("stream: 403 terms acceptance required", "warning");
-      options.onError(
-        isAiAckOnly(termsMeta)
-          ? "Please acknowledge the AI notice, then send your message again."
-          : "The Terms of Service must be accepted before using AI features.",
-      );
-      return;
     }
     const b = (body ?? {}) as { error?: { message?: string } };
     chatBreadcrumb("stream: 403 forbidden", "warning");
