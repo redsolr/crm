@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, records } from "@/db";
-import { apiError, parseIfMatchVersion } from "@/server/api-error";
+import { apiError, parseIfMatchVersion, readJsonBody } from "@/server/api-error";
+import { logActivity } from "@/server/activities";
 import {
   completedAtFor,
   loadWorkItem,
@@ -46,12 +47,9 @@ export async function PATCH(
     );
   }
 
-  let raw: unknown;
-  try {
-    raw = await request.json();
-  } catch {
-    return apiError(400, "invalid_json", "Request body is not valid JSON");
-  }
+  const parsedBody = await readJsonBody(request);
+  if (!parsedBody.ok) return parsedBody.response;
+  const raw = parsedBody.body;
   const parsed = updateWorkItemSchema.safeParse(raw);
   if (!parsed.success) {
     return apiError(
@@ -128,6 +126,7 @@ export async function PATCH(
     changes.parentId = body.parent_id;
   }
 
+  let stateChange: { from: string; to: string } | null = null;
   if (body.state_key !== undefined) {
     const stage = await resolveStage(existing.type, body.state_key);
     if (!stage) {
@@ -136,6 +135,9 @@ export async function PATCH(
         "validation_failed",
         `Unknown workflow state key for type ${existing.type.key}: ${body.state_key}`,
       );
+    }
+    if (stage.id !== existing.record.stateId) {
+      stateChange = { from: existing.state.key, to: stage.key };
     }
     changes.stateId = stage.id;
     changes.completedAt = completedAtFor(
@@ -148,6 +150,13 @@ export async function PATCH(
   changes.updatedAt = new Date();
 
   await db.update(records).set(changes).where(eq(records.id, id));
+
+  await logActivity({
+    type: stateChange ? "work_item_status_changed" : "work_item_updated",
+    entityId: existing.record.id,
+    entityIdentifier: existing.record.identifier,
+    changes: stateChange ? { state_key: stateChange } : null,
+  });
 
   const updated = await loadWorkItem(id);
   if (!updated) return apiError(404, "not_found", `Work item not found: ${id}`);
@@ -180,5 +189,10 @@ export async function DELETE(
   }
 
   await db.delete(records).where(eq(records.id, id));
+  await logActivity({
+    type: "work_item_deleted",
+    entityId: existing.record.id,
+    entityIdentifier: existing.record.identifier,
+  });
   return new Response(null, { status: 204 });
 }

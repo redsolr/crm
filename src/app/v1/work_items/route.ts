@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apiError } from "@/server/api-error";
+import { apiError, readJsonBody } from "@/server/api-error";
+import { logActivity } from "@/server/activities";
 import {
   MAX_PAGE_SIZE,
   createWorkItemSchema,
@@ -83,12 +84,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  let raw: unknown;
-  try {
-    raw = await request.json();
-  } catch {
-    return apiError(400, "invalid_json", "Request body is not valid JSON");
-  }
+  const parsedBody = await readJsonBody(request);
+  if (!parsedBody.ok) return parsedBody.response;
+  const raw = parsedBody.body;
 
   const parsed = createWorkItemSchema.safeParse(raw);
   if (!parsed.success) {
@@ -131,6 +129,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const created = await insertWorkItem({ body, type, stage });
+  await logActivity({
+    type: "work_item_created",
+    entityId: created.record.id,
+    entityIdentifier: created.record.identifier,
+  });
   return NextResponse.json(
     { work_item: serializeWorkItem(created) },
     { status: 201 },

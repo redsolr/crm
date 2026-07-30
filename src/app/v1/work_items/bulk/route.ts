@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, records } from "@/db";
-import { apiError } from "@/server/api-error";
+import { apiError, readJsonBody } from "@/server/api-error";
+import { logActivity } from "@/server/activities";
 import {
   bulkUpdateSchema,
   completedAtFor,
@@ -18,12 +19,9 @@ import {
  */
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  let raw: unknown;
-  try {
-    raw = await request.json();
-  } catch {
-    return apiError(400, "invalid_json", "Request body is not valid JSON");
-  }
+  const parsedBody = await readJsonBody(request);
+  if (!parsedBody.ok) return parsedBody.response;
+  const raw = parsedBody.body;
   const parsed = bulkUpdateSchema.safeParse(raw);
   if (!parsed.success) {
     return apiError(
@@ -62,6 +60,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   for (const row of loaded) {
     const changes: Partial<typeof records.$inferInsert> = {};
 
+    let stateChange: { from: string; to: string } | null = null;
     if (body.state_key !== undefined) {
       const stage = await resolveStage(row.type, body.state_key);
       if (!stage) {
@@ -70,6 +69,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           "validation_failed",
           `Unknown workflow state key for type ${row.type.key}: ${body.state_key}`,
         );
+      }
+      if (stage.id !== row.record.stateId) {
+        stateChange = { from: row.state.key, to: stage.key };
       }
       changes.stateId = stage.id;
       changes.completedAt = completedAtFor(
@@ -88,6 +90,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     changes.version = row.record.version + 1;
     changes.updatedAt = new Date();
     await db.update(records).set(changes).where(eq(records.id, row.record.id));
+    await logActivity({
+      type: stateChange ? "work_item_status_changed" : "work_item_updated",
+      entityId: row.record.id,
+      entityIdentifier: row.record.identifier,
+      changes: stateChange ? { state_key: stateChange } : null,
+    });
     updatedIds.push(row.record.id);
   }
 

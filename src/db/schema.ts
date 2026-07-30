@@ -35,8 +35,12 @@ export const workflows = pgTable("workflows", {
   id: text("id").primaryKey(),
   key: text("key").notNull().unique(),
   name: text("name").notNull(),
+  description: text("description"),
   isDefault: boolean("is_default").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });
@@ -54,6 +58,12 @@ export const workflowStages = pgTable(
     /** `not_started` | `active` | `done` | `dead` (wire categories). */
     category: text("category").notNull(),
     position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [uniqueIndex("uq_workflow_stages_workflow_key").on(t.workflowId, t.key)],
 );
@@ -63,9 +73,16 @@ export const recordTypes = pgTable("record_types", {
   id: text("id").primaryKey(),
   key: text("key").notNull().unique(),
   name: text("name").notNull(),
+  description: text("description"),
   workflowId: text("workflow_id")
     .notNull()
     .references(() => workflows.id),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 /** The work_items subset the CRM consumes. */
@@ -176,9 +193,9 @@ export const activities = pgTable("activities", {
   /** Open string on the wire — writers introduce types freely. */
   type: text("type").notNull(),
   entityType: text("entity_type").notNull().default("work_item"),
-  entityId: text("entity_id")
-    .notNull()
-    .references(() => records.id, { onDelete: "cascade" }),
+  // Deliberately NO FK to records: the audit feed must survive record
+  // deletion (`work_item_deleted` is itself an activity).
+  entityId: text("entity_id").notNull(),
   entityIdentifier: text("entity_identifier"),
   actorId: text("actor_id"),
   /** `user` | `agent` | `system` (wire actor types). */

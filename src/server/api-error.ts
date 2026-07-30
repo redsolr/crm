@@ -36,6 +36,25 @@ export function apiError(
 }
 
 /**
+ * Read a JSON request body once, at the boundary. Malformed JSON is an
+ * expected client error — logged at warn, answered 400 in the platform
+ * envelope. Callers: `if (!parsed.ok) return parsed.response`.
+ */
+export async function readJsonBody(
+  request: Request,
+): Promise<{ ok: true; body: unknown } | { ok: false; response: NextResponse }> {
+  try {
+    return { ok: true, body: await request.json() };
+  } catch (err) {
+    console.warn("[api] request body is not valid JSON:", err);
+    return {
+      ok: false,
+      response: apiError(400, "invalid_json", "Request body is not valid JSON"),
+    };
+  }
+}
+
+/**
  * Parse the `If-Match: W/"v<n>"` optimistic-concurrency header
  * (api-discipline § C4). Returns the version number, or null when the
  * header is absent/malformed (caller responds 428).
