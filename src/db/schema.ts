@@ -239,6 +239,33 @@ export const chatMessages = pgTable("chat_messages", {
     .defaultNow(),
 });
 
+/**
+ * Durable saved query specs for the table/board surfaces (`Save view`).
+ * `query` is opaque to the backend — the toolbar owns its shape
+ * (`WorkItemsViewQuery`). Ported from the platform's views module during
+ * the 2026-07-31 dead-call sweep: the FE shipped the full affordance but
+ * the swap never brought the table, so every `/api/views` call 404'd.
+ */
+export const savedViews = pgTable("saved_views", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  /** Surface discriminator (`work_items` today; open string on the wire). */
+  kind: text("kind").notNull(),
+  /** `private` | `shared` (wire enum). */
+  visibility: text("visibility").notNull().default("private"),
+  /** Static single-tenant stub — always `CRM_WORKSPACE_ID`. */
+  workspaceId: text("workspace_id").notNull(),
+  ownerAccountId: text("owner_account_id").notNull(),
+  ownerName: text("owner_name"),
+  query: jsonb("query").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const comments = pgTable("comments", {
   id: text("id").primaryKey(),
   workItemId: text("work_item_id")
