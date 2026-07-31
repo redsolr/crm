@@ -28,6 +28,8 @@ export interface Activity {
   entity_identifier: string | null; // e.g., "WEB-42"
   project_id: ProjectId;
   actor_id: string; // polymorphic — discriminated by actor_type
+  actor_type: string; // `user` | `agent` | `system`
+  actor_name: string | null; // display name stamped at write time
   changes: Record<string, unknown> | null;
   created_at: string;
 }

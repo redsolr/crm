@@ -8,9 +8,9 @@
  *   - Reads a seeded user from `localStorage[SEEDED_USER_KEY]` and
  *     hydrates the Zustand auth store from it (Playwright fixture
  *     path).
- *   - Falls back to `POST /auth/dev/login` for manual browser dev,
- *     and stores the resulting canned user in `localStorage` so the
- *     next mount short-circuits.
+ *   - Falls back to hydrating a canned dev user for manual browser
+ *     dev, stored in `localStorage` so the next mount short-circuits.
+ *     (No backend call — mock-mode routes accept session-less callers.)
  *
  * Without explicit signaling, that auto-login fires on EVERY layout
  * mount — including the page load immediately following a click on
@@ -64,7 +64,7 @@ export function markDevMockSignedOut(): void {
 
 /**
  * Has the user explicitly signed out in this tab? Read by
- * `E2EAuthInit` to skip the auto-`/auth/dev/login` fallback.
+ * `E2EAuthInit` to skip the auto-login fallback.
  */
 export function isDevMockSignedOut(): boolean {
   if (typeof window === "undefined") return false;

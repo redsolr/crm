@@ -92,7 +92,7 @@ test.describe("Sales journey", () => {
     // (sum of value estimates across active opportunities).
     await expect(
       authedPage.getByTestId("sales-pipeline-value"),
-    ).toContainText("$120,000 active", { timeout: STEP_TIMEOUT });
+    ).toContainText("฿120,000 active", { timeout: STEP_TIMEOUT });
 
     await waitForActivation(authedPage, "sales_first_opportunity_created");
 

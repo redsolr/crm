@@ -236,6 +236,7 @@ export function SalesOpportunityDetailView({ opportunityId }: Props) {
         <CreateCallNoteModal
           bundle={bundle}
           parentId={opp.id}
+          parentTitle={opp.title}
           onClose={() => setShowCallModal(false)}
         />
       )}

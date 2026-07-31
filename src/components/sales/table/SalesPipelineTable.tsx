@@ -32,6 +32,7 @@ import {
   useUpsertAttributeValue,
 } from "@/lib/sales/use-sales-mutations";
 import { parseAttributeValueForType } from "@/lib/sales/attribute-editing";
+import { formatTHB } from "@/lib/format-currency";
 import { CompanyLogo } from "../CompanyLogo";
 import { TransitionToClosedModal } from "../TransitionToClosedModal";
 import { CrmRecordTable } from "./CrmRecordTable";
@@ -186,7 +187,7 @@ export function SalesPipelineTable({
         align: "right",
         render: (opp) => {
           const v = snapshot(opp)?.valueEstimate ?? null;
-          return v === null ? "—" : `$${v.toLocaleString()}`;
+          return v === null ? "—" : formatTHB(v);
         },
         edit: {
           dataType: "number",
@@ -278,8 +279,8 @@ export function SalesPipelineTable({
           );
           return (
             <>
-              {visible.length} opportunit{visible.length === 1 ? "y" : "ies"} ·
-              ${total.toLocaleString()} total value
+              {visible.length} opportunit{visible.length === 1 ? "y" : "ies"} ·{" "}
+              {formatTHB(total)} total value
             </>
           );
         }}

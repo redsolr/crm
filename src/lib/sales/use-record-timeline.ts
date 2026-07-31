@@ -31,6 +31,8 @@ export type TimelineEntry =
       id: string;
       label: string;
       detail: string | null;
+      /** Who did it — stamped at write time; null on legacy/session-less rows. */
+      author: string | null;
     }
   | {
       kind: "call_note";
@@ -40,6 +42,7 @@ export type TimelineEntry =
       outcome: string | null;
       callType: string | null;
       summary: string | null;
+      author: string | null;
     }
   | {
       kind: "commitment";
@@ -49,6 +52,7 @@ export type TimelineEntry =
       dueDate: string | null;
       promisedTo: string | null;
       done: boolean;
+      author: string | null;
     };
 
 /** Per-entity activity feed (bounded server-side at ~50 rows). */
@@ -137,6 +141,7 @@ export function buildRecordTimeline(
       outcome: attrs.outcome ?? null,
       callType: attrs.call_type ?? null,
       summary: attrs.summary ?? null,
+      author: note.created_by_name ?? null,
     });
   }
 
@@ -150,6 +155,7 @@ export function buildRecordTimeline(
       dueDate: attrs.due_date ?? null,
       promisedTo: attrs.promised_to ?? null,
       done: c.state.category === "done",
+      author: c.created_by_name ?? null,
     });
   }
 
@@ -163,6 +169,8 @@ const ACTIVITY_LABELS: Record<string, string> = {
   work_item_updated: "updated",
   work_item_status_changed: "moved stage",
   work_item_deleted: "deleted",
+  // Legacy vocabulary: agent writes logged `task_created` until 2026-08-01.
+  task_created: "created",
 };
 
 function projectActivity(a: Activity): TimelineEntry {
@@ -181,5 +189,6 @@ function projectActivity(a: Activity): TimelineEntry {
     id: a.id,
     label,
     detail,
+    author: a.actor_name ?? null,
   };
 }

@@ -6,6 +6,7 @@ import {
   type OpportunityAttributeSnapshot,
 } from "@/lib/sales/use-opportunity-attributes";
 import type { AccountAttributeSnapshot } from "@/lib/sales/use-account-attributes";
+import { formatTHB } from "@/lib/format-currency";
 import { CompanyLogo } from "./CompanyLogo";
 
 /**
@@ -91,7 +92,7 @@ export function SalesCardBody({
           <span className="flex-1" />
           {attributes?.valueEstimate != null ? (
             <span className="text-xs font-medium tabular-nums text-[var(--crm-green)] flex-shrink-0">
-              ${attributes.valueEstimate.toLocaleString()}
+              {formatTHB(attributes.valueEstimate)}
             </span>
           ) : null}
         </div>

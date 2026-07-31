@@ -2,7 +2,7 @@
 
 > **What this is**: the CRM's Model Context Protocol endpoint. Any MCP
 > client (Claude Code, Claude Desktop, Cursor, …) can read and write
-> the pipeline directly — the same five tools the in-app Ask panel
+> the pipeline directly — the same six tools the in-app Ask panel
 > uses. This is the programmatic door for agent-driven data entry
 > (bulk seeding, enrichment, call-note logging) — the Attio-style
 > surface, sized for an internal tool.
@@ -38,11 +38,12 @@ tool there publishes it here with no route change.
 
 | Tool | What it does |
 | --- | --- |
-| `find_crm_record` | Resolve accounts/contacts/opportunities/call notes by name or id |
+| `find_crm_record` | Resolve accounts/contacts/opportunities/call notes/commitments by name or id |
 | `create_account` | New company record (dedupe-checked) |
 | `create_opportunity` | New pipeline deal under an account |
 | `update_opportunity` | Stage moves + attribute updates |
 | `log_call_note` | Call note linked to its account/opportunity |
+| `create_commitment` | A promise made to a firm — lands in the Inbox, ranked by due date |
 
 ## Connect from Claude Code
 

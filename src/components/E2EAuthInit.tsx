@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/auth.store";
-import { API_BASE } from "@/lib/api-base";
 import { SEEDED_USER_KEY, isDevMockSignedOut } from "@/lib/dev-mock-session";
 
 /**
@@ -29,24 +28,22 @@ const DEV_MOCK_USER = {
     },
   },
 };
-const DEV_MOCK_LOGIN_EMAIL = "dev@jurisimus.local";
 
 /**
- * E2E / mock-auth component that hydrates the Zustand auth store and
- * (when needed) seeds a real BE session via `/auth/dev/login`.
- *
- * Pre-cookie-migration this component poked `localStorage` directly
- * with a hardcoded mock JWT; that doesn't work anymore because (1)
- * tokens live in HttpOnly cookies the BE issues, and (2) a fake JWT
- * fails the BE's `jwtService.verify()`. New flow:
+ * E2E / mock-auth component that hydrates the Zustand auth store under
+ * `MOCK_AUTH=true`. No backend session is involved: the standalone
+ * CRM's routes accept session-less callers in mock mode (`currentActor`
+ * falls back to `usr_local`), so hydrating the store IS the login.
+ * (The platform-era `/auth/dev/login` fetch died with the backend
+ * swap — it 404'd on every mock session and only "worked" because
+ * fetch doesn't throw on 404.)
  *
  * 1. **Playwright** — addInitScript injects user data into the
- *    Playwright context (and may pre-seed cookies via context.addCookies).
- *    The user data lives in `localStorage["e2e-auth-user"]` for backward
- *    compat with existing test fixtures; we just hydrate the store from it.
+ *    Playwright context. The user data lives in
+ *    `localStorage["e2e-auth-user"]` for backward compat with existing
+ *    test fixtures; we just hydrate the store from it.
  * 2. **Manual browser** (`npm run dev:mock`) — no Playwright context,
- *    so we call `POST /auth/dev/login` to get a real BE-issued cookie
- *    session, then hydrate the store with the canned dev user.
+ *    so we hydrate the store with the canned dev user directly.
  */
 export function E2EAuthInit() {
   useEffect(() => {
@@ -88,26 +85,10 @@ export function E2EAuthInit() {
       return;
     }
 
-    // Manual dev — call /auth/dev/login so the BE issues real cookies.
-    void (async () => {
-      try {
-        await fetch(`${API_BASE}/auth/dev/login`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: DEV_MOCK_LOGIN_EMAIL,
-            name: DEV_MOCK_USER.full_name,
-          }),
-        });
-        localStorage.setItem(SEEDED_USER_KEY, JSON.stringify(DEV_MOCK_USER));
-        store.setUser(DEV_MOCK_USER);
-      } catch (err) {
-        console.error("[E2EAuthInit] /auth/dev/login failed", err);
-      } finally {
-        store.setLoading(false);
-      }
-    })();
+    // Manual dev — hydrate the canned dev user directly.
+    localStorage.setItem(SEEDED_USER_KEY, JSON.stringify(DEV_MOCK_USER));
+    store.setUser(DEV_MOCK_USER);
+    store.setLoading(false);
   }, []);
 
   return null;

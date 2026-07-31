@@ -34,6 +34,7 @@ import {
   SALES_TYPE_KEYS,
 } from "@/lib/sales/constants";
 import { timeAgo } from "@/lib/sales/relative-time";
+import { formatTHB } from "@/lib/format-currency";
 import { TransitionToClosedModal } from "../TransitionToClosedModal";
 import type {
   AttributeDefinition,
@@ -94,9 +95,16 @@ export function SalesPeekPanel({ bundle, workItemId, onClose }: Props) {
 
   const typeKey = record?.type.key;
   const isOpportunity = typeKey === SALES_TYPE_KEYS.opportunity;
-  const href = isOpportunity
-    ? `/sales/opportunity/${workItemId}`
-    : `/sales/account/${workItemId}`;
+  // No href until the record resolves: the route branches on the
+  // record TYPE, so expanding before the query lands would send an
+  // opportunity to the account page (real race — a fast click after
+  // opening the peek used to do exactly that).
+  const href =
+    record === undefined
+      ? null
+      : isOpportunity
+        ? `/sales/opportunity/${workItemId}`
+        : `/sales/account/${workItemId}`;
 
   // Company name for an opportunity — the parent account.
   const parent = useWorkItemQuery(
@@ -166,6 +174,7 @@ export function SalesPeekPanel({ bundle, workItemId, onClose }: Props) {
   );
 
   const handleExpand = () => {
+    if (href === null) return;
     onClose();
     router.push(href);
   };
@@ -194,9 +203,10 @@ export function SalesPeekPanel({ bundle, workItemId, onClose }: Props) {
         <button
           type="button"
           onClick={handleExpand}
+          disabled={href === null}
           title="Open full view"
           data-testid="sales-peek-expand"
-          className="p-1.5 text-[var(--theme-text-muted)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-hover)] rounded-md transition-colors"
+          className="p-1.5 text-[var(--theme-text-muted)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-hover)] rounded-md transition-colors disabled:opacity-40"
         >
           <ExpandIcon />
         </button>
@@ -334,7 +344,8 @@ export function SalesPeekPanel({ bundle, workItemId, onClose }: Props) {
         <button
           type="button"
           onClick={handleExpand}
-          className="flex items-center justify-center gap-2 w-full py-2 text-[13px] font-medium text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] bg-[var(--theme-bg-tertiary)] hover:bg-[var(--theme-bg-hover)] border border-[var(--theme-border-primary)] rounded-lg transition-colors"
+          disabled={href === null}
+          className="flex items-center justify-center gap-2 w-full py-2 text-[13px] font-medium text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] bg-[var(--theme-bg-tertiary)] hover:bg-[var(--theme-bg-hover)] border border-[var(--theme-border-primary)] rounded-lg transition-colors disabled:opacity-40"
         >
           <ExpandIcon size={14} />
           Open full view
@@ -433,7 +444,7 @@ function PeekSection({
 }
 
 /** Human display for an attribute value; select-ish snake_case values
- *  read as words, money-ish keys get $ formatting. */
+ *  read as words, money-ish keys get ฿ formatting. */
 function formatAttributeValue(
   def: AttributeDefinition,
   raw: unknown,
@@ -441,7 +452,7 @@ function formatAttributeValue(
   if (raw === undefined || raw === null || raw === "") return "—";
   if (typeof raw === "number") {
     return def.key.includes("value") || def.key.includes("estimate")
-      ? `$${raw.toLocaleString()}`
+      ? formatTHB(raw)
       : raw.toLocaleString();
   }
   if (typeof raw === "string") {

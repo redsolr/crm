@@ -10,6 +10,7 @@ import {
 } from "@/lib/sales/constants";
 import { useCreateCallNote } from "@/lib/sales/use-sales-mutations";
 import { fireActivation } from "@/lib/sales/activation";
+import { todayDateString } from "@/lib/sales/use-opportunity-attributes";
 import type { WorkItem } from "@/lib/workItemsApi";
 import type { SalesWorkspaceBundle } from "@/lib/sales/use-sales-workspace";
 
@@ -17,6 +18,10 @@ interface Props {
   bundle: SalesWorkspaceBundle;
   /** Opportunity or account this note belongs to. */
   parentId: string;
+  /** Parent record title — when given, the note title prefills with the
+   *  same `Call — {record} ({date})` convention the agent door uses, so
+   *  logging a call is fill-summary-and-submit instead of naming work. */
+  parentTitle?: string;
   onClose: () => void;
   onCreated?: (callNote: WorkItem) => void;
 }
@@ -24,13 +29,16 @@ interface Props {
 export function CreateCallNoteModal({
   bundle,
   parentId,
+  parentTitle,
   onClose,
   onCreated,
 }: Props) {
-  const [title, setTitle] = useState("");
-  const [callDate, setCallDate] = useState<string>(
-    new Date().toISOString().slice(0, 10),
+  // Local wall-clock date, not toISOString(): on UTC+7 the UTC date is
+  // yesterday until 07:00, which stamped every early-morning call wrong.
+  const [title, setTitle] = useState(() =>
+    parentTitle ? `Call — ${parentTitle} (${todayDateString()})` : "",
   );
+  const [callDate, setCallDate] = useState<string>(todayDateString());
   const [outcome, setOutcome] = useState<string>("");
   const [callType, setCallType] = useState<string>("");
   const [attendees, setAttendees] = useState("");

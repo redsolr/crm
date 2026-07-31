@@ -41,7 +41,7 @@ type PaletteModal =
   | { kind: "account" }
   | { kind: "opportunity" }
   | { kind: "contact" }
-  | { kind: "call_note"; parentId: string }
+  | { kind: "call_note"; parentId: string; parentTitle: string }
   | { kind: "closed"; opportunity: WorkItem; nextStateKey: "lost" | "not_now" };
 
 interface PaletteItem {
@@ -125,7 +125,7 @@ export function CommandPalette() {
           id: "opp-log-call",
           label: "Log call",
           run: () => {
-            setModal({ kind: "call_note", parentId: opp.id });
+            setModal({ kind: "call_note", parentId: opp.id, parentTitle: opp.title });
             close();
           },
         },
@@ -360,6 +360,7 @@ export function CommandPalette() {
         <CreateCallNoteModal
           bundle={bundle}
           parentId={modal.parentId}
+          parentTitle={modal.parentTitle}
           onClose={() => setModal(null)}
         />
       )}

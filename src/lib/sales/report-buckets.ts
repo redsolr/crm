@@ -55,10 +55,15 @@ export function buildMonthBuckets(
 }
 
 /** Last `weeksBack` Monday-aligned weeks (oldest first, current week
- *  last), counting call notes by created_at. */
+ *  last). Calls count by when they HAPPENED — `callDateById` carries the
+ *  `call_date` attribute (`YYYY-MM-DD`, parsed as local midnight so the
+ *  week boundary matches the founder's wall clock); rows without one
+ *  fall back to created_at. Bucketing by created_at alone piled a whole
+ *  backfilled tour week onto the logging day. */
 export function buildWeekBuckets(
   callNotes: ReadonlyArray<WorkItem>,
   now: Date,
+  callDateById: Record<string, string | undefined> = {},
   weeksBack = 8,
 ): WeekBucket[] {
   const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -74,7 +79,11 @@ export function buildWeekBuckets(
         day: "numeric",
       }),
       count: callNotes.filter((n) => {
-        const t = Date.parse(n.created_at);
+        const callDate = callDateById[n.id];
+        const t =
+          callDate !== undefined
+            ? new Date(`${callDate}T00:00:00`).getTime()
+            : Date.parse(n.created_at);
         return t >= start && t < end;
       }).length,
     });

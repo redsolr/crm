@@ -45,6 +45,7 @@ import {
   type OpportunityAttributeSnapshot,
 } from "@/lib/sales/use-opportunity-attributes";
 import { useAccountAttributes } from "@/lib/sales/use-account-attributes";
+import { formatTHB } from "@/lib/format-currency";
 import { SalesPipelineTable } from "./table/SalesPipelineTable";
 
 /** localStorage key persisting the kanban ⇄ table mode choice. */
@@ -195,7 +196,7 @@ export function SalesPipelineView() {
             data-testid="sales-pipeline-value"
             title="Sum of value estimates across active opportunities"
           >
-            ${activePipelineValue.toLocaleString()} active
+            {formatTHB(activePipelineValue)} active
           </span>
         )}
         <div className="flex-1" />

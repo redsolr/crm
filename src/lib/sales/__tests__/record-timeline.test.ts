@@ -142,6 +142,46 @@ describe("buildRecordTimeline", () => {
     expect(entry.detail).toBe("contacted → call booked");
   });
 
+  it("carries the author on every stream (actor_name / created_by_name)", () => {
+    const note = makeItem("n1", "call_note", {
+      created_by_name: "Khun Nan",
+    } as Partial<WorkItem>);
+    const commitment = makeItem("c1", "commitment", {
+      created_at: "2026-07-15T00:00:00Z",
+      created_by_name: "Claude (agent)",
+    } as Partial<WorkItem>);
+    const entries = buildRecordTimeline(
+      [
+        activity("a1", "2026-07-01T00:00:00Z", {
+          actor_name: "Claude (agent)",
+        }),
+      ],
+      [note],
+      [commitment],
+      DEFS,
+      {},
+    );
+    expect(entries.map((e) => e.author)).toEqual([
+      "Claude (agent)", // commitment (newest)
+      "Khun Nan", // call note
+      "Claude (agent)", // activity
+    ]);
+  });
+
+  it("labels legacy task_created activities as created, author null when unstamped", () => {
+    const entries = buildRecordTimeline(
+      [activity("a1", "2026-07-01T00:00:00Z", { type: "task_created" })],
+      [],
+      [],
+      DEFS,
+      {},
+    );
+    const entry = entries[0]!;
+    if (entry.kind !== "activity") throw new Error("unreachable");
+    expect(entry.label).toBe("created");
+    expect(entry.author).toBeNull();
+  });
+
   it("ignores attribute rows whose definition is unknown or value non-string", () => {
     const note = makeItem("n1", "call_note");
     const entries = buildRecordTimeline(

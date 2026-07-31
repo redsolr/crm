@@ -183,7 +183,7 @@ async function createSalesRecord(input: {
     stage,
   });
   await logActivity({
-    type: "task_created",
+    type: "work_item_created",
     entityId: created.record.id,
     entityIdentifier: created.record.identifier,
     metadata: { title: created.record.title, via: "ask_agent" },
@@ -194,6 +194,21 @@ async function createSalesRecord(input: {
 
 function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : "unknown error";
+}
+
+/**
+ * Server-side "today" runs on UTC hosts (Vercel), but the team logging
+ * calls works on Bangkok wall clocks — `toISOString()` would stamp
+ * yesterday's date for the first seven hours of every day. Defaults
+ * derive from the app timezone instead.
+ */
+const APP_TIME_ZONE = "Asia/Bangkok";
+
+function todayInAppTimeZone(): string {
+  // en-CA formats as YYYY-MM-DD.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIME_ZONE,
+  }).format(new Date());
 }
 
 // ---------------------------------------------------------------------------
@@ -617,7 +632,7 @@ const logCallNote: AskTool = {
       const callDate =
         typeof input.call_date === "string" && input.call_date.trim() !== ""
           ? input.call_date.trim()
-          : new Date().toISOString().slice(0, 10);
+          : todayInAppTimeZone();
       const result = await createSalesRecord({
         title: `Call — ${parent.title} (${callDate})`,
         typeKey: "call_note",
@@ -649,12 +664,89 @@ const logCallNote: AskTool = {
   },
 };
 
+const createCommitment: AskTool = {
+  definition: {
+    name: "create_commitment",
+    description:
+      "Record a commitment (a promise made to a firm — 'send the proposal by Friday') under an opportunity (preferred) or account. Resolve the record with find_crm_record first. Commitments land in the Inbox and are ranked by due date, so due_date is required — infer it from the conversation ('by Friday' → that date) rather than asking, and default to a week out only when nothing was said.",
+    input_schema: {
+      type: "object",
+      properties: {
+        record_id: {
+          type: "string",
+          description: "The opportunity or account record id the promise belongs to.",
+        },
+        title: {
+          type: "string",
+          description: "The promise itself, e.g. 'Send pilot proposal + pricing PDF'.",
+        },
+        due_date: { type: "string", description: "When it was promised for, YYYY-MM-DD." },
+        promised_to: {
+          type: "string",
+          description: "Optional: who the promise was made to, free text.",
+        },
+      },
+      required: ["record_id", "title", "due_date"],
+    },
+  },
+  async execute(input) {
+    const recordRef =
+      typeof input.record_id === "string" ? input.record_id.trim() : "";
+    const title = typeof input.title === "string" ? input.title.trim() : "";
+    const dueDate =
+      typeof input.due_date === "string" ? input.due_date.trim() : "";
+    if (recordRef === "" || title === "" || dueDate === "") {
+      return {
+        content:
+          "record_id, a non-empty title, and due_date are required — resolve the record with find_crm_record first.",
+        isError: true,
+      };
+    }
+    try {
+      const parent = (
+        await findSalesRecords(recordRef, ["opportunity", "account"], 1)
+      ).at(0);
+      if (parent === undefined) {
+        return {
+          content: `No opportunity or account matches "${recordRef}". Call find_crm_record to resolve it first.`,
+          isError: true,
+        };
+      }
+      const result = await createSalesRecord({
+        title,
+        typeKey: "commitment",
+        stateKey: "open",
+        parentId: parent.id,
+      });
+      if ("error" in result) return { content: result.error, isError: true };
+      const attrErrors = await applyAttributeValues(
+        result.created.record.id,
+        result.typeId,
+        {
+          due_date: dueDate,
+          promised_to: input.promised_to,
+        },
+      );
+      return {
+        content: `Recorded commitment "${title}" under "${parent.title}" (due ${dueDate}, id ${result.created.record.id}).${attrNote(attrErrors)}`,
+      };
+    } catch (err) {
+      console.error(`[ask-tools] create_commitment failed ("${recordRef}"):`, err);
+      return {
+        content: `Could not record the commitment: ${errMessage(err)}`,
+        isError: true,
+      };
+    }
+  },
+};
+
 export const ASK_TOOLS: AskTool[] = [
   findCrmRecord,
   createAccount,
   createOpportunity,
   updateOpportunity,
   logCallNote,
+  createCommitment,
 ];
 
 export const ASK_TOOLS_BY_NAME = new Map(

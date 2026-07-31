@@ -32,7 +32,7 @@ test.describe("Reports", () => {
 
     await expect(
       authedPage.getByTestId("report-stat-active-value"),
-    ).toContainText("$0");
+    ).toContainText("฿0");
     await expect(
       authedPage.getByTestId("report-stat-companies"),
     ).toContainText("0");
@@ -81,7 +81,7 @@ test.describe("Reports", () => {
       .click();
     await expect(
       authedPage.getByTestId("sales-pipeline-value"),
-    ).toContainText("$120,000 active", { timeout: STEP_TIMEOUT });
+    ).toContainText("฿120,000 active", { timeout: STEP_TIMEOUT });
 
     // ── Reports reflect the pipeline ───────────────────────────────
     await authedPage.getByTestId("sales-nav-reports").click();
@@ -91,7 +91,7 @@ test.describe("Reports", () => {
 
     await expect(
       authedPage.getByTestId("report-stat-active-value"),
-    ).toContainText("$120,000", { timeout: STEP_TIMEOUT });
+    ).toContainText("฿120,000", { timeout: STEP_TIMEOUT });
     await expect(
       authedPage.getByTestId("report-stat-active-value"),
     ).toContainText("1 open opportunity");
@@ -134,7 +134,7 @@ test.describe("Reports", () => {
       .filter({ hasText: "Acme, Inc." });
     await expect(rosterRow).toBeVisible({ timeout: STEP_TIMEOUT });
     await expect(rosterRow).toContainText("Acme — Workflow pilot");
-    await expect(rosterRow).toContainText("$120,000");
+    await expect(rosterRow).toContainText("฿120,000");
     await expect(rosterRow.locator(".crm-badge-warn")).toHaveText("none");
 
     // Roster rows click through to the deal.

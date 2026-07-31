@@ -48,3 +48,19 @@ export function formatCurrency(cents: number): string {
     currency: "USD",
   }).format(cents / 100);
 }
+
+/**
+ * Pipeline money formatter — CRM deal values (`value_estimate` and its
+ * rollups) are THB in MAJOR units (the attribute is "Value Estimate
+ * (THB/yr)"), not cents. Rendering them with "$" misstated every deal
+ * by the exchange rate; every pipeline surface lands here instead.
+ * Whole baht, no decimals ("฿300,000").
+ */
+export function formatTHB(amount: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "THB",
+    currencyDisplay: "narrowSymbol",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}

@@ -291,7 +291,7 @@ test.describe("CRM record table", () => {
     await valueInput.press("Enter");
     await expect(
       tableRow.getByTestId("sales-pipeline-cell-value_estimate"),
-    ).toContainText("$120,000", { timeout: STEP_TIMEOUT });
+    ).toContainText("฿120,000", { timeout: STEP_TIMEOUT });
 
     // ── Toggle to BOARD (the opt-in) ───────────────────────────────
     await authedPage.getByTestId("sales-pipeline-mode-kanban").click();

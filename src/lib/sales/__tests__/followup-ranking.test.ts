@@ -79,6 +79,41 @@ describe("rankFollowupSuggestions", () => {
     expect(ranked[2]!.detail).toBe("untouched for 17 days");
   });
 
+  it("surfaces due-today between overdue and no-next-action", () => {
+    const overdue = makeOpportunity("overdue");
+    const dueToday = makeOpportunity("today", {
+      updated_at: "2026-07-17T00:00:00Z",
+    });
+    const noNext = makeOpportunity("nonext", {
+      updated_at: "2026-07-17T00:00:00Z",
+    });
+    const attrs = {
+      overdue: snapshot({
+        nextAction: "send proposal",
+        nextActionDate: "2026-07-13",
+      }),
+      today: snapshot({
+        nextAction: "pilot check-in",
+        nextActionDate: "2026-07-18",
+      }),
+      nonext: snapshot(),
+    };
+
+    const ranked = rankFollowupSuggestions(
+      [noNext, dueToday, overdue],
+      attrs,
+      {},
+      CLOCK,
+    );
+    expect(ranked.map((s) => s.reason)).toEqual([
+      "overdue_next_action",
+      "due_today",
+      "no_next_action",
+    ]);
+    expect(ranked[1]!.detail).toBe("next action due today");
+    expect(ranked[1]!.nextAction).toBe("pilot check-in");
+  });
+
   it("excludes won and dead opportunities entirely", () => {
     const won = makeOpportunity("won", {
       state: { id: "st-w", key: "won", name: "Won", category: "done" },

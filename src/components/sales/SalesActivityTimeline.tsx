@@ -51,6 +51,14 @@ export function SalesActivityTimeline({
           <div className="sales-timeline-body min-w-0">
             {entry.kind === "activity" && (
               <p className="sales-timeline-line text-[13px] leading-5">
+                {entry.author && (
+                  <span
+                    className="sales-timeline-author font-medium text-[var(--theme-text-primary)] mr-1"
+                    data-testid="sales-timeline-author"
+                  >
+                    {entry.author}
+                  </span>
+                )}
                 <span className="text-[var(--theme-text-secondary)]">
                   {entry.label}
                 </span>
@@ -115,6 +123,9 @@ export function SalesActivityTimeline({
             )}
             <span className="sales-timeline-when block mt-0.5 text-[11px] text-[var(--theme-text-muted)]">
               {timeAgo(entry.at)}
+              {entry.kind !== "activity" && entry.author && (
+                <span data-testid="sales-timeline-author"> · {entry.author}</span>
+              )}
             </span>
           </div>
         </li>

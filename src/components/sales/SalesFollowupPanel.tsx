@@ -24,6 +24,7 @@ import { CompanyLogo } from "./CompanyLogo";
 
 const REASON_BADGE: Record<FollowupReason, { label: string; className: string }> = {
   overdue_next_action: { label: "Overdue", className: "crm-badge-danger" },
+  due_today: { label: "Due today", className: "crm-badge-warn" },
   no_next_action: { label: "No next step", className: "crm-badge-warn" },
   stale: { label: "Going cold", className: "crm-tag" },
 };

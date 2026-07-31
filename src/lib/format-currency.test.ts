@@ -10,7 +10,7 @@
  *    catch).
  * 3. Metering money stays USD regardless of the plan currency.
  */
-import { formatCurrency, formatSeatPrice } from "./format-currency";
+import { formatCurrency, formatSeatPrice, formatTHB } from "./format-currency";
 
 describe("formatSeatPrice", () => {
   it("renders the seeded THB monthly seat price as ฿890", () => {
@@ -58,5 +58,21 @@ describe("formatCurrency (USD metering)", () => {
   it("is always USD with two decimals — budgets never adopt the plan currency", () => {
     expect(formatCurrency(10_000)).toBe("$100.00");
     expect(formatCurrency(542)).toBe("$5.42");
+  });
+});
+
+describe("formatTHB (pipeline deal values)", () => {
+  it("renders MAJOR-unit baht with the ฿ symbol and grouping", () => {
+    // value_estimate is major units — 300000 is ฿300,000, not satang.
+    expect(formatTHB(300_000)).toBe("฿300,000");
+    expect(formatTHB(1_770_000)).toBe("฿1,770,000");
+  });
+
+  it("never renders deal values with $", () => {
+    expect(formatTHB(600_000)).not.toContain("$");
+  });
+
+  it("drops decimals — whole baht only", () => {
+    expect(formatTHB(96_000.4)).toBe("฿96,000");
   });
 });

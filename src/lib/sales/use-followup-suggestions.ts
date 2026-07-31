@@ -7,6 +7,7 @@
  *
  * Signals (all client-side, from data already fetched):
  *   - overdue next action  — next_action_date < today (worst first)
+ *   - due today            — next_action_date = today (the morning list)
  *   - no next action set   — active deal with no planned step
  *   - stale                — nothing touched in STALE_AFTER_DAYS
  *
@@ -25,7 +26,11 @@ import {
 
 export const STALE_AFTER_DAYS = 7;
 
-export type FollowupReason = "overdue_next_action" | "no_next_action" | "stale";
+export type FollowupReason =
+  | "overdue_next_action"
+  | "due_today"
+  | "no_next_action"
+  | "stale";
 
 export interface FollowupSuggestion {
   opportunity: WorkItem;
@@ -115,6 +120,18 @@ export function rankFollowupSuggestions(
           detail: `next action ${overdueDays} day${overdueDays === 1 ? "" : "s"} overdue`,
           nextAction: attrs.nextAction,
           score: 1000 + overdueDays * 10,
+        });
+        continue;
+      }
+
+      if (attrs?.nextActionDate === today) {
+        suggestions.push({
+          opportunity: opp,
+          account,
+          reason: "due_today",
+          detail: "next action due today",
+          nextAction: attrs.nextAction,
+          score: 900,
         });
         continue;
       }

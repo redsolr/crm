@@ -99,12 +99,6 @@ const IDEMPOTENCY_EXEMPTIONS: ReadonlyArray<{
     mode: "prefix",
     reason: "Health/liveness probes — infra, not platform writes",
   },
-  // Dev-only login bypass.
-  {
-    match: "/auth/dev/login",
-    mode: "exact",
-    reason: "Dev-only login bypass; never in production",
-  },
 ];
 
 interface WriteCallSite {

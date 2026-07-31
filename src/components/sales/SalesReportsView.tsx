@@ -29,6 +29,8 @@ import {
   useOpportunityAttributes,
 } from "@/lib/sales/use-opportunity-attributes";
 import { useAttributeValuesByItem } from "@/lib/sales/use-item-attribute-values";
+import { defKeyIndex, stringValuesByKey } from "@/lib/sales/attribute-projection";
+import { formatTHB } from "@/lib/format-currency";
 import { useAccountAttributes } from "@/lib/sales/use-account-attributes";
 import { useCommitmentsInbox } from "@/lib/sales/use-commitments-inbox";
 import {
@@ -77,9 +79,7 @@ function labelize(key: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function usd(n: number): string {
-  return `$${n.toLocaleString()}`;
-}
+const thb = formatTHB;
 
 export function SalesReportsView() {
   const { bundle, isLoading: bundleLoading } = useSalesWorkspaceBundle();
@@ -196,6 +196,30 @@ export function SalesReportsView() {
     [callNotesQuery.data],
   );
 
+  // call_date per note — the weekly heartbeat counts calls by when they
+  // happened, not when they were typed in (backfilled notes otherwise
+  // pile onto the logging day).
+  const callNoteType = bundle?.workItemTypes.find(
+    (t) => t.key === SALES_TYPE_KEYS.call_note,
+  );
+  const callNoteDefs = useMemo(
+    () =>
+      callNoteType
+        ? bundle?.attributeDefinitionsByType[callNoteType.id] ?? []
+        : [],
+    [bundle, callNoteType],
+  );
+  const callNoteValues = useAttributeValuesByItem(callNotes);
+  const callDateById = useMemo(() => {
+    const index = defKeyIndex(callNoteDefs);
+    const out: Record<string, string | undefined> = {};
+    for (const note of callNotes) {
+      out[note.id] = stringValuesByKey(callNoteValues[note.id] ?? [], index)
+        .call_date;
+    }
+    return out;
+  }, [callNotes, callNoteDefs, callNoteValues]);
+
   const donutSlices = useMemo<DonutSlice[]>(
     () =>
       SOURCE_SLOT_ORDER.map((key, i) => ({
@@ -215,8 +239,8 @@ export function SalesReportsView() {
     [opportunities, now],
   );
   const weekBuckets = useMemo<WeekBucket[]>(
-    () => buildWeekBuckets(callNotes, now),
-    [callNotes, now],
+    () => buildWeekBuckets(callNotes, now, callDateById),
+    [callNotes, now, callDateById],
   );
 
   // Stage roster — which client sits at which state right now.
@@ -272,7 +296,7 @@ export function SalesReportsView() {
         <div className="crm-stat-row">
           <StatTile
             label="Active pipeline"
-            value={usd(activeValue)}
+            value={thb(activeValue)}
             sub={`${activeOpps.length} open ${activeOpps.length === 1 ? "opportunity" : "opportunities"}`}
             testId="report-stat-active-value"
           />
@@ -284,7 +308,7 @@ export function SalesReportsView() {
           />
           <StatTile
             label="Won"
-            value={usd(won?.value ?? 0)}
+            value={thb(won?.value ?? 0)}
             sub={`${won?.count ?? 0} closed-won`}
             testId="report-stat-won"
           />
@@ -312,7 +336,7 @@ export function SalesReportsView() {
                 label: s.label,
                 amount: s.count,
                 display: String(s.count),
-                tooltip: `${s.label} — ${s.count} open · ${usd(s.value)}`,
+                tooltip: `${s.label} — ${s.count} open · ${thb(s.value)}`,
               }))}
             />
           </ReportCard>
@@ -326,8 +350,8 @@ export function SalesReportsView() {
                 key: s.key,
                 label: s.label,
                 amount: s.value,
-                display: usd(s.value),
-                tooltip: `${s.label} — ${usd(s.value)} across ${s.count} ${s.count === 1 ? "deal" : "deals"}`,
+                display: thb(s.value),
+                tooltip: `${s.label} — ${thb(s.value)} across ${s.count} ${s.count === 1 ? "deal" : "deals"}`,
               }))}
             />
           </ReportCard>
@@ -510,7 +534,7 @@ function StageRoster({
                   {deal.opportunity.title}
                 </td>
                 <td className="text-right tabular-nums text-[var(--crm-green)]">
-                  {deal.value > 0 ? usd(deal.value) : "—"}
+                  {deal.value > 0 ? thb(deal.value) : "—"}
                 </td>
                 <td>
                   {deal.nextActionDate ? (

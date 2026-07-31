@@ -114,13 +114,14 @@ placeholder; AI writes (Ask tools + `/mcp`) stamp `Claude (agent)`
 an actor — never reintroduce a hardcoded author.
 
 Known team gaps (queued, don't build unprompted): no cross-user cache
-invalidation (teammates see new records on refresh, not live); author
-names not yet displayed in timeline/comments UI; no in-app roles (every
-seat is equal until the first non-founder joins).
+invalidation (teammates see new records on refresh, not live); no
+in-app roles (every seat is equal until the first non-founder joins).
+Author names in the record timeline SHIPPED 2026-08-01 (`actor_name` on
+activities, `created_by_name` on call notes/commitments).
 
 ### MCP server (`POST /mcp`)
 
-The agent door — the 5 Ask-panel sales tools over Streamable HTTP,
+The agent door — the 6 Ask-panel sales tools over Streamable HTTP,
 bearer-authed via `CRM_MCP_TOKEN`, closed when unset. Tool registry is
 `src/server/ask-tools.ts` (single source; the route only adapts). Full
 doc: [docs/mcp.md](./docs/mcp.md).
