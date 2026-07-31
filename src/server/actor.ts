@@ -29,6 +29,16 @@ export const LOCAL_FALLBACK_ACTOR: RequestActor = {
   email: "local@crm.internal",
 };
 
+/** Project a request actor into the `logActivity` actor shape (human
+ *  writes — agent surfaces build their own with type "agent"). */
+export function asActivityActor(actor: RequestActor): {
+  id: string;
+  type: "user";
+  name: string | null;
+} {
+  return { id: actor.id, type: "user", name: actor.name };
+}
+
 export async function currentActor(): Promise<RequestActor> {
   try {
     const { user } = await withAuth();

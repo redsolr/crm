@@ -4,7 +4,7 @@ import { db, comments } from "@/db";
 import { mintId } from "@/db/ids";
 import { apiError, readJsonBody } from "@/server/api-error";
 import { logActivity } from "@/server/activities";
-import { currentActor } from "@/server/actor";
+import { asActivityActor, currentActor } from "@/server/actor";
 import { serializeComment } from "@/server/comments";
 import { loadWorkItem } from "@/server/work-items";
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     entityId: item.record.id,
     entityIdentifier: item.record.identifier,
     metadata: { comment_id: id },
-    actor: { id: actor.id, type: "user", name: actor.name },
+    actor: asActivityActor(actor),
   });
 
   const created = await db.query.comments.findFirst({

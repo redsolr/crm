@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, records } from "@/db";
 import { apiError, parseIfMatchVersion, readJsonBody } from "@/server/api-error";
 import { logActivity } from "@/server/activities";
-import { currentActor } from "@/server/actor";
+import { asActivityActor, currentActor } from "@/server/actor";
 import {
   completedAtFor,
   loadWorkItem,
@@ -158,7 +158,7 @@ export async function PATCH(
     entityId: existing.record.id,
     entityIdentifier: existing.record.identifier,
     changes: stateChange ? { state_key: stateChange } : null,
-    actor: { id: actor.id, type: "user", name: actor.name },
+    actor: asActivityActor(actor),
   });
 
   const updated = await loadWorkItem(id);
@@ -197,7 +197,7 @@ export async function DELETE(
     type: "work_item_deleted",
     entityId: existing.record.id,
     entityIdentifier: existing.record.identifier,
-    actor: { id: actor.id, type: "user", name: actor.name },
+    actor: asActivityActor(actor),
   });
   return new Response(null, { status: 204 });
 }

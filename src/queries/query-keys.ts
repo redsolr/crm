@@ -261,49 +261,6 @@ export const queryKeys = {
       [...queryKeys.subscriptions.all, "organization", organization_id] as const,
   },
 
-  platformApiKeys: {
-    all: ["platformApiKeys"] as const,
-    usage: (id: string, from?: string, to?: string) =>
-      [...queryKeys.platformApiKeys.all, "usage", id, { from, to }] as const,
-  },
-
-  // Customer-console: audit logs, account-level usage, notification
-  // preferences. Each gets its own root so cache invalidations stay
-  // narrow.
-  auditLogs: {
-    all: ["auditLogs"] as const,
-    list: (filters?: Record<string, unknown>) =>
-      [...queryKeys.auditLogs.all, "list", filters ?? {}] as const,
-  },
-  notificationPreferences: {
-    all: ["notificationPreferences"] as const,
-    me: () => [...queryKeys.notificationPreferences.all, "me"] as const,
-  },
-  consoleSummary: {
-    all: ["consoleSummary"] as const,
-    organization: (organizationId: string) =>
-      [...queryKeys.consoleSummary.all, organizationId] as const,
-  },
-  accountUsage: {
-    all: ["accountUsage"] as const,
-    me: () => [...queryKeys.accountUsage.all, "me"] as const,
-  },
-  usageBreakdown: {
-    all: ["usageBreakdown"] as const,
-    organization: (
-      organizationId: string,
-      groupBy: string,
-      from?: string,
-      to?: string,
-    ) =>
-      [
-        ...queryKeys.usageBreakdown.all,
-        organizationId,
-        groupBy,
-        { from, to },
-      ] as const,
-  },
-
   // Sharing
   sharing: {
     all: ["sharing"] as const,

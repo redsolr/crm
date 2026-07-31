@@ -67,6 +67,25 @@ If you discover an error mid-task, treat it like any other bug: investigate, fix
 - Commenting out tests to unblock CI
 - Declaring done when `tsc`, `jest`, or `next build` reports any error, regardless of which file
 
+**Before any production deploy, additionally run both e2e tiers:**
+
+```bash
+npm run test:e2e            # mocked Playwright (UI behavior)
+npm run test:e2e:real-auth  # REAL WorkOS login + real Postgres, no mocks
+```
+
+The real-auth tier (e2e/*.real-auth.spec.ts — the ONLY specs without
+MOCK_AUTH) exists because mocked tests structurally cannot catch a
+missing or wrongly-shaped real route: that class shipped three
+production bugs on 2026-07-31 (org-bootstrap deadlock, usage-summary
+404, views 404). It drives the actual email+password login against the
+crm WorkOS Staging env (credentials in `.env.local`: `E2E_WORKOS_*` +
+`E2E_WORKOS_TEAMMATE_*` — synthetic users, no real mailboxes), sweeps
+every app surface with a zero-404 tripwire, runs the sales loop with
+saved-view persistence, exercises the `/mcp` agent door, and proves
+two-seat attribution. Prereqs: docker Postgres on :5440, migrated +
+seeded (`npm run db:seed`).
+
 ### Debugging
 
 **When the user says to debug**: Add `console.log` statements to trace the issue. Do NOT guess or theorize — instrument the code and let the logs reveal the problem.
@@ -82,6 +101,29 @@ If you discover an error mid-task, treat it like any other bug: investigate, fix
 **Callback** (`callback/route.ts`) — Uses a custom handler with `authenticateWithCode` + `saveSession`, NOT `handleAuth`. The v3 `handleAuth` requires PKCE state that only `getSignInUrl()` sets. Since we use `getAuthorizationUrl()` (direct provider), the callback must exchange the code manually.
 
 **These three are coupled**: `getAuthorizationUrl` (routes) + custom `authenticateWithCode` callback + plain `authkitProxy` proxy. Changing any one breaks the others.
+
+### Backend identity (team attribution, swap step 6 — DONE 2026-07-31)
+
+Every write route resolves WHO is writing via `src/server/actor.ts`
+`currentActor()` (reads the AuthKit session headers the proxy attaches).
+Records carry real `created_by_id`/`created_by_name`, comments carry
+`author_name`/`author_email`, activities carry real actors. Session-less
+callers (MOCK_AUTH, unit tests) fall back to the `usr_local`
+placeholder; AI writes (Ask tools + `/mcp`) stamp `Claude (agent)`
+(`AGENT_ACTOR_ID`, `actor_type: "agent"`). New write paths MUST thread
+an actor — never reintroduce a hardcoded author.
+
+Known team gaps (queued, don't build unprompted): no cross-user cache
+invalidation (teammates see new records on refresh, not live); author
+names not yet displayed in timeline/comments UI; no in-app roles (every
+seat is equal until the first non-founder joins).
+
+### MCP server (`POST /mcp`)
+
+The agent door — the 5 Ask-panel sales tools over Streamable HTTP,
+bearer-authed via `CRM_MCP_TOKEN`, closed when unset. Tool registry is
+`src/server/ask-tools.ts` (single source; the route only adapts). Full
+doc: [docs/mcp.md](./docs/mcp.md).
 
 ### Mock Auth (`MOCK_AUTH=true`)
 
