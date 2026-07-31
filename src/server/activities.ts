@@ -57,6 +57,9 @@ export interface LogActivityInput {
   entityIdentifier: string | null;
   changes?: unknown;
   metadata?: unknown;
+  /** Who performed the write. Defaults to the local human actor;
+   *  agent surfaces (Ask tools, /mcp) pass their machine identity. */
+  actor?: { id: string; type: "user" | "agent" | "system"; name: string | null };
 }
 
 export async function logActivity(input: LogActivityInput): Promise<void> {
@@ -66,9 +69,9 @@ export async function logActivity(input: LogActivityInput): Promise<void> {
     entityType: "work_item",
     entityId: input.entityId,
     entityIdentifier: input.entityIdentifier,
-    actorId: LOCAL_ACTOR_ID,
-    actorType: "user",
-    actorName: null,
+    actorId: input.actor?.id ?? LOCAL_ACTOR_ID,
+    actorType: input.actor?.type ?? "user",
+    actorName: input.actor?.name ?? null,
     changes: input.changes ?? null,
     metadata: input.metadata ?? null,
   });

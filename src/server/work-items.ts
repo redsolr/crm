@@ -300,6 +300,10 @@ export interface CreateInput {
   body: z.infer<typeof createWorkItemSchema>;
   type: TypeRow;
   stage: StageRow;
+  /** Record author. Defaults to the local human actor; agent surfaces
+   *  (Ask tools, /mcp) pass their machine identity so `created_by`
+   *  is honest about who made the record. */
+  createdBy?: { id: string; name: string | null };
 }
 
 export async function insertWorkItem(
@@ -324,7 +328,8 @@ export async function insertWorkItem(
     position,
     parentId: body.parent_id ?? null,
     assigneeId: body.assignee_id ?? null,
-    createdById: LOCAL_ACTOR_ID,
+    createdById: input.createdBy?.id ?? LOCAL_ACTOR_ID,
+    createdByName: input.createdBy?.name ?? null,
     dueDate: body.due_date === undefined ? null : new Date(body.due_date),
     estimate: body.estimate ?? null,
     completedAt: completedAtFor(stage.category, null),

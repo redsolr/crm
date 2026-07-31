@@ -1,6 +1,7 @@
 import { and, eq, ilike, inArray } from "drizzle-orm";
 import { db, records, recordTypes, workflowStages } from "@/db";
 import { logActivity } from "./activities";
+import { AGENT_ACTOR_ID, AGENT_ACTOR_NAME } from "./constants";
 import {
   listDefinitionsForType,
   upsertValue,
@@ -171,6 +172,7 @@ async function createSalesRecord(input: {
     };
   }
   const created = await insertWorkItem({
+    createdBy: { id: AGENT_ACTOR_ID, name: AGENT_ACTOR_NAME },
     body: {
       title: input.title,
       type_key: input.typeKey,
@@ -185,6 +187,7 @@ async function createSalesRecord(input: {
     entityId: created.record.id,
     entityIdentifier: created.record.identifier,
     metadata: { title: created.record.title, via: "ask_agent" },
+    actor: { id: AGENT_ACTOR_ID, type: "agent", name: AGENT_ACTOR_NAME },
   });
   return { created, typeId: type.id };
 }
@@ -519,6 +522,7 @@ const updateOpportunity: AskTool = {
           entityIdentifier: opportunity.identifier,
           changes: { state_key: { from: opportunity.stateKey, to: stage } },
           metadata: { via: "ask_agent" },
+          actor: { id: AGENT_ACTOR_ID, type: "agent", name: AGENT_ACTOR_NAME },
         });
         changes.push(`stage → ${stage}`);
       }
