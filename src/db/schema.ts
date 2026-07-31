@@ -273,6 +273,10 @@ export const comments = pgTable("comments", {
     .references(() => records.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   authorId: text("author_id").notNull(),
+  /** Real author identity (team attribution, swap step 6 — 2026-07-31).
+   *  Null on rows written before the columns existed. */
+  authorName: text("author_name"),
+  authorEmail: text("author_email"),
   mentions: jsonb("mentions").notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

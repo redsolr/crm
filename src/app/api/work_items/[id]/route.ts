@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, records } from "@/db";
 import { apiError, parseIfMatchVersion, readJsonBody } from "@/server/api-error";
 import { logActivity } from "@/server/activities";
+import { currentActor } from "@/server/actor";
 import {
   completedAtFor,
   loadWorkItem,
@@ -151,11 +152,13 @@ export async function PATCH(
 
   await db.update(records).set(changes).where(eq(records.id, id));
 
+  const actor = await currentActor();
   await logActivity({
     type: stateChange ? "work_item_status_changed" : "work_item_updated",
     entityId: existing.record.id,
     entityIdentifier: existing.record.identifier,
     changes: stateChange ? { state_key: stateChange } : null,
+    actor: { id: actor.id, type: "user", name: actor.name },
   });
 
   const updated = await loadWorkItem(id);
@@ -189,10 +192,12 @@ export async function DELETE(
   }
 
   await db.delete(records).where(eq(records.id, id));
+  const actor = await currentActor();
   await logActivity({
     type: "work_item_deleted",
     entityId: existing.record.id,
     entityIdentifier: existing.record.identifier,
+    actor: { id: actor.id, type: "user", name: actor.name },
   });
   return new Response(null, { status: 204 });
 }

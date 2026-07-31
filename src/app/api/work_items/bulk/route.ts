@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, records } from "@/db";
 import { apiError, readJsonBody } from "@/server/api-error";
 import { logActivity } from "@/server/activities";
+import { currentActor } from "@/server/actor";
 import {
   bulkUpdateSchema,
   completedAtFor,
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
+  const actor = await currentActor();
   const updatedIds: string[] = [];
   for (const row of loaded) {
     const changes: Partial<typeof records.$inferInsert> = {};
@@ -95,6 +97,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       entityId: row.record.id,
       entityIdentifier: row.record.identifier,
       changes: stateChange ? { state_key: stateChange } : null,
+      actor: { id: actor.id, type: "user", name: actor.name },
     });
     updatedIds.push(row.record.id);
   }

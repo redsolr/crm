@@ -48,6 +48,8 @@ export interface UpdateCommentRequest {
  */
 export interface CommentAuthorPayload {
   id: string;
+  /** Real author display name (team attribution); null on legacy rows. */
+  name?: string | null;
   email: string;
 }
 

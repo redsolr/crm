@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError, readJsonBody } from "@/server/api-error";
 import { logActivity } from "@/server/activities";
+import { currentActor } from "@/server/actor";
 import {
   MAX_PAGE_SIZE,
   createWorkItemSchema,
@@ -128,11 +129,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const created = await insertWorkItem({ body, type, stage });
+  const actor = await currentActor();
+  const created = await insertWorkItem({
+    body,
+    type,
+    stage,
+    createdBy: { id: actor.id, name: actor.name },
+  });
   await logActivity({
     type: "work_item_created",
     entityId: created.record.id,
     entityIdentifier: created.record.identifier,
+    actor: { id: actor.id, type: "user", name: actor.name },
   });
   return NextResponse.json(
     { work_item: serializeWorkItem(created) },

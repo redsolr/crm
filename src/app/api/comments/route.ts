@@ -4,7 +4,7 @@ import { db, comments } from "@/db";
 import { mintId } from "@/db/ids";
 import { apiError, readJsonBody } from "@/server/api-error";
 import { logActivity } from "@/server/activities";
-import { LOCAL_ACTOR_ID } from "@/server/constants";
+import { currentActor } from "@/server/actor";
 import { serializeComment } from "@/server/comments";
 import { loadWorkItem } from "@/server/work-items";
 
@@ -40,12 +40,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
+  const actor = await currentActor();
   const id = mintId("cmt");
   await db.insert(comments).values({
     id,
     workItemId: body.work_item_id,
     content: body.content,
-    authorId: LOCAL_ACTOR_ID,
+    authorId: actor.id,
+    authorName: actor.name,
+    authorEmail: actor.email,
     mentions: body.mentions ?? [],
   });
 
@@ -54,6 +57,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     entityId: item.record.id,
     entityIdentifier: item.record.identifier,
     metadata: { comment_id: id },
+    actor: { id: actor.id, type: "user", name: actor.name },
   });
 
   const created = await db.query.comments.findFirst({

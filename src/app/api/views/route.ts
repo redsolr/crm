@@ -4,7 +4,8 @@ import { db } from "@/db";
 import { savedViews } from "@/db/schema";
 import { mintId } from "@/db/ids";
 import { apiError, readJsonBody } from "@/server/api-error";
-import { CRM_WORKSPACE_ID, LOCAL_ACTOR_ID } from "@/server/constants";
+import { currentActor } from "@/server/actor";
+import { CRM_WORKSPACE_ID } from "@/server/constants";
 import { createViewSchema, serializeSavedView } from "@/server/views";
 
 /**
@@ -28,9 +29,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const owner = params.get("owner");
   if (owner !== null && owner !== "") {
-    conditions.push(
-      eq(savedViews.ownerAccountId, owner === "me" ? LOCAL_ACTOR_ID : owner),
-    );
+    const me = owner === "me" ? (await currentActor()).id : owner;
+    conditions.push(eq(savedViews.ownerAccountId, me));
   }
 
   const rows = await db
@@ -55,6 +55,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
   const body = parsed.data;
 
+  const actor = await currentActor();
   const id = mintId("view");
   await db.insert(savedViews).values({
     id,
@@ -62,8 +63,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     kind: body.kind,
     visibility: body.visibility ?? "private",
     workspaceId: CRM_WORKSPACE_ID,
-    ownerAccountId: LOCAL_ACTOR_ID,
-    ownerName: null,
+    ownerAccountId: actor.id,
+    ownerName: actor.name,
     query: body.query ?? {},
   });
 

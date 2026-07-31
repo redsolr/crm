@@ -28,7 +28,7 @@ export async function GET(
   return NextResponse.json({
     data: rows.map((row) => ({
       comment: serializeComment(row),
-      author: authorPayloadFor(row.authorId),
+      author: authorPayloadFor(row),
     })),
   });
 }
