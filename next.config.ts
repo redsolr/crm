@@ -5,6 +5,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Public MCP endpoint: agents connect to the clean /mcp URL
+  // (Attio-style); the handler physically lives at
+  // app/api/mcp/[transport] (mcp-handler's required layout).
+  async rewrites() {
+    return [{ source: "/mcp", destination: "/api/mcp/mcp" }];
+  },
   // The e2e webServer sets NEXT_DIST_DIR=.next-e2e so its `next dev`
   // can run ALONGSIDE a developer's dev server — two instances can't
   // share .next (build lock), which is what used to force the suites
