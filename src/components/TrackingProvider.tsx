@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import { useAuth } from "@/stores/use-auth";
 import { initFaro } from "@/lib/tracking/faro";
 import { initPostHog, identifyUser, resetUser } from "@/lib/tracking/posthog";
-import { startPresence, stopPresence } from "@/lib/tracking/presence";
 
 export function TrackingProvider() {
   // Initialize non-Sentry SDKs once on mount
@@ -15,7 +14,9 @@ export function TrackingProvider() {
     initPostHog();
   }, []);
 
-  // Identify user across all tracking services + start presence
+  // Identify user across all tracking services. Presence heartbeats were
+  // platform-era dead weight — the standalone backend has no
+  // /api/presence/heartbeat route, so every ping 404'd.
   const { user } = useAuth();
 
   useEffect(() => {
@@ -25,12 +26,9 @@ export function TrackingProvider() {
         email: user.email || "",
         name: user.full_name || "",
       });
-
-      startPresence();
     } else {
       Sentry.setUser(null);
       resetUser();
-      stopPresence();
     }
   }, [user]);
 

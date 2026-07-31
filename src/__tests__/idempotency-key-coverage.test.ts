@@ -105,23 +105,6 @@ const IDEMPOTENCY_EXEMPTIONS: ReadonlyArray<{
     mode: "exact",
     reason: "Dev-only login bypass; never in production",
   },
-  // OAuth code → JWT exchange (auth/workos/exchange) — hitting it
-  // twice is fine; the second exchange just fails on consumed code.
-  {
-    match: "/auth/workos/exchange",
-    mode: "exact",
-    reason: "OAuth code-exchange — second call fails on consumed code",
-  },
-  // Presence heartbeat — fires every N seconds while the user is
-  // active. Each heartbeat is independently meaningful (latest beat
-  // wins server-side); replaying a stale beat is a no-op. Adding
-  // Idempotency-Key would just bloat the Redis dedupe cache for a
-  // high-frequency, naturally-idempotent surface.
-  {
-    match: "/api/presence/heartbeat",
-    mode: "exact",
-    reason: "High-frequency heartbeat; latest beat wins; replay is a no-op",
-  },
 ];
 
 interface WriteCallSite {

@@ -45,12 +45,8 @@ export function CrmSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const { isAccountMenuOpen, toggleAccountMenu } = useLayoutUI();
-  const {
-    currentOrganization,
-    workspaces,
-    currentWorkspace,
-    setCurrentWorkspace,
-  } = useAppContext();
+  const { workspaces, currentWorkspace, setCurrentWorkspace } =
+    useAppContext();
   const { bundle } = useSalesWorkspaceBundle();
   const workspaceId = bundle?.workspace.id;
   const accounts = useAccountsQuery(workspaceId);
@@ -242,7 +238,7 @@ export function CrmSidebar() {
           aria-expanded={isAccountMenuOpen}
         >
           <span className="crm-sidebar-org">
-            {currentOrganization?.name ?? ""}
+            {currentWorkspace?.name ?? ""}
           </span>
           <span className="crm-sidebar-user" data-testid="crm-sidebar-user">
             {user?.email ?? ""}

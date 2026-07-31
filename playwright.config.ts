@@ -42,6 +42,17 @@ import { defineConfig, devices } from "@playwright/test";
 const isIntegration = process.env.E2E_MODE === "integration";
 
 /**
+ * `E2E_MODE=real-auth` runs the ONLY tier without MOCK_AUTH: the web
+ * server boots with the real WorkOS credentials from `.env.local` (the
+ * crm WorkOS project's Staging env) and the spec drives the actual
+ * email+password login. Exists because every other tier mocks auth,
+ * which is exactly how the 2026-07-31 production bootstrap deadlock
+ * (real login → org-query 404 → workspace query never enabled →
+ * infinite spinner) shipped unseen.
+ */
+const isRealAuth = process.env.E2E_MODE === "real-auth";
+
+/**
  * `E2E_PAAS=true` enables the cross-repo PaaS three-tab spec
  * (`paas-customer-0.integration.spec.ts`). It (a) adds a second
  * `webServer` entry that boots feedback-board (`:3003`) with
@@ -69,7 +80,16 @@ const seWebServer = {
   timeout: 120 * 1000,
   env: {
     ...process.env,
-    MOCK_AUTH: "true",
+    // real-auth is the one tier that must NOT mock auth — next dev picks
+    // up the real WorkOS credentials from .env.local instead. It must
+    // ALSO self-address its API: .env.local pins the api base to the
+    // dev server's :3100, but this server serves its own /api on
+    // WEB_PORT (process env outranks .env.local in Next). The mocked
+    // tiers never notice the port mismatch because page.route()
+    // intercepts every API call before it leaves the browser.
+    ...(isRealAuth
+      ? { NEXT_PUBLIC_API_BASE_URL: `http://localhost:${WEB_PORT}` }
+      : { MOCK_AUTH: "true" }),
     // Own dist dir — coexists with a dev server sharing the repo.
     NEXT_DIST_DIR: ".next-e2e",
     // Hides dev-only floating widgets (TanStack devtools) that intercept
@@ -132,7 +152,11 @@ export default defineConfig({
     // Tier 1: Mocked — fast UI behavior tests
     {
       name: "mocked",
-      testIgnore: [/\.integration\.spec\.ts$/, /\.mobile\.spec\.ts$/],
+      testIgnore: [
+        /\.integration\.spec\.ts$/,
+        /\.mobile\.spec\.ts$/,
+        /\.real-auth\.spec\.ts$/,
+      ],
       use: { ...devices["Desktop Chrome"] },
     },
     // Tier 1b: Mocked Mobile — responsive UI tests at mobile viewport
@@ -155,6 +179,20 @@ export default defineConfig({
       testIgnore: /(?:paas-|featurebase-).*\.integration\.spec\.ts$/,
       use: { ...devices["Desktop Chrome"] },
     },
+    // Tier 3: Real auth — no MOCK_AUTH; drives the actual WorkOS
+    // email+password login against the crm Staging environment and
+    // asserts the shell bootstraps. Only registered under
+    // `E2E_MODE=real-auth` so `test:e2e:all` (which exports MOCK_AUTH)
+    // can never run this spec against a mocked server.
+    ...(isRealAuth
+      ? [
+          {
+            name: "real-auth",
+            testMatch: /\.real-auth\.spec\.ts$/,
+            use: { ...devices["Desktop Chrome"] },
+          },
+        ]
+      : []),
     // Tier 2b: PaaS — three-tab cross-repo spec proving same `/v1/*`
     // endpoints serve admin-cookie + anon + api-key callers. Requires
     // feedback-board on `:3003` with `NEXT_PUBLIC_BOARD_SLUG=acme`.

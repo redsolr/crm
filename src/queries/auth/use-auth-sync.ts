@@ -19,14 +19,15 @@
  *      returns the decoded user. The provider exposes it via `useAuth` from
  *      `@workos-inc/authkit-nextjs/components`.
  *
- *   3. `useAuthSync` (this hook) listens for the WorkOS user and, on every
- *      change, POSTs it to the NestJS backend at `/auth/workos/exchange` to
- *      obtain our own backend JWT + account/role context. The result is
- *      mirrored into the Zustand `auth.store`, which the rest of the app
- *      consumes via `useAuth` from `@/stores/use-auth`.
+ *   3. `useAuthSync` (this hook) mirrors the WorkOS user into the Zustand
+ *      `auth.store` directly. There is NO backend exchange: WorkOS is the
+ *      identity provider, and the in-repo `/api` routes authenticate via
+ *      the AuthKit session cookie (the platform-era
+ *      `POST /auth/workos/exchange` backend no longer exists — calling it
+ *      was dead weight that 404'd on every login).
  *
  *   4. `ProtectedRoute` reads from Zustand and bounces to `/login` if the
- *      user is null. So the entire chain must succeed for `/chat` to load.
+ *      user is null. So steps 1–3 must succeed for any (app) route to load.
  *
  * Historical gotchas (fixed — do NOT reintroduce):
  *
@@ -39,29 +40,22 @@
  *
  *   - Mock auth flag leaked into committed `.env` once, which made
  *     `layout.tsx` mount `E2EAuthInit` instead of `AuthSync`.
- *     Symptom: this hook never runs, no `/auth/workos/exchange` call in the
- *     Network tab, user stays null, bounced to `/login`. Fix: mock auth
- *     uses server-only `MOCK_AUTH` env var (set by `npm run dev:mock`
- *     or Playwright) — never committed to `.env` files.
+ *     Symptom: this hook never runs, user stays null, bounced to `/login`.
+ *     Fix: mock auth uses server-only `MOCK_AUTH` env var (set by
+ *     `npm run dev:mock` or Playwright) — never committed to `.env` files.
  * ============================================================================
  */
 
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef } from "react";
 import { useAuth as useWorkOSAuth } from "@workos-inc/authkit-nextjs/components";
 import { useAuthStore } from "@/stores/auth.store";
-import { authService } from "@/lib/authTokenManager";
-import {
-  buildAuthUserFromExchange,
-  buildFallbackAuthUser,
-  exchangeWorkOSIdentity,
-  type WorkOSUserLike,
-} from "./auth-bridge";
+import { buildAuthUserFromWorkOS, type WorkOSUserLike } from "./auth-bridge";
 
 export function useAuthSync() {
   const { user: workosUser, loading: workosLoading } = useWorkOSAuth();
 
-  // Track the last WorkOS user id we exchanged for, so we don't re-POST the
-  // backend on every render when nothing has actually changed.
+  // Track the last WorkOS user id we synced, so we don't rewrite the store
+  // on every render when nothing has actually changed.
   const syncedUserIdRef = useRef<string | null>(null);
 
   // Session-expiration listener: API clients dispatch this event on 401.
@@ -93,44 +87,8 @@ export function useAuthSync() {
     // Already synced this user — nothing to do.
     if (syncedUserIdRef.current === workosUser.id) return;
 
-    void syncWithBackend(workosUser as WorkOSUserLike, syncedUserIdRef);
-  }, [workosUser, workosLoading]);
-}
-
-/**
- * Perform one exchange + store hydration cycle. Kept outside the hook so the
- * orchestration is linear and easy to read; all pure data shaping lives in
- * `auth-bridge.ts`.
- */
-async function syncWithBackend(
-  workosUser: WorkOSUserLike,
-  syncedUserIdRef: RefObject<string | null>,
-): Promise<void> {
-  const store = useAuthStore.getState();
-
-  try {
-    const data = await exchangeWorkOSIdentity(workosUser);
-
-    if (!data) {
-      // Backend reachable but returned non-2xx — fall back to the minimal
-      // WorkOS-derived user so the UI isn't completely blocked.
-      store.setUser(buildFallbackAuthUser(workosUser));
-      return;
-    }
-
-    // BE sets access + refresh + csrf cookies on /auth/workos/exchange.
-    // backendToken stays in the store as a non-persistent flag for
-    // code paths that need a quick "did the exchange succeed?" check.
-    store.setBackendToken(data.access_token);
-    authService.invalidateAuthState();
-    store.setNeedsOnboarding(data.needs_onboarding ?? false);
-    store.setUser(buildAuthUserFromExchange(workosUser, data));
-    syncedUserIdRef.current = workosUser.id;
-  } catch (error) {
-    // Network error or backend down — fall back to WorkOS identity only.
-    console.error("[useAuthSync] backend exchange failed:", error);
-    store.setUser(buildFallbackAuthUser(workosUser));
-  } finally {
+    store.setUser(buildAuthUserFromWorkOS(workosUser as WorkOSUserLike));
     store.setLoading(false);
-  }
+    syncedUserIdRef.current = workosUser.id;
+  }, [workosUser, workosLoading]);
 }

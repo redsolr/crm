@@ -27,6 +27,8 @@
     "test:e2e:real-llm": "cross-env MOCK_AUTH=true E2E_MODE=integration RUN_REAL_LLM_E2E=true playwright test --project=integration chat-real-llm.integration.spec.ts",
     "pretest:e2e:mobile": "node e2e/scripts/ensure-port-free.mjs",
     "test:e2e:mobile": "cross-env MOCK_AUTH=true playwright test --project=mobile",
+    "pretest:e2e:real-auth": "node e2e/scripts/ensure-port-free.mjs",
+    "test:e2e:real-auth": "cross-env E2E_MODE=real-auth playwright test --project=real-auth",
     "pretest:e2e:all": "node e2e/scripts/ensure-port-free.mjs",
     "test:e2e:all": "cross-env MOCK_AUTH=true playwright test",
     "test:e2e:ui": "cross-env MOCK_AUTH=true playwright test --ui",
