@@ -4,7 +4,6 @@ import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components";
 import "./globals.css";
 import { QueryProvider } from "@/queries/query-provider";
 import { AuthSync } from "@/queries/auth/AuthSync";
-import { SettingsSync } from "@/queries/auth/SettingsSync";
 import { E2EAuthInit } from "@/components/E2EAuthInit";
 import { ThemeInit } from "@/components/ThemeInit";
 import { TrackingProvider } from "@/components/TrackingProvider";
@@ -109,7 +108,6 @@ export default function RootLayout({
         {isMockAuth ? (
           <QueryProvider>
             <E2EAuthInit />
-            <SettingsSync />
             <div className="flex w-full h-full min-h-screen">
               <div className="flex-1 flex flex-col min-h-screen">
                 {children}
@@ -120,7 +118,6 @@ export default function RootLayout({
           <AuthKitProvider>
             <QueryProvider>
               <AuthSync />
-              <SettingsSync />
               <div className="flex w-full h-full min-h-screen">
                 <div className="flex-1 flex flex-col min-h-screen">
                   {children}

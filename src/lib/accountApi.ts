@@ -4,7 +4,7 @@ import type {
   AccountMembership,
   AccountMembershipList,
 } from "./generated/api/models";
-import type { AccountId, FolderId, OrganizationId, SubscriptionId } from "./ids";
+import type { AccountId, FolderId, SubscriptionId } from "./ids";
 
 export type { AccountMembership, AccountMembershipList };
 
@@ -80,98 +80,10 @@ export interface CreateFolderRequest {
   };
 }
 
-/**
- * Re-issued auth envelope returned by `POST /api/accounts/me:switch_organization`.
- * Same shape as the WorkOS exchange response — re-mints the access /
- * refresh token pair bound to the target organization.
- */
-export interface SwitchOrganizationResponse {
-  success: true;
-  user: {
-    id: AccountId;
-    email: string;
-    full_name: string | null;
-    avatar_url: string | null;
-  };
-  organization_id: OrganizationId | undefined;
-  organization_name: string | undefined;
-  role: string | undefined;
-  needs_onboarding: boolean;
-  needs_profile_setup: boolean;
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-}
-
 class AccountApiClient extends BaseApiClient {
   // Account
   async getAccount(account_id: string): Promise<unknown> {
     return this.request(`/accounts/${account_id}`);
-  }
-
-  // Active-org primitives (`docs/platform/multi-tenant-model.md` §
-  // "Active organization resolution"). Memberships are JWT-bound;
-  // switching re-mints the token pair against the target org.
-
-  /** `GET /api/accounts/me/organizations` — every org the caller is an
-   *  active member of, with the membership row inline. */
-  async listMyOrganizations(): Promise<AccountMembershipList> {
-    return this.request<AccountMembershipList>("/accounts/me/organizations");
-  }
-
-  /** `POST /api/accounts/me:switch_organization` — AIP-136 custom action;
-   *  rebinds the active org. Caller must replace stored tokens with the
-   *  pair returned. 403 `organization_membership_required` if the target
-   *  isn't an active membership. */
-  async switchOrganization(
-    organization_id: string,
-    idempotencyKey: string = freshIdempotencyKey(),
-  ): Promise<SwitchOrganizationResponse> {
-    return this.request<SwitchOrganizationResponse>(
-      "/accounts/me:switch_organization",
-      {
-        method: "POST",
-        body: JSON.stringify({ organization_id: organization_id }),
-        headers: { "Idempotency-Key": idempotencyKey },
-      },
-    );
-  }
-
-  // Subscription — belongs to the organization, not the account
-  // (the multi-tenant model puts billing on the org). The wrapper
-  // accepts the active `organization_id` (resolvable from the auth
-  // store's `user.organization_id`).
-  async getSubscription(
-    organization_id: string,
-  ): Promise<Subscription | null> {
-    // Platform returns `CurrentSubscriptionResponseDto` envelope:
-    // `{ subscription, organization, message? }` (see
-    // `platform/src/modules/subscriptions/subscriptions.response.dto.ts`).
-    // Unwrap to the bare `Subscription` shape callers expect — they
-    // read `.status` / `.plan_type` directly. An org without a
-    // subscription row returns NULL, honestly — the old
-    // `{} as Subscription` normalisation was a truthy lie that walked
-    // past `subscription && ...` guards and crashed the account page
-    // on `formatSeatPrice(undefined, undefined)`.
-    const res = await this.request<{
-      subscription: Subscription | null;
-      organization?: { id: string };
-      message?: string;
-    }>(`/organizations/${organization_id}/subscription`);
-    return res.subscription ?? null;
-  }
-
-  // Usage — account-level consolidated summary across every org the
-  // caller owns. Backed by `GET /api/accounts/me/usage/summary` which
-  // resolves the account from the auth token; `account_id` is
-  // accepted-and-ignored here so existing call sites don't have to
-  // refactor their signature.
-  async getUsageSummary(
-    _account_id: string,
-    _periodStart?: string,
-    _periodEnd?: string,
-  ): Promise<UsageSummary> {
-    return this.request<UsageSummary>("/accounts/me/usage/summary");
   }
 
   // Account update

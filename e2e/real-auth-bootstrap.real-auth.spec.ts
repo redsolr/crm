@@ -42,15 +42,6 @@ const email = process.env.E2E_WORKOS_EMAIL ?? envLocal("E2E_WORKOS_EMAIL");
 const password =
   process.env.E2E_WORKOS_PASSWORD ?? envLocal("E2E_WORKOS_PASSWORD");
 
-/** The three platform-era endpoints removed by the 2026-07-31 dead-weight
- *  strip. A request to ANY of them is a regression — they have no route
- *  handlers, and the org one deadlocked the shell. */
-const DEAD_ENDPOINTS = [
-  "/auth/workos/exchange",
-  "/api/organizations",
-  "/api/presence/heartbeat",
-];
-
 test("real WorkOS login boots the sales shell with no dead platform calls", async ({
   page,
 }) => {
@@ -62,11 +53,19 @@ test("real WorkOS login boots the sales shell with no dead platform calls", asyn
     "E2E_WORKOS_EMAIL / E2E_WORKOS_PASSWORD missing (env or .env.local)",
   );
 
-  const deadCalls: string[] = [];
-  page.on("request", (req) => {
-    const url = req.url();
-    if (DEAD_ENDPOINTS.some((path) => url.includes(path))) {
-      deadCalls.push(url);
+  // ANY 404 from the app's own /api or /auth surface is a caller to a
+  // route that doesn't exist — the dead-weight class that deadlocked
+  // production (organizations, exchange, presence, usage/summary, …).
+  // Track the whole class, not an enumerated list: the list is exactly
+  // what let usage/summary slip through the first version of this spec.
+  const notFound: string[] = [];
+  page.on("response", (res) => {
+    const url = new URL(res.url());
+    if (
+      res.status() === 404 &&
+      (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/"))
+    ) {
+      notFound.push(`${res.request().method()} ${url.pathname}`);
     }
   });
 
@@ -96,5 +95,10 @@ test("real WorkOS login boots the sales shell with no dead platform calls", asyn
     timeout: 45_000,
   });
 
-  expect(deadCalls).toEqual([]);
+  // Let post-boot background queries (settings syncs, list prefetches)
+  // fire before judging — the usage/summary 404 arrived AFTER the shell
+  // rendered, which is why a render-only assertion missed it.
+  await page.waitForTimeout(3_000);
+
+  expect(notFound).toEqual([]);
 });

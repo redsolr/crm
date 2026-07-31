@@ -4,12 +4,20 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import type { Subscription, UsageSummary } from "@/lib/accountApi";
 
+/**
+ * Billing surface state. The standalone CRM has NO billing backend —
+ * there is no subscription or usage endpoint to fetch from — so the
+ * store initializes already-hydrated with nulls and the account page
+ * renders its honest empty states ("No subscription…"). The shape is
+ * kept so a future billing integration only has to call `hydrate`.
+ */
+
 interface UserSettingsState {
   subscription: Subscription | null;
   usage: UsageSummary | null;
-  /** True once the initial fetch after login completes (success or failure). */
+  /** True when the state reflects reality (always, since there is no
+   *  fetch — see the module note). */
   hydrated: boolean;
-  /** True while the initial or a manual refresh fetch is in progress. */
   loading: boolean;
 }
 
@@ -29,7 +37,7 @@ interface UserSettingsActions {
 const initialState: UserSettingsState = {
   subscription: null,
   usage: null,
-  hydrated: false,
+  hydrated: true,
   loading: false,
 };
 
