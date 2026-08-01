@@ -33,6 +33,7 @@ import { PersonAvatar } from "./PersonAvatar";
 import { SalesActivityTimeline } from "./SalesActivityTimeline";
 import { AttributeEditorPanel } from "./AttributeFieldEditor";
 import { RecordPresenceLayer } from "@/components/presence/RecordPresenceLayer";
+import { LiveNotePanel } from "./notes/LiveNotePanel";
 
 interface Props {
   accountId: string;
@@ -187,6 +188,11 @@ export function SalesAccountDetailView({ accountId }: Props) {
           />
         </section>
         <div className="space-y-5 min-w-0">
+          <LiveNotePanel
+            bundle={bundle}
+            recordId={accountId}
+            recordTitle={account.data.title}
+          />
           <OpportunitiesPanel
             opportunities={opportunities}
             onOpen={(id) => router.push(`/sales/opportunity/${id}`)}

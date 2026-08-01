@@ -117,17 +117,51 @@ function LiveNoteEditor({
   sessionRef.current = session;
 
   useEffect(() => {
+    // The Y.Doc outlives provider swaps (content is CRDT state; a new
+    // provider just re-syncs). The provider is REPLACED when its token
+    // dies: socket tokens live 1h and y-websocket reuses its params on
+    // every reconnect — after expiry it would retry-401 forever, so on
+    // connection errors we re-mint via the session route and rebuild
+    // the provider with a fresh token.
     const doc = new Y.Doc();
-    const provider = new WebsocketProvider(
-      sessionRef.current.doc_base_url,
-      recordId,
-      doc,
-      { params: { token: sessionRef.current.token } },
-    );
-    setCollab({ doc, provider });
+    let provider: WebsocketProvider | null = null;
+    let disposed = false;
+    let refreshing = false;
+
+    const attach = (docBaseUrl: string, token: string) => {
+      if (disposed) return;
+      const next = new WebsocketProvider(docBaseUrl, recordId, doc, {
+        params: { token },
+      });
+      next.on("connection-error", () => void refresh());
+      provider = next;
+      setCollab({ doc, provider: next });
+    };
+
+    const refresh = async () => {
+      if (disposed || refreshing) return;
+      refreshing = true;
+      try {
+        // Small delay so a transient network blip settles first.
+        await new Promise((r) => setTimeout(r, 3_000));
+        if (disposed) return;
+        const res = await fetch("/api/realtime/session");
+        if (res.status !== 200) return; // feature off / signed out — stay down
+        const fresh = (await res.json()) as RealtimeSession;
+        provider?.destroy();
+        attach(fresh.doc_base_url, fresh.token);
+      } catch (err) {
+        console.warn("[live-note] token refresh failed:", err);
+      } finally {
+        refreshing = false;
+      }
+    };
+
+    attach(sessionRef.current.doc_base_url, sessionRef.current.token);
     return () => {
+      disposed = true;
       setCollab(null);
-      provider.destroy();
+      provider?.destroy();
       doc.destroy();
     };
   }, [recordId]);
