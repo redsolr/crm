@@ -85,12 +85,14 @@ export function useRealtimeConnection(): void {
       if (disposed) return;
       try {
         const res = await fetch("/api/realtime/session");
-        if (res.status === 204) {
-          // Feature off — stay dormant, no retries.
+        if (!res.ok || res.status === 204) {
+          // 204 = feature off; any other non-200 means this deployment
+          // doesn't serve realtime (e.g. the mocked e2e tier answers
+          // unrouted /api calls with 599). Either way: dormant, no
+          // retry loop. Only NETWORK failures (fetch rejection) retry.
           store.setStatus("off");
           return;
         }
-        if (!res.ok) throw new Error(`session ${res.status}`);
         const session = (await res.json()) as {
           url: string;
           self: { id: string; name: string | null; email: string | null };

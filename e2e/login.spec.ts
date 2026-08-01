@@ -8,19 +8,19 @@
  */
 
 import { test, expect, Page } from "@playwright/test";
-import { API_BASE } from "./handlers/shared";
 
 test.describe("Login Page", () => {
   let page: Page;
 
   test.beforeEach(async ({ page: p }) => {
     page = p;
-    // Block /auth/dev/login so E2EAuthInit (MOCK_AUTH mode) cannot
-    // auto-seed a session via the real platform on :8080. Without this
-    // every login-page test auto-authenticates and redirects to /chat
-    // before the form-validation assertions can run.
-    await page.route(`${API_BASE}/auth/dev/login`, async (route) => {
-      await route.abort();
+    // Keep the login page unauthenticated: E2EAuthInit (MOCK_AUTH)
+    // hydrates the canned dev user synchronously on mount and would
+    // redirect every test to /sales before the form assertions run.
+    // The designed opt-out is the explicit signed-out flag
+    // (dev-mock-session.ts) — the same one "Log out" sets.
+    await page.addInitScript(() => {
+      sessionStorage.setItem("dev-mock-explicit-signed-out", "true");
     });
     await page.goto("/login");
   });
@@ -155,6 +155,9 @@ test.describe("Login Page", () => {
 
   test("redirects authenticated users to /sales", async () => {
     await page.addInitScript(() => {
+      // This test wants the AUTHENTICATED path — lift the suite-wide
+      // signed-out flag (beforeEach) and seed a user.
+      sessionStorage.removeItem("dev-mock-explicit-signed-out");
       localStorage.setItem(
         "friendly_fortnight_token",
         "e2e-test-jwt-token-for-playwright",

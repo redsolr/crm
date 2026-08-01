@@ -119,36 +119,36 @@ in-app roles (every seat is equal until the first non-founder joins).
 Author names in the record timeline SHIPPED 2026-08-01 (`actor_name` on
 activities, `created_by_name` on call notes/commitments).
 
-### Realtime collaboration — arc PAUSED mid-build (founder gate, 2026-08-01)
+### Realtime collaboration — SHIPPED 2026-08-01 (founder-greenlit, tiers 1–3)
 
-**DO NOT resume or extend this arc until the founder says go.** Open
-decision: current scope is commit-based record collaboration (live
-invalidation + presence + cursors + field-claim rings — Attio's actual
-behavior on records/fields); the founder is weighing whether to ALSO
-build a Yjs co-edited notes surface (keystroke-level, Attio-Notes
-class — would ride the same worker; separate arc if greenlit).
+Self-hosted multiplayer, no vendor: live data (every write fans out an
+invalidate; clients refetch — UI, Ask, and `/mcp` writes all propagate
+live), full awareness (topbar avatars, "X is here" record pill,
+field-claim rings + "X is editing…", live named cursors), and a
+Yjs/TipTap **co-edited live note** per record with a
+freeze-into-call-note flow. Full doc + founder deploy runbook:
+[docs/realtime.md](./docs/realtime.md).
 
-Built so far (UNCOMMITTED, entirely env-gated — `REALTIME_URL` +
-`REALTIME_SECRET` unset ⇒ total no-op, app behaves as before):
+Rules that keep it sane:
 
-- `realtime/` — self-hosted Cloudflare Durable Object worker (no
-  vendor, no Yjs): hibernated WebSocket room per workspace, presence
-  roster, cursor relay, HMAC-token socket auth, bearer-secret
-  `POST /broadcast` for server fan-out. Own tsconfig; excluded from
-  the app's tsc.
-- `src/server/realtime.ts` — token mint + fire-and-forget
-  `broadcastInvalidate`, hooked into `insertWorkItem`, attribute
-  upserts, work-item PATCH/DELETE/bulk routes, ask-tools stage moves.
-- `GET /api/realtime/session` — session-authed socket URL + token
-  (204 when feature off).
-- `src/lib/realtime/` — Zustand store + connection hook (client half;
-  UI mounting NOT done: avatar stack revival, viewing pill, cursor
-  layer, field-claim rings all pending).
-
-Related dead code awaiting the same decision: platform-era presence
-(`src/lib/collab/*`, `src/components/presence/*`, `yjs` +
-`@hocuspocus/provider` deps) — points at the deleted platform
-collaboration server; strip or repoint when the arc resumes.
+- **Entirely env-gated**: `REALTIME_URL` + `REALTIME_SECRET` unset ⇒
+  the whole layer is a no-op (session route 204s, UI renders nothing).
+  Both e2e tiers run with it OFF; never make a spec depend on the
+  worker without an env-gated skip.
+- **Fields stay commit-based** (blur/save + `If-Match`; claims make
+  collisions visible). Keystroke CRDT sync belongs ONLY to the live
+  note — never add it to form fields (deliberate; Attio behaves the
+  same).
+- New write paths MUST call `broadcastInvalidate` (fire-and-forget,
+  never awaited into the response, never throws) — same discipline as
+  threading an actor.
+- The worker (`realtime/`) has its own tsconfig/deps and is excluded
+  from the app's tsc; `peer-color.ts` mirrors the worker's `colorFor`
+  — change both together.
+- Zustand selectors in the realtime store must return referentially
+  stable values (fresh-array selectors loop React's `getSnapshot`).
+  Under StrictMode, sockets/providers are created inside effects, not
+  render-time refs (render-ref + cleanup = permanently dead provider).
 
 ### MCP server (`POST /mcp`)
 

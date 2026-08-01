@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentActor, type RequestActor } from "@/server/actor";
-import { realtimeEnabled, realtimeSocketUrl } from "@/server/realtime";
+import {
+  mintRealtimeToken,
+  realtimeDocBaseUrl,
+  realtimeEnabled,
+  realtimeSocketUrl,
+} from "@/server/realtime";
 
 /**
  * `GET /api/realtime/session` — hands a session-authed browser its
@@ -25,6 +30,10 @@ export async function GET(
   const actor = mockOverride(request) ?? (await currentActor());
   return NextResponse.json({
     url: realtimeSocketUrl(actor),
+    // Live-note co-editing: y-websocket provider base + a token it can
+    // append per connection (same HMAC family as the room socket).
+    doc_base_url: realtimeDocBaseUrl(),
+    token: mintRealtimeToken(actor),
     self: { id: actor.id, name: actor.name, email: actor.email },
   });
 }

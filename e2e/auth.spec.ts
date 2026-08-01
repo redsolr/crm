@@ -3,16 +3,15 @@ import {
   test as authedTest,
   expect as authedExpect,
 } from "./fixtures/auth.fixture";
-import { API_BASE } from "./handlers/shared";
 
 test.describe("Authentication Flow (Unauthenticated)", () => {
-  // For unauthenticated tests, block /auth/dev/login so E2EAuthInit
-  // cannot auto-seed a session when no user has been pre-injected.
-  // The component's catch path is the only branch that doesn't set the
-  // user — abort the request so fetch() rejects.
+  // Keep these tests unauthenticated: E2EAuthInit (MOCK_AUTH) hydrates
+  // the canned dev user synchronously on mount — opt out with the
+  // designed explicit signed-out flag (dev-mock-session.ts), the same
+  // one "Log out" sets.
   test.beforeEach(async ({ page }) => {
-    await page.route(`${API_BASE}/auth/dev/login`, async (route) => {
-      await route.abort();
+    await page.addInitScript(() => {
+      sessionStorage.setItem("dev-mock-explicit-signed-out", "true");
     });
   });
 

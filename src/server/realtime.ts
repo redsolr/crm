@@ -33,9 +33,19 @@ export function realtimeSocketUrl(user: {
   name: string | null;
   email: string | null;
 }): string {
-  const base = process.env.REALTIME_URL!.replace(/^http/, "ws").replace(/\/$/, "");
+  const base = realtimeWsBase();
   const token = mintRealtimeToken(user);
   return `${base}/room/${CRM_WORKSPACE_ID}?token=${encodeURIComponent(token)}`;
+}
+
+/** wss:// base for co-edited documents — `y-websocket` appends the
+ *  room name itself, so this ends at `/doc`. */
+export function realtimeDocBaseUrl(): string {
+  return `${realtimeWsBase()}/doc`;
+}
+
+function realtimeWsBase(): string {
+  return process.env.REALTIME_URL!.replace(/^http/, "ws").replace(/\/$/, "");
 }
 
 /** `base64url(payload).hex(hmac)` — verified by the worker with the

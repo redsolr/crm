@@ -22,6 +22,9 @@ interface Props {
    *  same `Call — {record} ({date})` convention the agent door uses, so
    *  logging a call is fill-summary-and-submit instead of naming work. */
   parentTitle?: string;
+  /** Prefilled summary — the live-note freeze flow hands the co-edited
+   *  text in here. */
+  initialSummary?: string;
   onClose: () => void;
   onCreated?: (callNote: WorkItem) => void;
 }
@@ -30,6 +33,7 @@ export function CreateCallNoteModal({
   bundle,
   parentId,
   parentTitle,
+  initialSummary,
   onClose,
   onCreated,
 }: Props) {
@@ -42,7 +46,7 @@ export function CreateCallNoteModal({
   const [outcome, setOutcome] = useState<string>("");
   const [callType, setCallType] = useState<string>("");
   const [attendees, setAttendees] = useState("");
-  const [summary, setSummary] = useState("");
+  const [summary, setSummary] = useState(initialSummary ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

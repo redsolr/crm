@@ -43,6 +43,7 @@ import { BRAND_CTA_CLASS } from "./form";
 import { SalesActivityTimeline } from "./SalesActivityTimeline";
 import { AttributeEditorPanel } from "./AttributeFieldEditor";
 import { RecordPresenceLayer } from "@/components/presence/RecordPresenceLayer";
+import { LiveNotePanel } from "./notes/LiveNotePanel";
 
 interface Props {
   opportunityId: string;
@@ -203,6 +204,11 @@ export function SalesOpportunityDetailView({ opportunityId }: Props) {
         </section>
 
         <div className="space-y-4">
+          <LiveNotePanel
+            bundle={bundle}
+            recordId={opp.id}
+            recordTitle={opp.title}
+          />
           <ChildSection
             title="Call notes"
             testid="sales-call-notes-section"

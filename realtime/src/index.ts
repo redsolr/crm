@@ -21,9 +21,13 @@
  */
 
 import { DurableObject } from "cloudflare:workers";
+import { YDocRoom } from "./ydoc-room";
+
+export { YDocRoom };
 
 export interface Env {
   ROOM: DurableObjectNamespace<CrmRoom>;
+  YDOC: DurableObjectNamespace<YDocRoom>;
   REALTIME_SECRET: string;
 }
 
@@ -289,6 +293,18 @@ export default {
         ]),
       });
       return env.ROOM.getByName(roomId).fetch(forwarded);
+    }
+
+    // Co-edited documents (live notes) — same token gate, y-websocket
+    // protocol handled by YDocRoom (one DO per document).
+    if (kind === "doc" && roomId) {
+      if (request.headers.get("Upgrade") !== "websocket") {
+        return new Response("expected websocket", { status: 426 });
+      }
+      const token = url.searchParams.get("token") ?? "";
+      const user = await verifyToken(token, env.REALTIME_SECRET);
+      if (user === null) return new Response("unauthorized", { status: 401 });
+      return env.YDOC.getByName(roomId).fetch(request);
     }
 
     if (kind === "broadcast" && roomId && request.method === "POST") {
