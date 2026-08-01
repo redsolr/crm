@@ -42,6 +42,7 @@ import { InterviewMode } from "./interview/InterviewMode";
 import { BRAND_CTA_CLASS } from "./form";
 import { SalesActivityTimeline } from "./SalesActivityTimeline";
 import { AttributeEditorPanel } from "./AttributeFieldEditor";
+import { RecordPresenceLayer } from "@/components/presence/RecordPresenceLayer";
 
 interface Props {
   opportunityId: string;
@@ -124,9 +125,10 @@ export function SalesOpportunityDetailView({ opportunityId }: Props) {
 
   return (
     <div
-      className="sales-opportunity-detail flex-1 min-w-0 overflow-y-auto"
+      className="sales-opportunity-detail relative flex-1 min-w-0 overflow-y-auto"
       data-testid="sales-opportunity-detail"
     >
+      <RecordPresenceLayer recordId={opportunityId} />
       <div className="crm-view-header">
         <button
           onClick={() => router.push("/sales")}

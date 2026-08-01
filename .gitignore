@@ -67,3 +67,8 @@ node_modules/
 # OpenAPI codegen output — regenerate via `npm run openapi:gen`. Source
 # of truth is openapi/openapi.yaml (synced from platform).
 /src/lib/generated/
+
+# Realtime worker (Cloudflare) — local secrets + wrangler state
+realtime/.dev.vars
+realtime/.wrangler/
+realtime/node_modules/

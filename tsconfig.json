@@ -46,6 +46,7 @@
   ],
   "exclude": [
     "node_modules",
+    "realtime",
     "src/app/sw.ts",
     "src/**/__tests__/**",
     "src/lib/generated/api/apis",

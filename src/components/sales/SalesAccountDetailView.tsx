@@ -32,6 +32,7 @@ import { CompanyLogo } from "./CompanyLogo";
 import { PersonAvatar } from "./PersonAvatar";
 import { SalesActivityTimeline } from "./SalesActivityTimeline";
 import { AttributeEditorPanel } from "./AttributeFieldEditor";
+import { RecordPresenceLayer } from "@/components/presence/RecordPresenceLayer";
 
 interface Props {
   accountId: string;
@@ -139,9 +140,10 @@ export function SalesAccountDetailView({ accountId }: Props) {
 
   return (
     <div
-      className="sales-account-detail flex-1 min-w-0 overflow-y-auto"
+      className="sales-account-detail relative flex-1 min-w-0 overflow-y-auto"
       data-testid="sales-account-detail"
     >
+      <RecordPresenceLayer recordId={accountId} />
       <div className="crm-view-header">
         <button
           onClick={() => router.push("/sales")}
@@ -162,7 +164,7 @@ export function SalesAccountDetailView({ accountId }: Props) {
         >
           {account.data.title}
         </h1>
-        <span className="crm-tag">Company</span>
+        <span className="crm-tag">Company</span>
       </div>
 
       <div className="px-5 py-5 grid grid-cols-1 lg:grid-cols-3 gap-5">

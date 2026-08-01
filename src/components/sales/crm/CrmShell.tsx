@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation";
 import { Inter } from "next/font/google";
 import { useAppContext } from "@/stores/use-app-context";
 import { useEnabledModules } from "@/lib/modules/enabled-modules";
+import { useRealtimeConnection } from "@/lib/realtime/use-realtime-connection";
 import { LoadingDots } from "@/components/shared/LoadingDots";
 import { CommandPalette } from "@/components/sales/palette/CommandPalette";
 import { AskPanel } from "@/components/sales/ask/AskPanel";
@@ -41,6 +42,9 @@ export function CrmShell({ children }: { children: ReactNode }) {
   // this call the store never fills and `ready` never turns true.
   const { workspaces, currentWorkspace, setCurrentWorkspace } = useAppContext();
   const { modules, ready } = useEnabledModules();
+  // Collaboration channel (presence / cursors / live invalidation) —
+  // dormant no-op unless the realtime worker is configured.
+  useRealtimeConnection();
 
   // Module gate, standalone-app shape: crm-web IS the CRM, so an org
   // without the sales module has nothing here — bounce to /unauthorized

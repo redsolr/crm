@@ -1,0 +1,21 @@
+// crm-realtime — the CRM's collaboration channel (presence, live
+// cursors, cross-user cache invalidation). One Durable Object room per
+// workspace (single-tenant CRM ⇒ effectively one room, "ws_crm").
+//
+// Deploy (founder, one-time):
+//   cd realtime && npx wrangler login && npx wrangler deploy
+//   npx wrangler secret put REALTIME_SECRET   (same value as the crm
+//     Vercel env REALTIME_SECRET)
+// Then set in Vercel: REALTIME_URL=https://crm-realtime.<acct>.workers.dev
+//   (or route rt.jurisimus.com to the worker) + REALTIME_SECRET.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "crm-realtime",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "observability": { "enabled": true },
+  "durable_objects": {
+    "bindings": [{ "name": "ROOM", "class_name": "CrmRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["CrmRoom"] }]
+}

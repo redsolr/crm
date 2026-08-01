@@ -2,6 +2,7 @@ import { and, eq, ilike, inArray } from "drizzle-orm";
 import { db, records, recordTypes, workflowStages } from "@/db";
 import { logActivity } from "./activities";
 import { AGENT_ACTOR_ID, AGENT_ACTOR_NAME } from "./constants";
+import { broadcastInvalidate } from "./realtime";
 import {
   listDefinitionsForType,
   upsertValue,
@@ -531,6 +532,7 @@ const updateOpportunity: AskTool = {
           .update(records)
           .set({ stateId: stageRow.id, updatedAt: new Date() })
           .where(eq(records.id, opportunity.id));
+        broadcastInvalidate("records");
         await logActivity({
           type: "work_item_status_changed",
           entityId: opportunity.id,

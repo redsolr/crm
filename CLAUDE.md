@@ -119,6 +119,37 @@ in-app roles (every seat is equal until the first non-founder joins).
 Author names in the record timeline SHIPPED 2026-08-01 (`actor_name` on
 activities, `created_by_name` on call notes/commitments).
 
+### Realtime collaboration — arc PAUSED mid-build (founder gate, 2026-08-01)
+
+**DO NOT resume or extend this arc until the founder says go.** Open
+decision: current scope is commit-based record collaboration (live
+invalidation + presence + cursors + field-claim rings — Attio's actual
+behavior on records/fields); the founder is weighing whether to ALSO
+build a Yjs co-edited notes surface (keystroke-level, Attio-Notes
+class — would ride the same worker; separate arc if greenlit).
+
+Built so far (UNCOMMITTED, entirely env-gated — `REALTIME_URL` +
+`REALTIME_SECRET` unset ⇒ total no-op, app behaves as before):
+
+- `realtime/` — self-hosted Cloudflare Durable Object worker (no
+  vendor, no Yjs): hibernated WebSocket room per workspace, presence
+  roster, cursor relay, HMAC-token socket auth, bearer-secret
+  `POST /broadcast` for server fan-out. Own tsconfig; excluded from
+  the app's tsc.
+- `src/server/realtime.ts` — token mint + fire-and-forget
+  `broadcastInvalidate`, hooked into `insertWorkItem`, attribute
+  upserts, work-item PATCH/DELETE/bulk routes, ask-tools stage moves.
+- `GET /api/realtime/session` — session-authed socket URL + token
+  (204 when feature off).
+- `src/lib/realtime/` — Zustand store + connection hook (client half;
+  UI mounting NOT done: avatar stack revival, viewing pill, cursor
+  layer, field-claim rings all pending).
+
+Related dead code awaiting the same decision: platform-era presence
+(`src/lib/collab/*`, `src/components/presence/*`, `yjs` +
+`@hocuspocus/provider` deps) — points at the deleted platform
+collaboration server; strip or repoint when the arc resumes.
+
 ### MCP server (`POST /mcp`)
 
 The agent door — the 6 Ask-panel sales tools over Streamable HTTP,

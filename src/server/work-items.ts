@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db, records, recordTypes, workflowStages } from "@/db";
 import { mintId } from "@/db/ids";
 import { CRM_WORKSPACE_ID, LOCAL_ACTOR_ID } from "./constants";
+import { broadcastInvalidate } from "./realtime";
 import type { WorkItem } from "@/lib/generated/api/models";
 
 /**
@@ -339,5 +340,6 @@ export async function insertWorkItem(
 
   const created = await loadWorkItem(id);
   if (!created) throw new Error(`Work item ${id} vanished after insert`);
+  broadcastInvalidate("records");
   return created;
 }

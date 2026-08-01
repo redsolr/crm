@@ -10,6 +10,7 @@
 import { usePathname } from "next/navigation";
 import { AskHeaderButton } from "@/components/sales/ask/AskHeaderButton";
 import { GlobalSearchBar } from "@/components/sales/search/GlobalSearchBar";
+import { PresenceAvatarStack } from "@/components/presence/PresenceAvatarStack";
 
 const TOPBAR_SECTIONS: ReadonlyArray<{ prefix: string; label: string }> = [
   { prefix: "/sales/inbox", label: "Inbox" },
@@ -35,6 +36,7 @@ export function CrmTopbar() {
       <div className="crm-topbar-center">
         <GlobalSearchBar />
       </div>
+      <PresenceAvatarStack compact />
       <AskHeaderButton />
     </header>
   );

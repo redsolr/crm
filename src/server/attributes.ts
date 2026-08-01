@@ -1,6 +1,7 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db, attributeDefinitions, attributeValues } from "@/db";
 import { mintId } from "@/db/ids";
+import { broadcastInvalidate } from "./realtime";
 
 /**
  * Attributes family (Magic Fields). Definitions are seeded per record
@@ -176,9 +177,11 @@ export async function upsertValue(
   bareValue: unknown,
 ): Promise<ValueRow> {
   const existing = await findExistingValue(workItemId, definitionId);
-  return writeValue(existing, workItemId, definitionId, bareValue, {
+  const row = await writeValue(existing, workItemId, definitionId, bareValue, {
     source: "manual",
   });
+  broadcastInvalidate("records");
+  return row;
 }
 
 /**
@@ -201,6 +204,7 @@ export async function upsertComputedValue(
     computedAt: new Date(),
     computedModel: model,
   });
+  broadcastInvalidate("records");
   return { outcome: "computed", row };
 }
 

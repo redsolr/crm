@@ -4,6 +4,7 @@ import { db, records } from "@/db";
 import { apiError, parseIfMatchVersion, readJsonBody } from "@/server/api-error";
 import { logActivity } from "@/server/activities";
 import { asActivityActor, currentActor } from "@/server/actor";
+import { broadcastInvalidate } from "@/server/realtime";
 import {
   completedAtFor,
   loadWorkItem,
@@ -163,6 +164,7 @@ export async function PATCH(
 
   const updated = await loadWorkItem(id);
   if (!updated) return apiError(404, "not_found", `Work item not found: ${id}`);
+  broadcastInvalidate("records");
   return NextResponse.json({ work_item: serializeWorkItem(updated) });
 }
 
@@ -199,5 +201,6 @@ export async function DELETE(
     entityIdentifier: existing.record.identifier,
     actor: asActivityActor(actor),
   });
+  broadcastInvalidate("records");
   return new Response(null, { status: 204 });
 }

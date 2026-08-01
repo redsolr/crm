@@ -27,6 +27,8 @@ import {
   parseAttributeValueForType,
   stringifyAttributeValue,
 } from "@/lib/sales/attribute-editing";
+import { publishFieldFocus } from "@/lib/realtime/use-realtime-connection";
+import { useFieldClaim } from "@/lib/realtime/use-field-claim";
 import { AttributeEnrichmentControls } from "./AttributeEnrichmentControls";
 import { FORM_INPUT_CLASS } from "./form";
 
@@ -66,12 +68,31 @@ export function AttributeFieldEditor({
     });
   }
 
+  // Field-level presence: publish my focus, render a colleague's claim
+  // as a colored ring + "is editing" chip (realtime off ⇒ both inert).
+  const claim = useFieldClaim(workItemId, definition.key);
+  const focusProps = {
+    onFocus: () => publishFieldFocus(definition.key),
+    style: claim
+      ? { boxShadow: `0 0 0 2px ${claim.color}` }
+      : undefined,
+  };
+
   const label = (
     <span className="flex items-center text-xs font-medium text-[var(--theme-text-secondary)] uppercase tracking-wider mb-1.5">
       <span>
         {definition.name}
         {definition.required && <span className="text-red-400 ml-1">*</span>}
       </span>
+      {claim && (
+        <span
+          className="attr-field-claim ml-2 normal-case tracking-normal font-medium"
+          data-testid={`${testIdPrefix}-${definition.key}-claim`}
+          style={{ color: claim.color }}
+        >
+          {claim.name} is editing…
+        </span>
+      )}
       <AttributeEnrichmentControls
         workItemId={workItemId}
         definition={definition}
@@ -96,7 +117,9 @@ export function AttributeFieldEditor({
             setLocal(e.target.value);
             commit(e.target.value);
           }}
+          onBlur={() => publishFieldFocus(null)}
           className={FORM_INPUT_CLASS}
+          {...focusProps}
         >
           <option value="">—</option>
           {config.options.map((o) => (
@@ -122,8 +145,12 @@ export function AttributeFieldEditor({
           type={definition.data_type}
           value={local}
           onChange={(e) => setLocal(e.target.value)}
-          onBlur={() => commit(local)}
+          onBlur={() => {
+            commit(local);
+            publishFieldFocus(null);
+          }}
           className={FORM_INPUT_CLASS}
+          {...focusProps}
         />
       </label>
     );
@@ -139,9 +166,13 @@ export function AttributeFieldEditor({
           data-testid={testid}
           value={local}
           onChange={(e) => setLocal(e.target.value)}
-          onBlur={() => commit(local)}
+          onBlur={() => {
+            commit(local);
+            publishFieldFocus(null);
+          }}
           rows={3}
           className={FORM_INPUT_CLASS}
+          {...focusProps}
         />
       ) : (
         <input
@@ -149,8 +180,12 @@ export function AttributeFieldEditor({
           type="text"
           value={local}
           onChange={(e) => setLocal(e.target.value)}
-          onBlur={() => commit(local)}
+          onBlur={() => {
+            commit(local);
+            publishFieldFocus(null);
+          }}
           className={FORM_INPUT_CLASS}
+          {...focusProps}
         />
       )}
     </label>

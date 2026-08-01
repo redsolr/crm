@@ -4,6 +4,7 @@ import { db, records } from "@/db";
 import { apiError, readJsonBody } from "@/server/api-error";
 import { logActivity } from "@/server/activities";
 import { asActivityActor, currentActor } from "@/server/actor";
+import { broadcastInvalidate } from "@/server/realtime";
 import {
   bulkUpdateSchema,
   completedAtFor,
@@ -107,5 +108,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const row = await loadWorkItem(id);
     if (row) workItems.push(serializeWorkItem(row));
   }
+  broadcastInvalidate("records");
   return NextResponse.json({ work_items: workItems });
 }
