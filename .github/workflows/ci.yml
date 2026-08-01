@@ -1,0 +1,153 @@
+# CRM CI — mirrors the local Definition of Done (CLAUDE.md):
+#
+#   gates        tsc + jest + next build (fast fail, no services)
+#   mocked-e2e   Playwright mocked + mobile projects (no backend)
+#   real-auth    the tier that catches what mocks can't: REAL WorkOS
+#                login + real Postgres + the /mcp door + the realtime
+#                worker (wrangler dev, local mode — no Cloudflare
+#                account involved) driving the multiplayer spec
+#
+# real-auth is gated on the `RUN_REAL_AUTH_E2E` repo variable so the
+# workflow lands green before the secrets exist. To enable:
+#   1. Add repo secrets (values = the same keys in .env.local):
+#      WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_COOKIE_PASSWORD,
+#      E2E_WORKOS_EMAIL, E2E_WORKOS_PASSWORD,
+#      E2E_WORKOS_TEAMMATE_EMAIL, E2E_WORKOS_TEAMMATE_PASSWORD,
+#      CRM_MCP_TOKEN
+#   2. Set repo variable RUN_REAL_AUTH_E2E=true
+name: ci
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  gates:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Unit tests
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Worker typecheck
+        working-directory: realtime
+        run: npm ci && npx tsc --noEmit
+
+  mocked-e2e:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Mocked + mobile tiers
+        run: npx cross-env MOCK_AUTH=true playwright test --project=mocked --project=mobile
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-mocked
+          path: playwright-report/
+          retention-days: 14
+
+  real-auth:
+    if: ${{ vars.RUN_REAL_AUTH_E2E == 'true' }}
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: crm
+          POSTGRES_PASSWORD: crm
+          POSTGRES_DB: crm
+        ports:
+          - 5440:5432
+        options: >-
+          --health-cmd="pg_isready -U crm"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Materialize .env.local (real WorkOS + e2e seats)
+        # Next's dev server reads .env.local; envLocal() in the specs
+        # prefers process env but the WorkOS APP credentials must reach
+        # the server through the file, exactly like local runs.
+        # localhost redirect URIs are allowed wildcard-port in the
+        # WorkOS Staging environment, so the e2e port (3190) needs no
+        # dashboard entry.
+        run: |
+          cat > .env.local <<EOF
+          WORKOS_API_KEY=${{ secrets.WORKOS_API_KEY }}
+          WORKOS_CLIENT_ID=${{ secrets.WORKOS_CLIENT_ID }}
+          WORKOS_COOKIE_PASSWORD=${{ secrets.WORKOS_COOKIE_PASSWORD }}
+          WORKOS_COOKIE_NAME=crm-wos-session
+          NEXT_PUBLIC_WORKOS_REDIRECT_URI=http://localhost:3190/callback
+          NEXT_PUBLIC_API_BASE_URL=http://localhost:3190
+          NEXT_PUBLIC_APP_URL=http://localhost:3190
+          E2E_WORKOS_EMAIL=${{ secrets.E2E_WORKOS_EMAIL }}
+          E2E_WORKOS_PASSWORD=${{ secrets.E2E_WORKOS_PASSWORD }}
+          E2E_WORKOS_TEAMMATE_EMAIL=${{ secrets.E2E_WORKOS_TEAMMATE_EMAIL }}
+          E2E_WORKOS_TEAMMATE_PASSWORD=${{ secrets.E2E_WORKOS_TEAMMATE_PASSWORD }}
+          CRM_MCP_TOKEN=${{ secrets.CRM_MCP_TOKEN }}
+          EOF
+
+      - name: Migrate + seed
+        run: npm run db:migrate && npm run db:seed
+
+      - name: Start realtime worker (wrangler dev, local mode)
+        working-directory: realtime
+        run: |
+          npm ci
+          echo "REALTIME_SECRET=ci-realtime-secret" > .dev.vars
+          npx wrangler dev --port 8788 > /tmp/wrangler.log 2>&1 &
+          for i in {1..30}; do
+            if curl -sf http://localhost:8788/ > /dev/null 2>&1; then
+              echo "realtime worker ready (try $i)"; exit 0
+            fi
+            sleep 2
+          done
+          echo "realtime worker failed to start" >&2
+          tail -50 /tmp/wrangler.log >&2
+          exit 1
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Real-auth tier (incl. realtime multiplayer spec)
+        run: npx cross-env E2E_MODE=real-auth REALTIME_URL=http://localhost:8788 REALTIME_SECRET=ci-realtime-secret playwright test --project=real-auth
+        env:
+          CRM_MCP_TOKEN: ${{ secrets.CRM_MCP_TOKEN }}
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-real-auth
+          path: playwright-report/
+          retention-days: 14
+      - name: Worker log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wrangler-log
+          path: /tmp/wrangler.log
+          retention-days: 7
