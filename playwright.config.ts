@@ -159,12 +159,10 @@ export default defineConfig({
       ],
       use: { ...devices["Desktop Chrome"] },
     },
-    // Tier 1b: Mocked Mobile — responsive UI tests at mobile viewport
-    {
-      name: "mobile",
-      testMatch: /\.mobile\.spec\.ts$/,
-      use: { ...devices["iPhone 14"] },
-    },
+    // (No mobile project: the platform-era *.mobile.spec.ts files never
+    // came over in the fork — `--project=mobile` errors "No tests
+    // found". Recreate the project WITH specs if a mobile viewport
+    // tier is ever wanted; the CRM is a desktop internal tool.)
     // Tier 2: Integration — real backend, critical journeys
     {
       name: "integration",

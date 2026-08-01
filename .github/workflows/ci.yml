@@ -54,8 +54,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Mocked + mobile tiers
-        run: npx cross-env MOCK_AUTH=true playwright test --project=mocked --project=mobile
+      - name: Mocked tier
+        run: npx cross-env MOCK_AUTH=true playwright test --project=mocked
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
