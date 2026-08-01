@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentActor, type RequestActor } from "@/server/actor";
+import { LOCAL_ACTOR_ID } from "@/server/constants";
 import {
   mintRealtimeToken,
   realtimeDocBaseUrl,
@@ -28,6 +29,12 @@ export async function GET(
     return new Response(null, { status: 204 });
   }
   const actor = mockOverride(request) ?? (await currentActor());
+  // A socket token grants presence + live-note access — never mint one
+  // for the session-less fallback actor outside MOCK_AUTH (an
+  // unauthenticated caller would otherwise get a valid token).
+  if (actor.id === LOCAL_ACTOR_ID && process.env.MOCK_AUTH !== "true") {
+    return new Response(null, { status: 401 });
+  }
   return NextResponse.json({
     url: realtimeSocketUrl(actor),
     // Live-note co-editing: y-websocket provider base + a token it can
