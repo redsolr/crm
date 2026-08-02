@@ -7,6 +7,9 @@
  *
  * Signals (all client-side, from data already fetched):
  *   - overdue next action  — next_action_date < today (worst first)
+ *   - revisit due          — "not now" deal whose not_now_until passed
+ *                            (parked deals COME BACK — without this a
+ *                            parked deal silently never resurfaces)
  *   - due today            — next_action_date = today (the morning list)
  *   - no next action set   — active deal with no planned step
  *   - stale                — nothing touched in STALE_AFTER_DAYS
@@ -28,6 +31,7 @@ export const STALE_AFTER_DAYS = 7;
 
 export type FollowupReason =
   | "overdue_next_action"
+  | "revisit_due"
   | "due_today"
   | "no_next_action"
   | "stale";
@@ -96,11 +100,30 @@ export function rankFollowupSuggestions(
     const suggestions: FollowupSuggestion[] = [];
 
     for (const opp of opportunities) {
+      const attrs = attrsById[opp.id];
+      const account = opp.parent_id ? accountsById[opp.parent_id] : undefined;
+
+      // Parked deals come back: a "not now" whose revisit date has
+      // arrived is live follow-up work, ranked just under overdue.
+      // Checked BEFORE the closed-state skip (not_now is category
+      // "dead" — the skip would silently bury the revisit forever).
+      if (opp.state.key === "not_now") {
+        if (attrs?.notNowUntil && attrs.notNowUntil <= today) {
+          suggestions.push({
+            opportunity: opp,
+            account,
+            reason: "revisit_due",
+            detail: `parked until ${attrs.notNowUntil} — time to revisit`,
+            nextAction: attrs.nextAction,
+            score: 950,
+          });
+        }
+        continue;
+      }
+
       if (opp.state.category === "done" || opp.state.category === "dead") {
         continue;
       }
-      const attrs = attrsById[opp.id];
-      const account = opp.parent_id ? accountsById[opp.parent_id] : undefined;
       const daysSinceTouch = Math.floor(
         (now - Date.parse(opp.updated_at)) / 86_400_000,
       );

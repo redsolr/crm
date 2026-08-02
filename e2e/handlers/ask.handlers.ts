@@ -36,6 +36,13 @@ export interface AskHandlerOptions {
    * agentic loop acting on CRM records (create_opportunity etc.).
    */
   toolSteps?: Array<{ tool_name: string; summary: string }>;
+  /**
+   * Invoked before each stream response is fulfilled (0-based send
+   * index). Journey specs use it to APPLY the scripted turn's writes to
+   * the sales mock store (`setupSalesHandlers(...).agentWrites`) so the
+   * views behind the chat actually change.
+   */
+  onSend?: (sendIndex: number) => void;
 }
 
 interface StoredChat {
@@ -202,6 +209,7 @@ export async function setupAskHandlers(
             `input: non-empty string). Got: ${JSON.stringify(body)}`,
         );
       }
+      options?.onSend?.(capturedStreamInputs.length);
       capturedStreamInputs.push(body.input);
 
       const id = new URL(request.url()).pathname.split("/").at(-2) as string;

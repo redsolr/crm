@@ -130,6 +130,47 @@ describe("rankFollowupSuggestions", () => {
     expect(ranked).toEqual([]);
   });
 
+  it("resurfaces a parked deal once its revisit date arrives, ranked under overdue and above due-today", () => {
+    const notNowState = {
+      id: "st-nn",
+      key: "not_now",
+      name: "Not now",
+      category: "dead",
+    } as const;
+    const revisitDue = makeOpportunity("revisit", { state: notNowState });
+    const revisitToday = makeOpportunity("revisit-today", {
+      state: notNowState,
+    });
+    const parkedFuture = makeOpportunity("parked", { state: notNowState });
+    const parkedNoDate = makeOpportunity("undated", { state: notNowState });
+    const overdue = makeOpportunity("overdue");
+    const dueToday = makeOpportunity("today", {
+      updated_at: "2026-07-17T00:00:00Z",
+    });
+
+    const ranked = rankFollowupSuggestions(
+      [parkedFuture, dueToday, revisitDue, parkedNoDate, overdue, revisitToday],
+      {
+        revisit: snapshot({ notNowUntil: "2026-07-01" }),
+        "revisit-today": snapshot({ notNowUntil: "2026-07-18" }),
+        parked: snapshot({ notNowUntil: "2026-10-01" }),
+        undated: snapshot(),
+        overdue: snapshot({ nextActionDate: "2026-07-13" }),
+        today: snapshot({ nextActionDate: "2026-07-18" }),
+      },
+      {},
+      CLOCK,
+    );
+
+    expect(ranked.map((s) => [s.opportunity.id, s.reason])).toEqual([
+      ["overdue", "overdue_next_action"],
+      ["revisit", "revisit_due"],
+      ["revisit-today", "revisit_due"],
+      ["today", "due_today"],
+    ]);
+    expect(ranked[1]!.detail).toBe("parked until 2026-07-01 — time to revisit");
+  });
+
   it("does not flag a fresh deal with a future next action", () => {
     const healthy = makeOpportunity("healthy", {
       updated_at: "2026-07-17T00:00:00Z",

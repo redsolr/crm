@@ -484,6 +484,65 @@ export async function setupSalesHandlers(page: Page) {
   const savedViews: WireSavedView[] = [];
   let savedViewCounter = 0;
 
+  /** Shared record factory — the POST /work_items route and the
+   *  agent-write helpers (returned below) mint identical rows. */
+  function buildWorkItem(input: {
+    typeKey: string;
+    stateKey: string;
+    title: string;
+    description?: string | null;
+    parentId?: string | null;
+    workspaceId?: string;
+  }): WireWorkItem {
+    const type = types.find((t) => t.key === input.typeKey);
+    const workflowId = type?.workflow_id ?? "wf-pipeline";
+    const stateDef = (statesByWorkflow[workflowId] ?? []).find(
+      (s) => s.key === input.stateKey,
+    );
+    workItemCounter += 1;
+    const item: WireWorkItem = {
+      id: `wi-${workItemCounter}`,
+      identifier: `SALES-${workItemCounter}`,
+      title: input.title,
+      subject: null,
+      description: input.description ?? null,
+      workspace_id: input.workspaceId ?? SALES_WORKSPACE_ID,
+      folder_id: null,
+      state: {
+        id: stateDef?.id ?? "wfs-pipeline-identified",
+        key: stateDef?.key ?? input.stateKey,
+        name: stateDef?.name ?? input.stateKey,
+        category: stateDef?.category ?? "not_started",
+      },
+      type: {
+        id: type?.id ?? "wit-account",
+        key: type?.key ?? input.typeKey,
+        name: type?.name ?? input.typeKey,
+      },
+      priority: "none",
+      position: workItemCounter,
+      iteration_id: null,
+      parent_id: input.parentId ?? null,
+      assignee_id: null,
+      assignee_name: null,
+      dri_id: null,
+      dri_name: null,
+      created_by_id: TEST_USER.user_id,
+      created_by_name: TEST_USER.full_name ?? null,
+      due_date: null,
+      estimate: null,
+      visibility: "private",
+      vote_count: 0,
+      version: 1,
+      shipped_at: null,
+      created_at: NOW(),
+      updated_at: NOW(),
+      completed_at: null,
+    };
+    workItems.push(item);
+    return item;
+  }
+
   // ── Routes ────────────────────────────────────────────────────────────
   //
   // Workspace rename arc (2026-05-27): the `project` primitive was
@@ -581,56 +640,14 @@ export async function setupSalesHandlers(page: Page) {
 
     if (request.method() === "POST" && u.pathname === "/api/work_items") {
       const body = request.postDataJSON() as Record<string, unknown>;
-      const typeKey = (body.type_key as string | undefined) ?? "task";
-      const stateKey =
-        (body.state_key as string | undefined) ?? "identified";
-      const type = types.find((t) => t.key === typeKey);
-      const workflowId = type?.workflow_id ?? "wf-pipeline";
-      const stateDef = (statesByWorkflow[workflowId] ?? []).find(
-        (s) => s.key === stateKey,
-      );
-      workItemCounter += 1;
-      const newItem: WireWorkItem = {
-        id: `wi-${workItemCounter}`,
-        identifier: `SALES-${workItemCounter}`,
+      const newItem = buildWorkItem({
+        typeKey: (body.type_key as string | undefined) ?? "task",
+        stateKey: (body.state_key as string | undefined) ?? "identified",
         title: (body.title as string) ?? "Untitled",
-        subject: null,
         description: (body.description as string) ?? null,
-        workspace_id:
-          (body.workspace_id as string | undefined) ?? SALES_WORKSPACE_ID,
-        folder_id: null,
-        state: {
-          id: stateDef?.id ?? "wfs-pipeline-identified",
-          key: stateDef?.key ?? stateKey,
-          name: stateDef?.name ?? stateKey,
-          category: stateDef?.category ?? "not_started",
-        },
-        type: {
-          id: type?.id ?? "wit-account",
-          key: type?.key ?? typeKey,
-          name: type?.name ?? typeKey,
-        },
-        priority: "none",
-        position: workItemCounter,
-        iteration_id: null,
-        parent_id: (body.parent_id as string | null) ?? null,
-        assignee_id: null,
-        assignee_name: null,
-        dri_id: null,
-        dri_name: null,
-        created_by_id: TEST_USER.user_id,
-        created_by_name: TEST_USER.full_name ?? null,
-        due_date: null,
-        estimate: null,
-        visibility: "private",
-        vote_count: 0,
-        version: 1,
-        shipped_at: null,
-        created_at: NOW(),
-        updated_at: NOW(),
-        completed_at: null,
-      };
-      workItems.push(newItem);
+        parentId: (body.parent_id as string | null) ?? null,
+        workspaceId: body.workspace_id as string | undefined,
+      });
       await route.fulfill({
         status: 201,
         contentType: "application/json",
@@ -934,6 +951,77 @@ export async function setupSalesHandlers(page: Page) {
       await route.fallback();
     },
   );
+
+  // ── Agent-write helpers ─────────────────────────────────────────────
+  // A scripted Ask/Chat turn (ask.handlers `onSend`) calls these to
+  // APPLY the writes its canned tool steps claim were made — so journey
+  // specs can assert the views actually changed after the agent acted,
+  // not merely that an invalidation refetch fired.
+  return {
+    agentWrites: {
+      /** Create a record exactly as POST /api/work_items would; returns its id. */
+      createRecord(input: {
+        typeKey: string;
+        stateKey: string;
+        title: string;
+        parentId?: string | null;
+      }): string {
+        return buildWorkItem(input).id;
+      },
+      /** Move a record's stage exactly as PATCH state_key would. */
+      transition(workItemId: string, stateKey: string): void {
+        const idx = workItems.findIndex((w) => w.id === workItemId);
+        const item = workItems[idx];
+        if (!item) throw new Error(`agentWrites.transition: ${workItemId}?`);
+        const type = types.find((t) => t.id === item.type.id);
+        const workflowId = type?.workflow_id ?? "wf-pipeline";
+        const def = (statesByWorkflow[workflowId] ?? []).find(
+          (s) => s.key === stateKey,
+        );
+        if (!def) throw new Error(`agentWrites.transition: state ${stateKey}?`);
+        workItems[idx] = {
+          ...item,
+          state: {
+            id: def.id,
+            key: def.key,
+            name: def.name,
+            category: def.category,
+          },
+          version: item.version + 1,
+          updated_at: NOW(),
+        };
+      },
+      /** Upsert an attribute value by definition KEY (manual provenance). */
+      setAttribute(workItemId: string, defKey: string, value: unknown): void {
+        const item = workItems.find((w) => w.id === workItemId);
+        if (!item) throw new Error(`agentWrites.setAttribute: ${workItemId}?`);
+        const definitionId = `ad-${item.type.id}-${defKey}`;
+        const existingIdx = attributeValues.findIndex(
+          (v) =>
+            v.work_item_id === workItemId && v.definition_id === definitionId,
+        );
+        const next: WireAttributeValue = {
+          id:
+            existingIdx >= 0
+              ? attributeValues[existingIdx]!.id
+              : `av-${workItemId}-${definitionId}`,
+          work_item_id: workItemId,
+          definition_id: definitionId,
+          value: toStorageEnvelope(value),
+          source: "manual",
+          computed_at: null,
+          computed_model: null,
+          created_at:
+            existingIdx >= 0
+              ? attributeValues[existingIdx]!.created_at
+              : NOW(),
+          updated_at: NOW(),
+        };
+        if (existingIdx >= 0) attributeValues[existingIdx] = next;
+        else attributeValues.push(next);
+      },
+    },
+  };
 }
 
 function defAttr(

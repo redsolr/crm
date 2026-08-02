@@ -47,6 +47,7 @@ const WRITE_TOOL_NAMES = new Set([
   "create_opportunity",
   "update_opportunity",
   "log_call_note",
+  "create_commitment",
 ]);
 
 /**
