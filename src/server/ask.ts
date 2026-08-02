@@ -1,21 +1,22 @@
-import type Anthropic from "@anthropic-ai/sdk";
+import type OpenAI from "openai";
 import { ASK_TOOLS, ASK_TOOLS_BY_NAME } from "./ask-tools";
 import { appendMessage, loadHistory } from "./chats";
-import { anthropicClient, ASK_MODEL } from "./llm";
+import { openaiClient, ASK_MODEL } from "./llm";
 
 /**
  * Ask chat agentic loop (backend-swap: Ask chat) — the local
  * replacement for the platform's `POST /api/chats/{id}/responses`
  * workspace loop. Persistence lives in `chats.ts`; the LLM seam in
- * `llm.ts`; this module owns the loop and the SSE event grammar.
+ * `llm.ts` (OpenAI since 2026-08-02); this module owns the loop and
+ * the SSE event grammar.
  *
  * Wire contract: the SSE event shapes `src/lib/chat/stream.ts` parses —
- * Anthropic-style events with the platform's camelCase field spelling
+ * platform-era events with camelCase field spelling
  * (`message.usage.inputTokens`, `delta.stopReason`, `usage.outputTokens`)
  * plus snake_case `tool_step` events (`tool_name` / `summary`) whose
- * summary is the raw tool-result content, exactly what the platform
- * emitted. The manual tool loop is deliberate: we re-emit a custom SSE
- * wire format the SDK tool runner doesn't produce.
+ * summary is the raw tool-result content. The grammar predates the
+ * provider and stays IDENTICAL across the Anthropic→OpenAI port — the
+ * FE never learns which vendor answered.
  */
 
 /** Hard cap on model turns per send — the platform's MAX_TOOL_LOOPS shape. */
@@ -33,8 +34,29 @@ const SYSTEM_PROMPT = [
   "- Do not stop to ask about OPTIONAL fields the user did not mention — create the records with what you have; missing optional details can be filled in later. Only ask when a REQUIRED input is genuinely unknowable from the request.",
 ].join("\n");
 
+/** Ask-tool registry → OpenAI function-tool declarations. */
+const OPENAI_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] =
+  ASK_TOOLS.map((t) => ({
+    type: "function",
+    function: {
+      name: t.definition.name,
+      description: t.definition.description,
+      parameters: t.definition.input_schema as unknown as Record<
+        string,
+        unknown
+      >,
+    },
+  }));
+
 export interface AskSseWriter {
   emit(eventType: string, data: Record<string, unknown>): Promise<void>;
+}
+
+/** Tool call assembled from streamed deltas (arguments arrive chunked). */
+interface PendingToolCall {
+  id: string;
+  name: string;
+  argumentsJson: string;
 }
 
 /**
@@ -51,8 +73,8 @@ export async function runAskStream(
   if (input !== null && input !== "") {
     await appendMessage(chatId, "user", input);
   }
-  const messages: Anthropic.MessageParam[] = await loadHistory(chatId);
-  if (messages.length === 0) {
+  const history = await loadHistory(chatId);
+  if (history.length === 0) {
     await writer.emit("error", {
       type: "error",
       error: { message: "Nothing to respond to — send a message first." },
@@ -60,55 +82,78 @@ export async function runAskStream(
     return;
   }
 
-  const tools = ASK_TOOLS.map((t) => t.definition);
+  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+    { role: "system", content: SYSTEM_PROMPT },
+    ...history,
+  ];
+
   let visibleText = "";
   let outputTokens = 0;
   let messageStartEmitted = false;
 
   try {
-    const client = anthropicClient();
+    const client = openaiClient();
     for (let loop = 0; loop < MAX_TOOL_LOOPS; loop++) {
       if (abortSignal.aborted) break;
 
-      const stream = client.messages.stream({
+      const stream = await client.chat.completions.create({
         model: ASK_MODEL,
-        max_tokens: MAX_OUTPUT_TOKENS,
-        system: SYSTEM_PROMPT,
+        max_completion_tokens: MAX_OUTPUT_TOKENS,
         // Final permitted turn runs without tools so the client always
         // gets a closing answer (the platform's loop-exhausted shape).
-        tools: loop < MAX_TOOL_LOOPS - 1 ? tools : [],
+        ...(loop < MAX_TOOL_LOOPS - 1 ? { tools: OPENAI_TOOLS } : {}),
         messages,
+        stream: true,
+        stream_options: { include_usage: true },
       });
 
-      for await (const event of stream) {
+      let turnText = "";
+      let finishReason: string | null = null;
+      const toolCalls: PendingToolCall[] = [];
+
+      for await (const chunk of stream) {
         if (abortSignal.aborted) break;
-        if (event.type === "message_start" && !messageStartEmitted) {
+        if (!messageStartEmitted && chunk.model) {
           messageStartEmitted = true;
+          // OpenAI reports usage at stream END; the grammar carries the
+          // prompt count in message_start, so it reads 0 here and the
+          // authoritative outputTokens ride message_delta at the end.
           await writer.emit("message_start", {
             type: "message_start",
-            message: {
-              usage: { inputTokens: event.message.usage.input_tokens },
-              model: event.message.model,
-            },
+            message: { usage: { inputTokens: 0 }, model: chunk.model },
           });
-        } else if (
-          event.type === "content_block_delta" &&
-          event.delta.type === "text_delta"
-        ) {
-          visibleText += event.delta.text;
+        }
+        if (chunk.usage) {
+          outputTokens += chunk.usage.completion_tokens ?? 0;
+        }
+        const choice = chunk.choices[0];
+        if (choice === undefined) continue;
+        if (choice.finish_reason) finishReason = choice.finish_reason;
+
+        const delta = choice.delta;
+        if (typeof delta.content === "string" && delta.content !== "") {
+          turnText += delta.content;
+          visibleText += delta.content;
           await writer.emit("content_block_delta", {
             type: "content_block_delta",
-            index: event.index,
-            delta: { type: "text_delta", text: event.delta.text },
+            index: 0,
+            delta: { type: "text_delta", text: delta.content },
           });
+        }
+        for (const tc of delta.tool_calls ?? []) {
+          const slot = (toolCalls[tc.index] ??= {
+            id: "",
+            name: "",
+            argumentsJson: "",
+          });
+          if (tc.id) slot.id = tc.id;
+          if (tc.function?.name) slot.name += tc.function.name;
+          if (tc.function?.arguments) slot.argumentsJson += tc.function.arguments;
         }
       }
       if (abortSignal.aborted) break;
 
-      const message = await stream.finalMessage();
-      outputTokens += message.usage.output_tokens;
-
-      if (message.stop_reason === "refusal") {
+      if (finishReason === "content_filter") {
         await writer.emit("error", {
           type: "error",
           error: {
@@ -119,35 +164,51 @@ export async function runAskStream(
         return;
       }
 
-      const toolUses = message.content.filter(
-        (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",
-      );
-      if (message.stop_reason !== "tool_use" || toolUses.length === 0) {
+      const settledCalls = toolCalls.filter((c) => c.id !== "" && c.name !== "");
+      if (finishReason !== "tool_calls" || settledCalls.length === 0) {
         break;
       }
 
-      const toolResults: Anthropic.ToolResultBlockParam[] = [];
-      for (const toolUse of toolUses) {
-        const tool = ASK_TOOLS_BY_NAME.get(toolUse.name);
+      messages.push({
+        role: "assistant",
+        content: turnText === "" ? null : turnText,
+        tool_calls: settledCalls.map((c) => ({
+          id: c.id,
+          type: "function",
+          function: { name: c.name, arguments: c.argumentsJson || "{}" },
+        })),
+      });
+
+      for (const call of settledCalls) {
+        const tool = ASK_TOOLS_BY_NAME.get(call.name);
+        let args: Record<string, unknown> = {};
+        try {
+          args = JSON.parse(call.argumentsJson || "{}") as Record<
+            string,
+            unknown
+          >;
+        } catch (err) {
+          console.warn(
+            `[ask] unparseable arguments for ${call.name}:`,
+            err,
+          );
+        }
         const result = tool
-          ? await tool.execute(toolUse.input as Record<string, unknown>)
-          : { content: `Unknown tool "${toolUse.name}".`, isError: true };
+          ? await tool.execute(args)
+          : { content: `Unknown tool "${call.name}".`, isError: true };
         // The step summary IS the raw tool-result content — the shape
         // the platform emitted and the drawer renders as "✓ <summary>".
         await writer.emit("tool_step", {
           type: "tool_step",
-          tool_name: toolUse.name,
+          tool_name: call.name,
           summary: result.content,
         });
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: toolUse.id,
+        messages.push({
+          role: "tool",
+          tool_call_id: call.id,
           content: result.content,
-          ...(result.isError === true ? { is_error: true } : {}),
         });
       }
-      messages.push({ role: "assistant", content: message.content });
-      messages.push({ role: "user", content: toolResults });
     }
 
     if (visibleText !== "") {

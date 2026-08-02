@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError } from "@/server/api-error";
-import { anthropicClient, ASK_MODEL, extractText } from "@/server/llm";
+import { openaiClient, ASK_MODEL } from "@/server/llm";
 import {
   findDefinition,
   listDefinitionsForType,
@@ -15,7 +15,7 @@ import { loadWorkItem } from "@/server/work-items";
  * `POST /api/work_items/{id}/attribute_values/{definitionId}/compute` —
  * sync single-item LLM enrichment for an AI-computed column (a
  * definition carrying an `enrichment` config), deferred from the
- * attributes swap step to here where the Anthropic client exists.
+ * attributes swap step to here where the LLM client exists.
  *
  * Contract per `attributesApi.computeValue`: `{ outcome, value }` with
  * outcome `computed` | `skipped_manual_override` | `failed`. A human
@@ -60,8 +60,8 @@ export async function POST(
     );
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return apiError(500, "llm_unavailable", "ANTHROPIC_API_KEY is not configured");
+  if (!process.env.OPENAI_API_KEY) {
+    return apiError(500, "llm_unavailable", "OPENAI_API_KEY is not configured");
   }
 
   // Record context the enrichment grounds in: core fields + the
@@ -100,16 +100,21 @@ export async function POST(
     .join("\n");
 
   try {
-    const client = anthropicClient();
-    const response = await client.messages.create({
+    const client = openaiClient();
+    const response = await client.chat.completions.create({
       model: ASK_MODEL,
-      max_tokens: COMPUTE_MAX_TOKENS,
+      max_completion_tokens: COMPUTE_MAX_TOKENS,
       messages: [{ role: "user", content: instructions }],
     });
-    if (response.stop_reason === "refusal") {
+    const choice = response.choices[0];
+    if (
+      choice === undefined ||
+      choice.finish_reason === "content_filter" ||
+      choice.message.refusal
+    ) {
       return NextResponse.json({ outcome: "failed", value: null });
     }
-    const text = extractText(response.content).trim();
+    const text = (choice.message.content ?? "").trim();
     if (text === "") {
       return NextResponse.json({ outcome: "failed", value: null });
     }

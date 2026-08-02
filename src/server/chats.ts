@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { asc, eq } from "drizzle-orm";
 import { chatMessages, chats, db } from "@/db";
 import { mintId } from "@/db/ids";
@@ -48,9 +47,13 @@ export async function loadChat(id: string): Promise<ChatRow | null> {
   return rows[0] ?? null;
 }
 
-export async function loadHistory(
-  chatId: string,
-): Promise<Anthropic.MessageParam[]> {
+/** One persisted conversational turn — provider-neutral (plain text). */
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export async function loadHistory(chatId: string): Promise<ChatTurn[]> {
   const rows = await db
     .select()
     .from(chatMessages)

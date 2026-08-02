@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { mintId } from "@/db/ids";
 import { apiError, readJsonBody } from "@/server/api-error";
-import { anthropicClient, ASK_MODEL, extractText } from "@/server/llm";
+import { openaiClient, ASK_MODEL } from "@/server/llm";
 
 /**
  * `POST /api/responses` — local replacement for the platform's
@@ -47,21 +47,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       `input.question exceeds ${MAX_QUESTION_CHARS} characters`,
     );
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return apiError(500, "llm_unavailable", "ANTHROPIC_API_KEY is not configured");
+  if (!process.env.OPENAI_API_KEY) {
+    return apiError(500, "llm_unavailable", "OPENAI_API_KEY is not configured");
   }
 
   try {
-    const client = anthropicClient();
-    const response = await client.messages.create({
+    const client = openaiClient();
+    const response = await client.chat.completions.create({
       model: ASK_MODEL,
-      max_tokens: MAX_TOKENS,
+      max_completion_tokens: MAX_TOKENS,
       messages: [{ role: "user", content: question }],
     });
-    if (response.stop_reason === "refusal") {
+    const choice = response.choices[0];
+    if (
+      choice === undefined ||
+      choice.finish_reason === "content_filter" ||
+      choice.message.refusal
+    ) {
       return apiError(400, "declined", "The model declined this request");
     }
-    const text = extractText(response.content);
+    const text = choice.message.content ?? "";
     return NextResponse.json({
       id: mintId("resp"),
       object: "response",
@@ -70,8 +75,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       output: { text },
       sources: [],
       usage: {
-        input_tokens: response.usage.input_tokens,
-        output_tokens: response.usage.output_tokens,
+        input_tokens: response.usage?.prompt_tokens ?? 0,
+        output_tokens: response.usage?.completion_tokens ?? 0,
       },
     });
   } catch (err) {
