@@ -150,6 +150,26 @@ Backend API (localhost:8080) ← authTokenManager.getAuthHeaders()
 
 ---
 
+### Realtime collaboration (2026-08-01)
+
+Self-hosted multiplayer on a Cloudflare Durable Object worker
+(`realtime/`): live cross-user cache invalidation, presence
+(avatars / "X is here" / field claims / cursors), and Yjs/TipTap
+co-edited live notes with a freeze-into-call-note flow. Client half
+lives in `src/lib/realtime/` (one socket in CrmShell, Zustand store)
++ `src/components/presence/`. Entirely env-gated
+(`REALTIME_URL`/`REALTIME_SECRET`). Full architecture + deploy
+runbook: [docs/realtime.md](./realtime.md).
+
+### LLM seam (OpenAI, 2026-08-02)
+
+Every paid model call rides `src/server/llm.ts` (OpenAI; default
+`gpt-5.4-mini`, `CRM_ASK_MODEL` override): the Ask agentic loop
+(`server/ask.ts` — SSE grammar in `src/lib/chat/stream.ts` is
+provider-agnostic), attribute enrichment `/compute`, and interview
+suggest `/api/responses`. Fails loudly without `OPENAI_API_KEY` —
+never add a silent fallback (billing discipline).
+
 ## TanStack Query Hooks
 
 ### Chat (`src/queries/chat/`)

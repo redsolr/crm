@@ -78,7 +78,10 @@ The real-auth tier (e2e/*.real-auth.spec.ts — the ONLY specs without
 MOCK_AUTH) exists because mocked tests structurally cannot catch a
 missing or wrongly-shaped real route: that class shipped three
 production bugs on 2026-07-31 (org-bootstrap deadlock, usage-summary
-404, views 404). It drives the actual email+password login against the
+404, views 404). The tier: bootstrap zero-404 sweep · sales loop w/ saved views ·
+daily motions (inbox/stage/reports reconcile) · /mcp door · two-seat
+teamwork · realtime multiplayer (env-gated on REALTIME_URL/SECRET —
+skips without the worker). It drives the actual email+password login against the
 crm WorkOS Staging env (credentials in `.env.local`: `E2E_WORKOS_*` +
 `E2E_WORKOS_TEAMMATE_*` — synthetic users, no real mailboxes), sweeps
 every app surface with a zero-404 tripwire, runs the sales loop with

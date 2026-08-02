@@ -59,7 +59,12 @@ browser ◀─wss /doc/:recordId?token=…──▶ YDocRoom (Durable Object)
   independently in worker and client (`peer-color.ts` mirrors
   `colorFor` in the worker — keep in sync).
 
-## Deploy runbook (founder, one-time)
+## Deploy runbook (DONE 2026-08-02 — kept for redeploys/rotation)
+
+> Deployed: `https://crm-realtime.crm-realtime.workers.dev` on the
+> founder's PERSONAL Cloudflare account (all Cloudflare lives there —
+> zone, worker, R2 backups). Envs live in Vercel prod. The steps below
+> re-run for redeploys or secret rotation.
 
 ```bash
 cd D:\App\crm\realtime
@@ -93,6 +98,8 @@ keystroke sync to form fields.
 - `src/server/__tests__/realtime.test.ts` — token contract (payload +
   HMAC + TTL + email-local-part fallback), env gating no-op,
   record-route path parsing.
-- Two-browser proofs (presence/cursors/claims/live-stage +
-  co-edit/freeze/clear) run against `wrangler dev` — see the
-  2026-08-01 handoff for the scripted walkthroughs.
+- `e2e/realtime.real-auth.spec.ts` — two REAL seats: presence pill,
+  live stage propagation (no reload), co-edit convergence both ways.
+  Env-gated: skips without REALTIME_URL/SECRET; runs in CI against
+  `wrangler dev` in local mode (no Cloudflare credential).
+- Original scripted two-browser proofs: 2026-08-01 handoff.
