@@ -57,6 +57,17 @@ jobs:
       - run: npm ci
       - name: Generate OpenAPI client (gitignored, needed by tsc/build)
         run: npm run openapi:gen
+      - name: Placeholder env (authkit proxy wants WorkOS vars at boot, even mocked)
+        run: |
+          cat > .env.local <<EOF
+          WORKOS_API_KEY=sk_test_ci_placeholder
+          WORKOS_CLIENT_ID=client_ci_placeholder
+          WORKOS_COOKIE_PASSWORD=ci_cookie_password_must_be_32_chars_x
+          WORKOS_COOKIE_NAME=crm-wos-session
+          NEXT_PUBLIC_WORKOS_REDIRECT_URI=http://localhost:3190/callback
+          NEXT_PUBLIC_API_BASE_URL=http://localhost:3190
+          NEXT_PUBLIC_APP_URL=http://localhost:3190
+          EOF
       - run: npx playwright install --with-deps chromium
       - name: Mocked tier
         run: npx cross-env MOCK_AUTH=true playwright test --project=mocked
