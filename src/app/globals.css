@@ -592,10 +592,16 @@ body.is-dragging .project-board-card {
 
 /* ── CRM shell chrome ── */
 
+:root {
+  /* Single source for the rail width — the topbar's screen-centering
+     math (.crm-topbar-center) offsets by it; change both never. */
+  --crm-sidebar-width: 264px;
+}
+
 .crm-sidebar {
   /* OpenAI-platform-class rail: 260px column, ~36px rows. The previous
      232px/28px was visibly cramped next to the reference products. */
-  width: 264px;
+  width: var(--crm-sidebar-width);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -973,6 +979,7 @@ body.is-dragging .project-board-card {
 /* ── Global topbar (Attio-shape: crumb · search · Ask AI) ── */
 
 .crm-topbar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -995,6 +1002,29 @@ body.is-dragging .project-board-card {
   display: flex;
   justify-content: center;
   min-width: 0;
+  align-items: center;
+}
+
+/* Wide windows: pin the search to the true center of the SCREEN.
+   The flex fallback above centers within the topbar, which starts
+   after the sidebar — so the box sits half-a-rail right of where
+   Slack/Attio put theirs. Only kicks in when there's room for the
+   absolute box to clear the crumb (left) and presence/Ask (right);
+   below the breakpoint the collision-free flex centering stays. */
+@media (min-width: 1440px) {
+  .crm-topbar-center {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(50vw - var(--crm-sidebar-width));
+    transform: translateX(-50%);
+    width: min(560px, 44vw);
+  }
+  /* The center column left the flex flow — the crumb takes over as
+     the spacer that pushes presence + Ask to the right edge. */
+  .crm-topbar-crumb {
+    flex: 1;
+  }
 }
 
 /* ── Tab strip (Board ⇄ Table etc.) ── */

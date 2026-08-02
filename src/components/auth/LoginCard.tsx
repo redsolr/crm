@@ -1,21 +1,29 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useAuth } from "@/stores/use-auth";
+import {
+  clearLastAccount,
+  readLastAccount,
+  type LastAccount,
+} from "@/lib/last-account";
 import { PasswordInput } from "./PasswordInput";
 import { FieldError } from "./FieldError";
 import { SubmitButton } from "./SubmitButton";
 import { SocialButton } from "./SocialButton";
 import { AuthDivider } from "./AuthDivider";
 import { ToggleSwitch } from "./ToggleSwitch";
+import { LastAccountCard } from "./LastAccountCard";
 
 /**
- * The complete sign-in card — email/password form, remember-me,
- * Google/Apple social buttons. Part of the auth kit: a product's login
- * page is just <LoginCard login={action} redirectTo="/home" /> inside
- * the (auth) layout's AuthShell; everything product-specific arrives
- * via props so this file stays byte-identical across repos.
+ * The complete sign-in card — "Continue as <last account>" (when the
+ * `crm-last-account` cookie remembers one), email/password form,
+ * remember-me, Google/Apple social buttons. Part of the auth kit: a
+ * product's login page is just <LoginCard login={action}
+ * redirectTo="/home" /> inside the (auth) layout's AuthShell;
+ * everything product-specific arrives via props so this file stays
+ * byte-identical across repos.
  */
 export function LoginCard({
   login,
@@ -43,12 +51,38 @@ export function LoginCard({
   // so the button never flips back to "Sign in" while the old document
   // is still on screen.
   const [redirecting, setRedirecting] = useState(false);
+  // Read post-mount — document.cookie doesn't exist during SSR.
+  const [lastAccount, setLastAccount] = useState<LastAccount | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setLastAccount(readLastAccount());
+  }, []);
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
       window.location.href = needsOnboarding ? onboardingRedirect : redirectTo;
     }
   }, [isAuthenticated, loading, needsOnboarding, onboardingRedirect, redirectTo]);
+
+  // Password-method "Continue as" — the account is already on file,
+  // so drop the user straight at the only thing left to type.
+  function continueWithPassword() {
+    if (lastAccount === null) return;
+    if (emailInputRef.current) {
+      emailInputRef.current.value = lastAccount.email;
+    }
+    setFieldErrors((e) => ({ ...e, email: undefined }));
+    formRef.current
+      ?.querySelector<HTMLInputElement>('input[name="password"]')
+      ?.focus();
+  }
+
+  function useAnotherAccount() {
+    clearLastAccount();
+    setLastAccount(null);
+  }
 
   function validateEmail(email: string): string | null {
     if (!email) return "Email is required";
@@ -96,12 +130,24 @@ export function LoginCard({
         </h1>
       </div>
 
+      {lastAccount !== null && (
+        <>
+          <LastAccountCard
+            account={lastAccount}
+            onContinueWithPassword={continueWithPassword}
+            onUseAnotherAccount={useAnotherAccount}
+          />
+          <AuthDivider />
+        </>
+      )}
+
       {/* Submitted via onSubmit, NOT `action={...}`: React 19 auto-resets
           uncontrolled fields when a form action completes, which blanked the
           email input and un-pended the button for the beat between the
           server action finishing and the hard nav committing — a
           successful login flashed like a broken/failed one. */}
       <form
+        ref={formRef}
         onSubmit={(e) => {
           e.preventDefault();
           handleSubmit(new FormData(e.currentTarget));
@@ -112,6 +158,7 @@ export function LoginCard({
         <div>
           <label className="ctx-label">Email</label>
           <input
+            ref={emailInputRef}
             name="email"
             type="text"
             className={`ctx-input ${fieldErrors.email ? "ctx-input-error" : ""}`}

@@ -86,6 +86,13 @@ test.describe("Global search", () => {
     });
     // No modal backdrop — the page underneath stays visible.
     await expect(authedPage.getByTestId("sales-pipeline")).toBeVisible();
+    // Pre-typing the dropdown suggests instead of nagging: the legend
+    // of searchable kinds renders; no recents yet (nothing searched).
+    await expect(authedPage.getByTestId("crm-search-kinds")).toBeVisible();
+    await expect(authedPage.getByTestId("crm-search-kinds")).toContainText(
+      "Companies"
+    );
+    await expect(authedPage.getByTestId("crm-search-recent")).toHaveCount(0);
 
     // ── Debounced FTS call → grouped results with identifiers ─────
     await authedPage.getByTestId("crm-search-input").fill("acme");
@@ -122,6 +129,25 @@ test.describe("Global search", () => {
     await expect(authedPage.getByTestId("sales-account-title")).toContainText(
       "Acme Legal"
     );
+
+    // ── The successful query is offered back as a recent search ───
+    await authedPage.keyboard.press("/");
+    await expect(authedPage.getByTestId("crm-search-dropdown")).toBeVisible({
+      timeout: STEP_TIMEOUT,
+    });
+    const recentItem = authedPage.getByTestId("crm-search-recent-item");
+    await expect(recentItem).toHaveCount(1);
+    await expect(recentItem).toContainText("acme");
+    // Applying a recent re-runs the search in place.
+    await recentItem.click();
+    await expect(authedPage.getByTestId("crm-search-input")).toHaveValue(
+      "acme"
+    );
+    await expect(
+      authedPage.getByTestId("crm-search-group-account")
+    ).toBeVisible({ timeout: STEP_TIMEOUT });
+    await authedPage.keyboard.press("Escape");
+    await expect(authedPage.getByTestId("crm-search-dropdown")).toHaveCount(0);
 
     // ── Sidebar filter: view matches replace the nav in place ─────
     const sidebarInput = authedPage.getByTestId("crm-sidebar-search-input");

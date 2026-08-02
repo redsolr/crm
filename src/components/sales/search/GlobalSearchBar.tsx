@@ -3,21 +3,32 @@
 /**
  * Topbar global search — Slack-shape: a REAL input living in the
  * topbar whose results render in a dropdown anchored directly under
- * it. No centered modal, no dimmed backdrop — the page stays visible
- * while you search.
+ * it, always exactly as wide as the input (inset-x-0 — never a fixed
+ * width the field doesn't share). No centered modal, no dimmed
+ * backdrop — the page stays visible while you search.
+ *
+ * Before the query is long enough to search, the dropdown offers
+ * suggestions instead of a bare hint: recent successful searches
+ * (localStorage, keyboard-navigable) plus a legend of what the search
+ * reaches. See `SearchSuggestions`.
  *
  * `/` anywhere in the CRM shell focuses this input (unless the user
  * is typing somewhere else or a sibling overlay — ⌘K palette, Ask
  * drawer — owns the keyboard). Ctrl/Cmd+F is deliberately NOT
  * intercepted — browser find stays native. Full keyboard nav: ↑↓
- * moves the selection, Enter opens the record, Esc closes the
- * dropdown and blurs.
+ * moves the selection (results or recents), Enter opens the record
+ * (or applies the recent), Esc closes the dropdown and blurs.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useClickOutside } from "@/hooks/use-click-outside";
 import { routeForHit } from "@/lib/sales/search-results";
+import {
+  clearRecentSearches,
+  readRecentSearches,
+  recordRecentSearch,
+} from "@/lib/sales/recent-searches";
 import type { SearchHit } from "@/lib/searchApi";
 import { useAskPanel } from "@/stores/use-ask-panel";
 import {
@@ -26,20 +37,33 @@ import {
   useCrmSearch,
 } from "./useCrmSearch";
 import { MagnifierIcon, SearchResultsList } from "./SearchResultsList";
+import { SearchSuggestions } from "./SearchSuggestions";
 
 export function GlobalSearchBar() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState(0);
+  const [recents, setRecents] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const search = useCrmSearch(query);
   const { flatHits } = search;
 
+  // Mode follows the LIVE input (not the debounced query) so the
+  // suggestions never flash while the debounce catches up.
+  const suggestMode = query.trim().length < MIN_QUERY_LENGTH;
+  const navLength = suggestMode ? recents.length : flatHits.length;
+
   // Derived clamp (no state-sync effect) — same pattern as the palette.
-  const activeIndex = Math.min(selected, Math.max(0, flatHits.length - 1));
+  const activeIndex = Math.min(selected, Math.max(0, navLength - 1));
+
+  // Recents are re-read every time the dropdown opens — another tab or
+  // an earlier search this session may have added entries.
+  useEffect(() => {
+    if (isOpen) setRecents(readRecentSearches());
+  }, [isOpen]);
 
   // Global hotkey — `/` focuses the input when the user isn't typing
   // somewhere else and no sibling overlay is up.
@@ -66,6 +90,9 @@ export function GlobalSearchBar() {
   useClickOutside(containerRef, closeDropdown);
 
   function openHit(hit: SearchHit) {
+    // The query that surfaced a record the user actually opened is
+    // worth offering back next time.
+    recordRecentSearch(search.effectiveQuery);
     router.push(routeForHit(hit));
     setQuery("");
     setSelected(0);
@@ -73,15 +100,32 @@ export function GlobalSearchBar() {
     inputRef.current?.blur();
   }
 
+  function applyRecent(term: string) {
+    setQuery(term);
+    setSelected(0);
+    inputRef.current?.focus();
+  }
+
+  function clearRecents() {
+    clearRecentSearches();
+    setRecents([]);
+    setSelected(0);
+  }
+
   function onInputKeyDown(e: React.KeyboardEvent) {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelected(Math.min(activeIndex + 1, Math.max(0, flatHits.length - 1)));
+      setSelected(Math.min(activeIndex + 1, Math.max(0, navLength - 1)));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelected(Math.max(activeIndex - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
+      if (suggestMode) {
+        const term = recents[activeIndex];
+        if (term !== undefined) applyRecent(term);
+        return;
+      }
       const hit = flatHits[activeIndex];
       if (hit) openHit(hit);
     } else if (e.key === "Escape") {
@@ -91,10 +135,14 @@ export function GlobalSearchBar() {
     }
   }
 
+  // Live input is long enough but the debounced query hasn't caught up
+  // yet — the results list would render blank for the debounce window.
+  const waitingForDebounce = !suggestMode && !search.enabled;
+
   return (
     <div
       ref={containerRef}
-      className="crm-topbar-search relative w-full max-w-[440px]"
+      className="crm-topbar-search relative w-full max-w-[560px]"
       data-testid="crm-topbar-search"
       role="search"
     >
@@ -130,20 +178,30 @@ export function GlobalSearchBar() {
 
       {isOpen && (
         <div
-          className="crm-search-dropdown absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-[560px] max-w-[80vw] max-h-[420px] overflow-y-auto rounded-xl border border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)] shadow-2xl z-[60] py-1.5"
+          className="crm-search-dropdown absolute top-full inset-x-0 mt-1.5 max-h-[420px] overflow-y-auto rounded-xl border border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)] shadow-2xl z-[60] py-1.5"
           data-testid="crm-search-dropdown"
         >
-          {!search.enabled && !search.isLoading && (
-            <div className="crm-search-hint px-4 py-3 text-sm text-[var(--theme-text-muted)]">
-              Type at least {MIN_QUERY_LENGTH} characters to search.
-            </div>
+          {suggestMode ? (
+            <SearchSuggestions
+              recents={recents}
+              activeIndex={activeIndex}
+              onHover={setSelected}
+              onApply={applyRecent}
+              onClearRecents={clearRecents}
+            />
+          ) : waitingForDebounce ? (
+            <div
+              className="crm-search-loading mx-4 my-3 h-3 rounded bg-[var(--theme-bg-hover)] animate-pulse"
+              aria-hidden
+            />
+          ) : (
+            <SearchResultsList
+              search={search}
+              activeIndex={activeIndex}
+              onHover={setSelected}
+              onOpen={openHit}
+            />
           )}
-          <SearchResultsList
-            search={search}
-            activeIndex={activeIndex}
-            onHover={setSelected}
-            onOpen={openHit}
-          />
         </div>
       )}
     </div>

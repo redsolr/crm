@@ -21,9 +21,14 @@
  *   path.
  */
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { saveSession } from "@workos-inc/authkit-nextjs";
 import { workos, clientId } from "@/lib/workos";
+import {
+  LAST_ACCOUNT_COOKIE,
+  LAST_ACCOUNT_MAX_AGE_SECONDS,
+  serializeLastAccount,
+} from "@/lib/last-account";
 
 /** Build an absolute URL for the current request from forwarded headers. */
 async function getRequestBaseUrl(): Promise<string> {
@@ -58,8 +63,29 @@ export async function emailPasswordLogin(
       password,
     });
 
-    const requestUrl = `${await getRequestBaseUrl()}/login`;
-    await saveSession(authResponse, requestUrl);
+    const baseUrl = await getRequestBaseUrl();
+    await saveSession(authResponse, `${baseUrl}/login`);
+
+    // Same "Continue as <account>" record the OAuth callback writes —
+    // password logins should be offered back after logout too.
+    const { user } = authResponse;
+    const name =
+      [user.firstName, user.lastName].filter(Boolean).join(" ") || undefined;
+    const cookieStore = await cookies();
+    cookieStore.set(
+      LAST_ACCOUNT_COOKIE,
+      serializeLastAccount({
+        email: user.email,
+        name,
+        method: "Password",
+      }),
+      {
+        maxAge: LAST_ACCOUNT_MAX_AGE_SECONDS,
+        path: "/",
+        sameSite: "lax",
+        secure: baseUrl.startsWith("https"),
+      },
+    );
 
     return {};
   } catch (err: unknown) {

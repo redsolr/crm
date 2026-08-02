@@ -153,6 +153,10 @@ test.describe("Login Page", () => {
     await expect(page.getByText("New chat")).not.toBeVisible();
   });
 
+  test("shows no last-account card without the cookie", async () => {
+    await expect(page.getByTestId("login-last-account")).toHaveCount(0);
+  });
+
   test("redirects authenticated users to /sales", async () => {
     await page.addInitScript(() => {
       // This test wants the AUTHENTICATED path — lift the suite-wide
@@ -177,5 +181,98 @@ test.describe("Login Page", () => {
     await page.goto("/login");
     await page.waitForURL("**/sales", { timeout: 10000 });
     expect(page.url()).toContain("/sales");
+  });
+});
+
+test.describe("Login Page — Continue as last account", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem("dev-mock-explicit-signed-out", "true");
+    });
+  });
+
+  /**
+   * Seed the non-httpOnly cookie the server writes on every login.
+   * Set on the CONTEXT (not addInitScript, which re-runs on every
+   * navigation and would resurrect the cookie after the clear test's
+   * reload).
+   */
+  function seedLastAccount(
+    page: Page,
+    baseURL: string | undefined,
+    account: { email: string; name?: string; method?: string },
+  ) {
+    if (!baseURL) throw new Error("baseURL missing from Playwright config");
+    return page.context().addCookies([
+      {
+        name: "crm-last-account",
+        value: encodeURIComponent(JSON.stringify(account)),
+        url: baseURL,
+      },
+    ]);
+  }
+
+  test("offers the last Google account back with a login_hint link", async ({
+    page,
+    baseURL,
+  }) => {
+    await seedLastAccount(page, baseURL, {
+      email: "admin@jurisimus.com",
+      name: "Kreethup Hiranphan",
+      method: "GoogleOAuth",
+    });
+    await page.goto("/login");
+
+    const card = page.getByTestId("login-last-account");
+    await expect(card).toBeVisible();
+    await expect(card).toContainText("Kreethup Hiranphan");
+    await expect(card).toContainText("admin@jurisimus.com");
+    await expect(card).toContainText("Continue with Google");
+    await expect(
+      page.getByTestId("login-last-account-continue"),
+    ).toHaveAttribute(
+      "href",
+      "/login/google?login_hint=admin%40jurisimus.com",
+    );
+    // The regular form stays available underneath.
+    await expect(page.getByTestId("login-email-form")).toBeVisible();
+  });
+
+  test("password-method continue prefills email and focuses password", async ({
+    page,
+    baseURL,
+  }) => {
+    await seedLastAccount(page, baseURL, {
+      email: "crm-e2e@jurisimus.com",
+      method: "Password",
+    });
+    await page.goto("/login");
+
+    const card = page.getByTestId("login-last-account");
+    await expect(card).toContainText("Continue with password");
+    await page.getByTestId("login-last-account-continue").click();
+    await expect(page.getByTestId("login-email-input")).toHaveValue(
+      "crm-e2e@jurisimus.com",
+    );
+    await expect(page.getByTestId("login-password-input")).toBeFocused();
+  });
+
+  test("Use another account dismisses the card and forgets the cookie", async ({
+    page,
+    baseURL,
+  }) => {
+    await seedLastAccount(page, baseURL, {
+      email: "admin@jurisimus.com",
+      method: "GoogleOAuth",
+    });
+    await page.goto("/login");
+
+    await expect(page.getByTestId("login-last-account")).toBeVisible();
+    await page.getByTestId("login-last-account-clear").click();
+    await expect(page.getByTestId("login-last-account")).toHaveCount(0);
+    // The cookie is gone — a reload doesn't resurrect the card.
+    await page.reload();
+    await expect(page.getByTestId("login-page")).toBeVisible();
+    await expect(page.getByTestId("login-last-account")).toHaveCount(0);
   });
 });

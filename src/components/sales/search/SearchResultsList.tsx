@@ -148,7 +148,7 @@ export function MagnifierIcon({ size = 15 }: { size?: number }) {
   );
 }
 
-function KindIcon({ kind }: { kind: SearchResultKind }) {
+export function KindIcon({ kind }: { kind: SearchResultKind }) {
   const shared = {
     width: 14,
     height: 14,
