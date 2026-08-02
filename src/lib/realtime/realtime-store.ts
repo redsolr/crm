@@ -47,16 +47,25 @@ export interface RealtimeCursor {
   at: number;
 }
 
+/** `GET /api/realtime/session` payload, held once for every consumer
+ *  (connection socket + live-note providers) — single fetch, one truth. */
+export interface RealtimeSession {
+  url: string;
+  doc_base_url: string;
+  token: string;
+  self: { id: string; name: string | null; email: string | null };
+}
+
 interface RealtimeState {
   status: "off" | "connecting" | "on";
-  selfId: string | null;
+  session: RealtimeSession | null;
   peers: RealtimePeer[];
   /** peerId → latest cursor (already filtered to others). */
   cursors: Record<string, RealtimeCursor>;
   send: ((message: Record<string, unknown>) => void) | null;
 
   setStatus: (status: RealtimeState["status"]) => void;
-  setSelfId: (id: string | null) => void;
+  setSession: (session: RealtimeSession | null) => void;
   setPeers: (peers: RealtimePeer[]) => void;
   upsertCursor: (cursor: RealtimeCursor) => void;
   removeCursor: (peerId: string) => void;
@@ -66,13 +75,13 @@ interface RealtimeState {
 
 export const useRealtimeStore = create<RealtimeState>((set) => ({
   status: "off",
-  selfId: null,
+  session: null,
   peers: [],
   cursors: {},
   send: null,
 
   setStatus: (status) => set({ status }),
-  setSelfId: (selfId) => set({ selfId }),
+  setSession: (session) => set({ session }),
   setPeers: (peers) => set({ peers }),
   upsertCursor: (cursor) =>
     set((s) => ({ cursors: { ...s.cursors, [cursor.peerId]: cursor } })),
@@ -84,7 +93,8 @@ export const useRealtimeStore = create<RealtimeState>((set) => ({
       return { cursors: next };
     }),
   setSend: (send) => set({ send }),
-  reset: () => set({ status: "off", peers: [], cursors: {}, send: null }),
+  reset: () =>
+    set({ status: "off", session: null, peers: [], cursors: {}, send: null }),
 }));
 
 /**
@@ -92,10 +102,11 @@ export const useRealtimeStore = create<RealtimeState>((set) => ({
  *
  * NOT for direct use as a `useRealtimeStore(selectOthers)` selector —
  * it allocates a fresh array per call, which loops React's
- * `getSnapshot`. Select `peers` + `selfId` and derive (memoized or
- * in-render), or use it inside a selector whose RETURN value is
- * referentially stable (e.g. `.find`).
+ * `getSnapshot`. Components use `useOthers()` (use-others.ts); keep
+ * this only for selectors whose RETURN value is referentially stable
+ * (e.g. `.find`, as in use-field-claim).
  */
 export function selectOthers(s: RealtimeState): RealtimePeer[] {
-  return s.selfId === null ? s.peers : s.peers.filter((p) => p.id !== s.selfId);
+  const selfId = s.session?.self.id ?? null;
+  return selfId === null ? s.peers : s.peers.filter((p) => p.id !== selfId);
 }

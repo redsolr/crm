@@ -22,20 +22,16 @@ import {
   type RealtimeCursor,
   type RealtimePeer,
 } from "@/lib/realtime/realtime-store";
+import { useOthers } from "@/lib/realtime/use-others";
 
 const CURSOR_THROTTLE_MS = 40;
 
 export function RecordPresenceLayer({ recordId }: { recordId: string }) {
-  // Select stable slices; derive in render (fresh-array selectors loop
-  // React's getSnapshot).
-  const allPeers = useRealtimeStore((s) => s.peers);
-  const selfId = useRealtimeStore((s) => s.selfId);
+  const others = useOthers();
   const cursors = useRealtimeStore((s) => s.cursors);
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  const viewers = allPeers.filter(
-    (p) => p.id !== selfId && p.view?.recordId === recordId,
-  );
+  const viewers = others.filter((p) => p.view?.recordId === recordId);
   const recordCursors = Object.values(cursors).filter(
     (c) => c.recordId === recordId,
   );

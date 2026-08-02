@@ -26,6 +26,7 @@ import {
   useRealtimeStore,
   type RealtimeCursor,
   type RealtimePeer,
+  type RealtimeSession,
 } from "./realtime-store";
 
 const PING_INTERVAL_MS = 30_000;
@@ -93,11 +94,10 @@ export function useRealtimeConnection(): void {
           store.setStatus("off");
           return;
         }
-        const session = (await res.json()) as {
-          url: string;
-          self: { id: string; name: string | null; email: string | null };
-        };
-        store.setSelfId(session.self.id);
+        const session = (await res.json()) as RealtimeSession;
+        // The store holds the session for EVERY consumer (this socket +
+        // the live-note Yjs providers) — one fetch, one truth.
+        store.setSession(session);
         store.setStatus("connecting");
 
         socket = new WebSocket(session.url);

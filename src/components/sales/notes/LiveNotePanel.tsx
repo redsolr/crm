@@ -24,15 +24,13 @@ import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { peerColorFor } from "@/lib/realtime/peer-color";
+import {
+  useRealtimeStore,
+  type RealtimeSession,
+} from "@/lib/realtime/realtime-store";
 import type { SalesWorkspaceBundle } from "@/lib/sales/use-sales-workspace";
 import type { WorkItem } from "@/lib/workItemsApi";
 import { CreateCallNoteModal } from "../CreateCallNoteModal";
-
-interface RealtimeSession {
-  doc_base_url: string;
-  token: string;
-  self: { id: string; name: string | null; email: string | null };
-}
 
 export function LiveNotePanel({
   bundle,
@@ -43,20 +41,10 @@ export function LiveNotePanel({
   recordId: string;
   recordTitle: string;
 }) {
-  const [session, setSession] = useState<RealtimeSession | null>(null);
+  // The connection hook (CrmShell) already fetched the session and
+  // holds it in the store — no session ⇒ realtime off ⇒ no panel.
+  const session = useRealtimeStore((s) => s.session);
   const [open, setOpen] = useState(false);
-
-  // Probe once per record — 204 means realtime is off, panel hidden.
-  useEffect(() => {
-    let cancelled = false;
-    void fetch("/api/realtime/session").then(async (res) => {
-      if (cancelled || res.status !== 200) return;
-      setSession((await res.json()) as RealtimeSession);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [recordId]);
 
   if (session === null) return null;
 

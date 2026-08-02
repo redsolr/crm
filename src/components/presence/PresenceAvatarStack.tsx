@@ -8,7 +8,7 @@
  * the dead platform-era Hocuspocus presence).
  */
 
-import { useRealtimeStore } from "@/lib/realtime/realtime-store";
+import { useOthers } from "@/lib/realtime/use-others";
 import { getInitials } from "@/lib/identity";
 
 const MAX_VISIBLE = 4;
@@ -32,12 +32,7 @@ export function PresenceAvatarStack({
   /** Slightly smaller circles for tight chrome. */
   compact?: boolean;
 }) {
-  // Select stable slices; derive in render (fresh-array selectors loop
-  // React's getSnapshot).
-  const allPeers = useRealtimeStore((s) => s.peers);
-  const selfId = useRealtimeStore((s) => s.selfId);
-  const peers =
-    selfId === null ? allPeers : allPeers.filter((p) => p.id !== selfId);
+  const peers = useOthers();
   if (peers.length === 0) return null;
 
   const size = compact ? 22 : 26;
