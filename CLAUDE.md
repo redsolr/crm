@@ -116,10 +116,10 @@ placeholder; AI writes (Ask tools + `/mcp`) stamp `Claude (agent)`
 (`AGENT_ACTOR_ID`, `actor_type: "agent"`). New write paths MUST thread
 an actor — never reintroduce a hardcoded author.
 
-Known team gaps (queued, don't build unprompted): no cross-user cache
-invalidation (teammates see new records on refresh, not live); no
-in-app roles (every seat is equal until the first non-founder joins).
-Author names in the record timeline SHIPPED 2026-08-01 (`actor_name` on
+Known team gaps (queued, don't build unprompted): no in-app roles
+(every seat is equal until the first non-founder joins). Cross-user
+cache invalidation SHIPPED 2026-08-01 (realtime arc — § Realtime
+collaboration). Author names in the record timeline SHIPPED 2026-08-01 (`actor_name` on
 activities, `created_by_name` on call notes/commitments).
 
 ### Realtime collaboration — SHIPPED 2026-08-01 (founder-greenlit, tiers 1–3)
