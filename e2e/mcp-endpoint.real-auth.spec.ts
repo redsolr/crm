@@ -60,6 +60,7 @@ test("the /mcp door: 401 closed, tools listed, real write + read-back", async ({
     "create_opportunity",
     "update_opportunity",
     "log_call_note",
+    "create_commitment",
   ]) {
     expect(listed.text).toContain(name);
   }

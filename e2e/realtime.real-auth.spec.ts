@@ -102,6 +102,20 @@ test("two seats: presence pill, live stage propagation, co-edited note", async (
   await expect(pill).toContainText("is here");
   await expect(seatA.getByTestId("presence-avatar-stack")).toBeVisible();
 
+  // ── Field claim: B focuses a field, A sees the ring + chip ─────────
+  await seatB.getByTestId("sales-attr-next_action").click();
+  await expect(
+    seatA.getByTestId("sales-attr-next_action-claim"),
+  ).toContainText("is editing", { timeout: 30_000 });
+  await seatB.getByTestId("sales-attr-next_action").blur();
+
+  // ── Cursor relay: B moves the pointer, A renders the named cursor ──
+  await seatB.mouse.move(600, 400);
+  await seatB.mouse.move(640, 440, { steps: 5 });
+  await expect(seatA.getByTestId("peer-cursor").first()).toBeVisible({
+    timeout: 30_000,
+  });
+
   // ── Live invalidation: B moves the stage, A updates with NO reload ─
   const stageA = seatA.getByTestId("sales-opportunity-detail-stage-select");
   const stageB = seatB.getByTestId("sales-opportunity-detail-stage-select");
@@ -136,6 +150,22 @@ test("two seats: presence pill, live stage propagation, co-edited note", async (
       timeout: 30_000,
     })
     .toBe(true);
+
+  // ── Freeze into call note: durable record created, pad clears for
+  //    EVERYONE (the shared doc resets) ────────────────────────────────
+  await seatA.getByTestId("live-note-freeze").click();
+  await expect(
+    seatA.getByPlaceholder("What they said in their words; commitments made."),
+  ).not.toHaveValue("", { timeout: 15_000 });
+  await seatA.getByRole("button", { name: "Log call", exact: true }).click();
+  const noteRow = seatA
+    .locator("[data-testid='sales-call-notes-section']")
+    .getByText(/Call — /)
+    .first();
+  await expect(noteRow).toBeVisible({ timeout: 30_000 });
+  await expect
+    .poll(() => docText(seatB), { timeout: 30_000 })
+    .toBe("");
 
   // ── Cleanup: close the deal so reruns don't accumulate open rows ───
   await stageA.selectOption("won");

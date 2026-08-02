@@ -131,6 +131,8 @@ jobs:
           E2E_WORKOS_TEAMMATE_EMAIL=${{ secrets.E2E_WORKOS_TEAMMATE_EMAIL }}
           E2E_WORKOS_TEAMMATE_PASSWORD=${{ secrets.E2E_WORKOS_TEAMMATE_PASSWORD }}
           CRM_MCP_TOKEN=${{ secrets.CRM_MCP_TOKEN }}
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          CRM_ASK_MODEL=gpt-5.4-nano
           EOF
 
       - name: Migrate + seed
@@ -154,8 +156,10 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
-      - name: Real-auth tier (incl. realtime multiplayer spec)
-        run: npx cross-env E2E_MODE=real-auth REALTIME_URL=http://localhost:8788 REALTIME_SECRET=ci-realtime-secret playwright test --project=real-auth
+      - name: Real-auth tier (incl. realtime multiplayer + real-LLM specs)
+        # RUN_REAL_LLM_E2E turns on the paid-model spec — pennies per
+        # run at gpt-5.4-nano (set in .env.local above).
+        run: npx cross-env E2E_MODE=real-auth REALTIME_URL=http://localhost:8788 REALTIME_SECRET=ci-realtime-secret RUN_REAL_LLM_E2E=true playwright test --project=real-auth
         env:
           CRM_MCP_TOKEN: ${{ secrets.CRM_MCP_TOKEN }}
 

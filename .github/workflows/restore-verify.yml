@@ -1,0 +1,76 @@
+# Monthly restore drill — proves the newest R2 backup actually
+# RESTORES, not just uploads (a dump nobody restores is a hope, not a
+# backup — DR doctrine). Pulls the latest object from
+# s3://crm-db-backups/crm/, pg_restores it into a throwaway Postgres,
+# and sanity-checks the row counts. Fails loudly → fix the backup
+# pipeline before it matters.
+#
+# Same gate + secrets as backup-neon.yml (RUN_NEON_BACKUP,
+# R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY).
+name: restore-verify
+on:
+  schedule:
+    # 20:00 UTC on the 1st = 03:00 Asia/Bangkok, an hour after that
+    # night's backup lands.
+    - cron: "0 20 1 * *"
+  workflow_dispatch:
+
+jobs:
+  restore-latest-dump:
+    if: ${{ vars.RUN_NEON_BACKUP == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: crm
+          POSTGRES_PASSWORD: crm
+          POSTGRES_DB: restore_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U crm"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+    steps:
+      - name: Install postgresql-client 16
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-16
+
+      - name: Download latest dump from R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        run: |
+          LATEST=$(aws s3 ls "s3://crm-db-backups/crm/" --endpoint-url "$ENDPOINT" \
+            | sort | tail -1 | awk '{print $4}')
+          if [ -z "$LATEST" ]; then
+            echo "no dumps found in the bucket" >&2; exit 1
+          fi
+          echo "latest dump: $LATEST"
+          aws s3 cp "s3://crm-db-backups/crm/$LATEST" ./latest.dump \
+            --endpoint-url "$ENDPOINT"
+
+      - name: Restore
+        env:
+          PGPASSWORD: crm
+        run: pg_restore --no-owner --no-privileges -h localhost -U crm -d restore_test ./latest.dump
+
+      - name: Sanity-check restored data
+        env:
+          PGPASSWORD: crm
+        run: |
+          TABLES=$(psql -h localhost -U crm -d restore_test -t -A -c \
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema='public'")
+          RECORDS=$(psql -h localhost -U crm -d restore_test -t -A -c \
+            "SELECT count(*) FROM records")
+          echo "tables=$TABLES records=$RECORDS"
+          if [ "$TABLES" -lt 5 ] || [ "$RECORDS" -lt 1 ]; then
+            echo "restored database looks empty — backup pipeline is broken" >&2
+            exit 1
+          fi
