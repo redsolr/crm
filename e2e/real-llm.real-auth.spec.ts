@@ -25,6 +25,13 @@ const stamp = Date.now().toString(36);
 const COMPANY = `E2E LLM Co ${stamp}`;
 const DEAL = `E2E LLM Deal ${stamp}`;
 
+/** GET a JSON body through the page's authed session (asserts 2xx). */
+async function getJson<T>(page: Page, url: string): Promise<T> {
+  const res = await page.request.get(url);
+  expect(res.ok()).toBeTruthy();
+  return (await res.json()) as T;
+}
+
 /** Collect a full SSE body from the Ask responses route. */
 async function askStream(
   page: Page,
@@ -147,12 +154,12 @@ test("Ask loop answers grounded, writes as Ask assistant; /mcp writes as Claude"
   );
   expect(write.toolSteps).toContain("log_call_note");
 
-  const childrenRes = await page.request.get(
-    `/api/work_items?parent_id=${dealId}&type_key=call_note`,
-  );
-  const children = ((await childrenRes.json()) as {
-    data: Array<{ created_by_name: string | null }>;
-  }).data;
+  const children = (
+    await getJson<{ data: Array<{ created_by_name: string | null }> }>(
+      page,
+      `/api/work_items?parent_id=${dealId}&type_key=call_note`,
+    )
+  ).data;
   expect(children.length).toBeGreaterThanOrEqual(1);
   expect(children[0]!.created_by_name).toBe("Ask assistant");
 
@@ -178,31 +185,33 @@ test("Ask loop answers grounded, writes as Ask assistant; /mcp writes as Claude"
     },
   });
   expect(mcpRes.ok()).toBeTruthy();
-  const commitsRes = await page.request.get(
-    `/api/work_items?parent_id=${dealId}&type_key=commitment`,
-  );
-  const commits = ((await commitsRes.json()) as {
-    data: Array<{ created_by_name: string | null }>;
-  }).data;
+  const commits = (
+    await getJson<{ data: Array<{ created_by_name: string | null }> }>(
+      page,
+      `/api/work_items?parent_id=${dealId}&type_key=commitment`,
+    )
+  ).data;
   expect(commits.length).toBeGreaterThanOrEqual(1);
   expect(commits[0]!.created_by_name).toBe("Claude (agent)");
 
   // ── 4. ✨ Enrichment /compute — real model fills an AI column ───────
-  const wsRes = await page.request.get("/api/workspaces");
-  const wsBody = (await wsRes.json()) as { workspaces: Array<{ id: string }> };
-  const typesRes = await page.request.get(
-    `/api/workspaces/${wsBody.workspaces[0]!.id}/work_item_types`,
+  const wsBody = await getJson<{ workspaces: Array<{ id: string }> }>(
+    page,
+    "/api/workspaces",
   );
-  const types = ((await typesRes.json()) as {
-    data: Array<{ id: string; key: string }>;
-  }).data;
+  const types = (
+    await getJson<{ data: Array<{ id: string; key: string }> }>(
+      page,
+      `/api/workspaces/${wsBody.workspaces[0]!.id}/work_item_types`,
+    )
+  ).data;
   const accountType = types.find((t) => t.key === "account")!;
-  const adefsRes = await page.request.get(
-    `/api/work_item_types/${accountType.id}/attribute_definitions`,
-  );
-  const adefs = ((await adefsRes.json()) as {
-    data: Array<{ id: string; key: string; config: unknown }>;
-  }).data;
+  const adefs = (
+    await getJson<{ data: Array<{ id: string; key: string; config: unknown }> }>(
+      page,
+      `/api/work_item_types/${accountType.id}/attribute_definitions`,
+    )
+  ).data;
   const enrichable = adefs.find(
     (d) =>
       typeof d.config === "object" &&
@@ -246,11 +255,10 @@ test("Ask loop answers grounded, writes as Ask assistant; /mcp writes as Claude"
   //       CRM in the right state. (Runs AFTER the /mcp scene so that
   //       scene's commits[0] attribution assert never sees ours.) ────
   const notesBefore = (
-    (await (
-      await page.request.get(
-        `/api/work_items?parent_id=${dealId}&type_key=call_note`,
-      )
-    ).json()) as { data: unknown[] }
+    await getJson<{ data: unknown[] }>(
+      page,
+      `/api/work_items?parent_id=${dealId}&type_key=call_note`,
+    )
   ).data.length;
 
   const narrative = await askStream(
@@ -265,27 +273,26 @@ test("Ask loop answers grounded, writes as Ask assistant; /mcp writes as Claude"
   expect(narrative.events["message_stop"]).toBe(1);
 
   const dealAfter = (
-    (await (await page.request.get(`/api/work_items/${dealId}`)).json()) as {
-      work_item: { state: { key: string } };
-    }
+    await getJson<{ work_item: { state: { key: string } } }>(
+      page,
+      `/api/work_items/${dealId}`,
+    )
   ).work_item;
   expect(dealAfter.state.key).toBe("call_done");
 
   const notesAfter = (
-    (await (
-      await page.request.get(
-        `/api/work_items?parent_id=${dealId}&type_key=call_note`,
-      )
-    ).json()) as { data: unknown[] }
+    await getJson<{ data: unknown[] }>(
+      page,
+      `/api/work_items?parent_id=${dealId}&type_key=call_note`,
+    )
   ).data.length;
   expect(notesAfter).toBeGreaterThan(notesBefore);
 
   const commitsAfter = (
-    (await (
-      await page.request.get(
-        `/api/work_items?parent_id=${dealId}&type_key=commitment`,
-      )
-    ).json()) as { data: Array<{ created_by_name: string | null }> }
+    await getJson<{ data: Array<{ created_by_name: string | null }> }>(
+      page,
+      `/api/work_items?parent_id=${dealId}&type_key=commitment`,
+    )
   ).data;
   // The /mcp scene's commitment is "Claude (agent)"; the narrative's
   // must additionally be there stamped by the in-app assistant.
@@ -296,9 +303,10 @@ test("Ask loop answers grounded, writes as Ask assistant; /mcp writes as Claude"
   // ── Cleanup: close the deal (accumulating-DB etiquette). The
   //    narrative scene bumped the version — read it, don't guess. ────
   const versionNow = (
-    (await (await page.request.get(`/api/work_items/${dealId}`)).json()) as {
-      work_item: { version: number };
-    }
+    await getJson<{ work_item: { version: number } }>(
+      page,
+      `/api/work_items/${dealId}`,
+    )
   ).work_item.version;
   await page.request.patch(`/api/work_items/${dealId}`, {
     headers: {

@@ -19,14 +19,7 @@ import { test, expect } from "./fixtures/auth.fixture";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
 import { setupAskHandlers } from "./handlers/ask.handlers";
 import { STEP_TIMEOUT } from "./helpers/sales-ui";
-
-function localDate(offsetDays: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${mm}-${dd}`;
-}
+import { localDate } from "./helpers/dates";
 
 test.describe("Conversational CRM ops", () => {
   test("'just finished the call' narrative → agent logs call, moves stage, books follow-up → views change", async ({

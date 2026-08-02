@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { envLocal, loginWithPassword } from "./helpers/real-auth";
+import {
+  createAccountViaUi,
+  envLocal,
+  loginWithPassword,
+} from "./helpers/real-auth";
 
 /**
  * Two real seats, one tenant — cross-user attribution against the real
@@ -56,12 +60,7 @@ test("two seats: shared tenant, per-user attribution on the wire", async ({
     );
 
     // ── A creates a company through the UI ─────────────────────────
-    await pageA.getByTestId("sales-add-account-button").click();
-    await pageA.getByTestId("sales-account-name-input").fill(COMPANY);
-    await pageA
-      .getByTestId("sales-account-source-select")
-      .selectOption("intro");
-    await pageA.getByRole("button", { name: /Add company/i }).click();
+    await createAccountViaUi(pageA, COMPANY, "intro");
 
     // ── B sees it (shared tenant) and finds its id ─────────────────
     // Full navigation, not the sidebar click: B's session prefetched

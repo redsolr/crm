@@ -1,5 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
-import { envLocal, loginWithPassword } from "./helpers/real-auth";
+import {
+  createAccountViaUi,
+  createOpportunityViaUi,
+  envLocal,
+  loginWithPassword,
+} from "./helpers/real-auth";
 
 /**
  * Realtime collaboration against the REAL stack + the realtime worker
@@ -68,19 +73,8 @@ test("two seats: presence pill, live stage propagation, co-edited note", async (
   await loginWithPassword(seatB, teammateEmail!, teammatePassword!);
 
   // ── Seat A creates the shared record and opens its page ────────────
-  await seatA.getByTestId("sales-add-account-button").click();
-  await seatA.getByTestId("sales-account-name-input").fill(COMPANY);
-  await seatA.getByTestId("sales-account-source-select").selectOption("intro");
-  await seatA.getByRole("button", { name: /Add company/i }).click();
-  await seatA.getByTestId("sales-add-opportunity-button").click();
-  await seatA.getByTestId("sales-opportunity-title-input").fill(DEAL);
-  await seatA
-    .getByTestId("sales-opportunity-account-select")
-    .selectOption({ label: COMPANY });
-  await seatA
-    .getByTestId("sales-opportunity-use-case-select")
-    .selectOption("client_comms");
-  await seatA.getByRole("button", { name: /Create opportunity/i }).click();
+  await createAccountViaUi(seatA, COMPANY, "intro");
+  await createOpportunityViaUi(seatA, { title: DEAL, accountName: COMPANY });
 
   await seatA.getByText(DEAL, { exact: true }).first().click();
   await expect(seatA.getByTestId("sales-peek-panel")).toBeVisible({

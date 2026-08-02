@@ -1,9 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
 import {
+  createAccountViaUi,
+  createOpportunityViaUi,
   envLocal,
   loginWithPassword,
   trackDeadApiCalls,
 } from "./helpers/real-auth";
+import { localDate } from "./helpers/dates";
 
 /**
  * The FULL deal lifecycle against the real stack (real WorkOS session,
@@ -42,25 +45,9 @@ const DEAL_LOST = `E2E Lifecycle Lost ${stamp}`;
 const DEAL_PARKED = `E2E Lifecycle Parked ${stamp}`;
 const COMMITMENT = `E2E Lifecycle follow-up ${stamp}`;
 
-function localDate(offsetDays: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${mm}-${dd}`;
-}
-
 /** Create an opportunity from the pipeline header (company exists). */
 async function createDeal(page: Page, title: string): Promise<void> {
-  await page.getByTestId("sales-add-opportunity-button").click();
-  await page.getByTestId("sales-opportunity-title-input").fill(title);
-  await page
-    .getByTestId("sales-opportunity-account-select")
-    .selectOption({ label: COMPANY });
-  await page
-    .getByTestId("sales-opportunity-use-case-select")
-    .selectOption("client_comms");
-  await page.getByRole("button", { name: /Create opportunity/i }).click();
+  await createOpportunityViaUi(page, { title, accountName: COMPANY });
   // The board re-renders with the new card before the modal state
   // settles; anchor on the card being present.
   await expect(page.getByText(title, { exact: true }).first()).toBeVisible({
@@ -105,10 +92,7 @@ test("full funnel: win with call+commitment, lose with reason, park and RESURFAC
   await loginWithPassword(page, email!, password!);
 
   // ── Seed: one company, three deals ─────────────────────────────────
-  await page.getByTestId("sales-add-account-button").click();
-  await page.getByTestId("sales-account-name-input").fill(COMPANY);
-  await page.getByTestId("sales-account-source-select").selectOption("referral");
-  await page.getByRole("button", { name: /Add company/i }).click();
+  await createAccountViaUi(page, COMPANY);
 
   await createDeal(page, DEAL_WIN);
   await createDeal(page, DEAL_LOST);

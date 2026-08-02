@@ -1,9 +1,16 @@
 import { test, expect, type Page } from "@playwright/test";
 import {
+  createAccountViaUi,
+  createOpportunityViaUi,
   envLocal,
   loginWithPassword,
   trackDeadApiCalls,
 } from "./helpers/real-auth";
+import { localDate } from "./helpers/dates";
+// Reports tiles render through the app's own formatter — asserting
+// with the same import (not a hand mirror) means a format change can
+// never silently diverge spec from UI.
+import { formatTHB as thb } from "../src/lib/format-currency";
 
 /**
  * The DAILY sales motions against the real stack (real WorkOS session,
@@ -35,19 +42,6 @@ const DEAL_VALUE = 123_000;
 
 const CLOSED_STAGES = ["won", "lost", "not_now"];
 
-function localDate(offsetDays: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${mm}-${dd}`;
-}
-
-/** formatTHB mirror (en-US grouping, narrow symbol, whole baht). */
-function thb(n: number): string {
-  return `฿${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
-}
-
 /** Fill an attribute-editor field on the opportunity page and commit
  *  (the editor PUTs on blur). */
 async function setAttr(page: Page, key: string, value: string): Promise<void> {
@@ -71,20 +65,8 @@ test("inbox follow-through → stage move with author → reports reconcile", as
   await loginWithPassword(page, email!, password!);
 
   // ── Seed today's deal through the UI ───────────────────────────────
-  await page.getByTestId("sales-add-account-button").click();
-  await page.getByTestId("sales-account-name-input").fill(COMPANY);
-  await page.getByTestId("sales-account-source-select").selectOption("referral");
-  await page.getByRole("button", { name: /Add company/i }).click();
-
-  await page.getByTestId("sales-add-opportunity-button").click();
-  await page.getByTestId("sales-opportunity-title-input").fill(DEAL);
-  await page
-    .getByTestId("sales-opportunity-account-select")
-    .selectOption({ label: COMPANY });
-  await page
-    .getByTestId("sales-opportunity-use-case-select")
-    .selectOption("client_comms");
-  await page.getByRole("button", { name: /Create opportunity/i }).click();
+  await createAccountViaUi(page, COMPANY);
+  await createOpportunityViaUi(page, { title: DEAL, accountName: COMPANY });
 
   // Open the deal's record page: card click opens the peek, expand
   // promotes to the full detail route.

@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 import {
+  createAccountViaUi,
+  createOpportunityViaUi,
   envLocal,
   loginWithPassword,
   trackDeadApiCalls,
@@ -40,22 +42,13 @@ test("company → deal → table → saved view survives reload", async ({
   const notFound = trackDeadApiCalls(page);
   await loginWithPassword(page, email!, password!);
 
-  // ── Create the company ─────────────────────────────────────────────
-  await page.getByTestId("sales-add-account-button").click();
-  await page.getByTestId("sales-account-name-input").fill(COMPANY);
-  await page.getByTestId("sales-account-source-select").selectOption("intro");
-  await page.getByRole("button", { name: /Add company/i }).click();
-
-  // ── Create the deal under it ───────────────────────────────────────
-  await page.getByTestId("sales-add-opportunity-button").click();
-  await page.getByTestId("sales-opportunity-title-input").fill(DEAL);
-  await page
-    .getByTestId("sales-opportunity-account-select")
-    .selectOption({ label: COMPANY });
-  await page
-    .getByTestId("sales-opportunity-use-case-select")
-    .selectOption("matter_chaos");
-  await page.getByRole("button", { name: /Create opportunity/i }).click();
+  // ── Create the company, then the deal under it ─────────────────────
+  await createAccountViaUi(page, COMPANY, "intro");
+  await createOpportunityViaUi(page, {
+    title: DEAL,
+    accountName: COMPANY,
+    useCase: "matter_chaos",
+  });
 
   // Both persisted: the Companies table (a fresh real fetch) shows the
   // company row with its live last-activity cell.

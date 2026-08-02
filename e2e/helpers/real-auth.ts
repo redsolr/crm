@@ -64,3 +64,35 @@ export async function loginWithPassword(
   await page.getByTestId("login-submit").click();
   await page.waitForURL(/\/sales/, { timeout: 45_000 });
 }
+
+/**
+ * Create a company through the real UI (add-modal → submit). Every
+ * real-auth spec seeds this way — through the interface, never an API
+ * shortcut. Callers add their own post-create assertions.
+ */
+export async function createAccountViaUi(
+  page: Page,
+  name: string,
+  source = "referral",
+): Promise<void> {
+  await page.getByTestId("sales-add-account-button").click();
+  await page.getByTestId("sales-account-name-input").fill(name);
+  await page.getByTestId("sales-account-source-select").selectOption(source);
+  await page.getByRole("button", { name: /Add company/i }).click();
+}
+
+/** Create an opportunity under an existing company through the real UI. */
+export async function createOpportunityViaUi(
+  page: Page,
+  input: { title: string; accountName: string; useCase?: string },
+): Promise<void> {
+  await page.getByTestId("sales-add-opportunity-button").click();
+  await page.getByTestId("sales-opportunity-title-input").fill(input.title);
+  await page
+    .getByTestId("sales-opportunity-account-select")
+    .selectOption({ label: input.accountName });
+  await page
+    .getByTestId("sales-opportunity-use-case-select")
+    .selectOption(input.useCase ?? "client_comms");
+  await page.getByRole("button", { name: /Create opportunity/i }).click();
+}

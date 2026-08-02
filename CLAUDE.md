@@ -88,15 +88,30 @@ MOCK_AUTH) exists because mocked tests structurally cannot catch a
 missing or wrongly-shaped real route: that class shipped three
 production bugs on 2026-07-31 (org-bootstrap deadlock, usage-summary
 404, views 404). The tier: bootstrap zero-404 sweep · sales loop w/ saved views ·
-daily motions (inbox/stage/reports reconcile) · /mcp door · two-seat
-teamwork · realtime multiplayer (env-gated on REALTIME_URL/SECRET —
-skips without the worker). It drives the actual email+password login against the
+daily motions (inbox/stage/reports reconcile) · **deal lifecycle**
+(full funnel + lost-with-reason + not-now revisit RESURFACING) ·
+/mcp door · two-seat teamwork · realtime multiplayer (env-gated on
+REALTIME_URL/SECRET — skips without the worker) · real-LLM (see
+below — skips without RUN_REAL_LLM_E2E). It drives the actual email+password login against the
 crm WorkOS Staging env (credentials in `.env.local`: `E2E_WORKOS_*` +
 `E2E_WORKOS_TEAMMATE_*` — synthetic users, no real mailboxes), sweeps
 every app surface with a zero-404 tripwire, runs the sales loop with
 saved-view persistence, exercises the `/mcp` agent door, and proves
 two-seat attribution. Prereqs: docker Postgres on :5440, migrated +
-seeded (`npm run db:seed`).
+seeded (`npm run db:seed`). Shared plumbing lives in
+`e2e/helpers/real-auth.ts` (login, dead-API tripwire, UI create
+helpers) + `e2e/helpers/dates.ts` (`localDate` — never derive spec
+dates via `toISOString()`, UTC off-by-one).
+
+**LLM testing layers.** Deterministic tests never call the model
+(mocked SSE + `agentWrites` scripted turns). The REAL model is
+covered by `real-llm.real-auth.spec.ts` — triple-gated
+(`RUN_REAL_LLM_E2E=true` + `OPENAI_API_KEY` + real-auth creds),
+outcome-only assertions (records/state on the wire, never wording or
+tool order). Full-fat local run: `npm run test:e2e:real-llm`
+(pennies at nano; per-push CI also runs it). Nightly drift alarm:
+`.github/workflows/llm-behavior.yml` re-runs it with retries so a
+silent model update reds a scheduled run, not a push.
 
 ### Debugging
 

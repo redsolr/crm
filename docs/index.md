@@ -170,6 +170,44 @@ provider-agnostic), attribute enrichment `/compute`, and interview
 suggest `/api/responses`. Fails loudly without `OPENAI_API_KEY` —
 never add a silent fallback (billing discipline).
 
+### AI chat surfaces (Chat tab + drawer, 2026-08-03)
+
+One conversation, two mounts of `AskConversation` over the shared
+`useAskPanel` store: the **drawer** (topbar "Ask AI" pill / Ctrl+J —
+frames the current view via `use-page-context.ts`) and the **Chat
+tab** — the ChatGPT-shape full page at `/sales/ask` (sidebar
+"Chat"): `AskHistoryRail` (new chat, persisted conversations, delete)
+beside transcript + composer. Persistence is `chats` +
+`chat_messages` (`src/server/chats.ts`); the rail rides the
+platform-era client contracts, now served in-repo:
+`GET /api/chats/history` · `GET /api/chats/:id/messages` ·
+`DELETE /api/chats/:id` (+ `POST /api/chats`,
+`POST /api/chats/:id/responses` from the original swap). Reopening a
+chat hydrates the store (`hydrateConversation` +
+`toAskTranscript`); tool steps are live-only and never persisted.
+
+### Testing layers (2026-08-03)
+
+Three layers, split by WHAT can break — see CLAUDE.md § Definition of
+Done for the command list:
+
+1. **Deterministic** (jest + mocked Playwright): UI, wire contracts,
+   tool-step plumbing. Journey specs walk real sales flows end to end
+   — `chat-ops.spec.ts` (narrative → agent writes → views change, via
+   `setupSalesHandlers(...).agentWrites` + ask.handlers `onSend`),
+   `precall-prep.spec.ts`, `ask-chat-tab.spec.ts`.
+2. **Real stack** (real-auth tier): real WorkOS + Postgres, LLM off —
+   incl. `deal-lifecycle.real-auth.spec.ts` (full funnel + lost +
+   not-now revisit resurfacing).
+3. **Real model** (`real-llm.real-auth.spec.ts`, triple-gated on
+   `RUN_REAL_LLM_E2E` + `OPENAI_API_KEY` + real-auth creds): grounded
+   read, single write w/ attribution, /mcp split, enrichment, and the
+   multi-write narrative — asserted by OUTCOMES on the wire only,
+   never wording or tool order. Locally: `npm run test:e2e:real-llm`.
+   Nightly drift alarm: `.github/workflows/llm-behavior.yml` re-runs
+   it with `--retries=2` (04:30 Bangkok) so a silent model update
+   behind the alias reds a scheduled run, not a code push.
+
 ## TanStack Query Hooks
 
 ### Chat (`src/queries/chat/`)
