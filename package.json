@@ -24,7 +24,7 @@
     "pretest:e2e:paas": "node e2e/scripts/ensure-port-free.mjs",
     "test:e2e:paas": "cross-env MOCK_AUTH=true E2E_MODE=integration E2E_PAAS=true playwright test --project=paas",
     "pretest:e2e:real-llm": "node e2e/scripts/ensure-port-free.mjs",
-    "test:e2e:real-llm": "cross-env MOCK_AUTH=true E2E_MODE=integration RUN_REAL_LLM_E2E=true playwright test --project=integration chat-real-llm.integration.spec.ts",
+    "test:e2e:real-llm": "cross-env E2E_MODE=real-auth RUN_REAL_LLM_E2E=true playwright test real-llm.real-auth.spec.ts --project=real-auth",
     "pretest:e2e:real-auth": "node e2e/scripts/ensure-port-free.mjs",
     "test:e2e:real-auth": "cross-env E2E_MODE=real-auth playwright test --project=real-auth",
     "pretest:e2e:all": "node e2e/scripts/ensure-port-free.mjs",

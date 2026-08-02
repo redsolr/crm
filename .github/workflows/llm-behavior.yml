@@ -1,0 +1,84 @@
+# Nightly REAL-MODEL behavior check — a drift alarm, not a merge gate.
+#
+# Per-push CI already proves the wiring (mocked tier + real-auth tier
+# including one cheap real-LLM pass). This job re-runs ONLY the
+# real-LLM spec on a schedule, WITH RETRIES, so a silent model update
+# behind the gpt-5.4 alias that degrades the agent (wrong tools, no
+# writes, ungrounded answers) shows up as a red nightly run instead of
+# surfacing on a founder call. Nondeterminism policy: the spec asserts
+# OUTCOMES on the wire (records exist, stage moved, attribution
+# stamped), never wording or tool order, and --retries=2 absorbs a bad
+# sample; a repeatable red therefore means real drift or real breakage.
+#
+# Cost: pennies per run at CRM_ASK_MODEL=gpt-5.4-nano.
+# Same gate + secrets as ci.yml's real-auth job (vars.RUN_REAL_AUTH_E2E).
+name: llm-behavior
+on:
+  schedule:
+    # 21:30 UTC = 04:30 Asia/Bangkok — off-hours, after the nightly
+    # backup (20:00 UTC) window.
+    - cron: "30 21 * * *"
+  workflow_dispatch:
+
+jobs:
+  real-llm:
+    if: ${{ vars.RUN_REAL_AUTH_E2E == 'true' }}
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: crm
+          POSTGRES_PASSWORD: crm
+          POSTGRES_DB: crm
+        ports:
+          - 5440:5432
+        options: >-
+          --health-cmd="pg_isready -U crm"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Generate OpenAPI client (gitignored, needed by tsc/build)
+        run: npm run openapi:gen
+
+      - name: Materialize .env.local (real WorkOS + e2e seat + OpenAI)
+        run: |
+          cat > .env.local <<EOF
+          WORKOS_API_KEY=${{ secrets.WORKOS_API_KEY }}
+          WORKOS_CLIENT_ID=${{ secrets.WORKOS_CLIENT_ID }}
+          WORKOS_COOKIE_PASSWORD=${{ secrets.WORKOS_COOKIE_PASSWORD }}
+          WORKOS_COOKIE_NAME=crm-wos-session
+          NEXT_PUBLIC_WORKOS_REDIRECT_URI=http://localhost:3190/callback
+          NEXT_PUBLIC_API_BASE_URL=http://localhost:3190
+          NEXT_PUBLIC_APP_URL=http://localhost:3190
+          E2E_WORKOS_EMAIL=${{ secrets.E2E_WORKOS_EMAIL }}
+          E2E_WORKOS_PASSWORD=${{ secrets.E2E_WORKOS_PASSWORD }}
+          CRM_MCP_TOKEN=${{ secrets.CRM_MCP_TOKEN }}
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          CRM_ASK_MODEL=gpt-5.4-nano
+          EOF
+
+      - name: Migrate + seed
+        run: npm run db:migrate && npm run db:seed
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Real-LLM behavior spec (outcome asserts, retries absorb samples)
+        run: npx cross-env E2E_MODE=real-auth RUN_REAL_LLM_E2E=true playwright test real-llm.real-auth.spec.ts --project=real-auth --retries=2
+        env:
+          CRM_MCP_TOKEN: ${{ secrets.CRM_MCP_TOKEN }}
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-llm-behavior
+          path: playwright-report/
+          retention-days: 14

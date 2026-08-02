@@ -239,9 +239,72 @@ test("Ask loop answers grounded, writes as Ask assistant; /mcp writes as Claude"
     );
   }
 
-  // ── Cleanup: close the deal (accumulating-DB etiquette) ────────────
+  // ── 5. Multi-write NARRATIVE: one message → call logged + stage
+  //       moved + follow-up booked. Outcome-only assertions — WHICH
+  //       tools ran in WHAT order is the model's business; the covered
+  //       claim is that telling the assistant what happened leaves the
+  //       CRM in the right state. (Runs AFTER the /mcp scene so that
+  //       scene's commits[0] attribution assert never sees ours.) ────
+  const notesBefore = (
+    (await (
+      await page.request.get(
+        `/api/work_items?parent_id=${dealId}&type_key=call_note`,
+      )
+    ).json()) as { data: unknown[] }
+  ).data.length;
+
+  const narrative = await askStream(
+    page,
+    chatId,
+    `I just finished the call with the deal "${DEAL}". Went well — they ` +
+      `want pilot pricing. Do all three of the following on that deal: ` +
+      `(1) log a call note about the call with a positive outcome, ` +
+      `(2) move the deal to stage call_done, ` +
+      `(3) create a commitment titled "Pricing follow-up ${stamp}" due 2027-02-01.`,
+  );
+  expect(narrative.events["message_stop"]).toBe(1);
+
+  const dealAfter = (
+    (await (await page.request.get(`/api/work_items/${dealId}`)).json()) as {
+      work_item: { state: { key: string } };
+    }
+  ).work_item;
+  expect(dealAfter.state.key).toBe("call_done");
+
+  const notesAfter = (
+    (await (
+      await page.request.get(
+        `/api/work_items?parent_id=${dealId}&type_key=call_note`,
+      )
+    ).json()) as { data: unknown[] }
+  ).data.length;
+  expect(notesAfter).toBeGreaterThan(notesBefore);
+
+  const commitsAfter = (
+    (await (
+      await page.request.get(
+        `/api/work_items?parent_id=${dealId}&type_key=commitment`,
+      )
+    ).json()) as { data: Array<{ created_by_name: string | null }> }
+  ).data;
+  // The /mcp scene's commitment is "Claude (agent)"; the narrative's
+  // must additionally be there stamped by the in-app assistant.
+  expect(
+    commitsAfter.filter((c) => c.created_by_name === "Ask assistant").length,
+  ).toBeGreaterThanOrEqual(1);
+
+  // ── Cleanup: close the deal (accumulating-DB etiquette). The
+  //    narrative scene bumped the version — read it, don't guess. ────
+  const versionNow = (
+    (await (await page.request.get(`/api/work_items/${dealId}`)).json()) as {
+      work_item: { version: number };
+    }
+  ).work_item.version;
   await page.request.patch(`/api/work_items/${dealId}`, {
-    headers: { "If-Match": 'W/"v2"', "Idempotency-Key": `e2e-llm-close-${stamp}` },
+    headers: {
+      "If-Match": `W/"v${versionNow}"`,
+      "Idempotency-Key": `e2e-llm-close-${stamp}`,
+    },
     data: { state_key: "lost" },
     failOnStatusCode: false,
   });
