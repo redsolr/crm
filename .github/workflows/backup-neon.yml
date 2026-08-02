@@ -21,6 +21,10 @@ on:
 
 jobs:
   pg-dump-to-r2:
+    # Gated until activation (R2 enabled + 4 secrets set) — otherwise
+    # the nightly schedule fails red every day. Flip with:
+    #   gh variable set RUN_NEON_BACKUP --body "true" --repo redsolr/crm
+    if: ${{ vars.RUN_NEON_BACKUP == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
