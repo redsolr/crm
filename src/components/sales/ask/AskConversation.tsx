@@ -184,6 +184,11 @@ export function AskConversation({ pageContext }: AskConversationProps) {
           });
           activeChatId = chat.id;
           setChatId(chat.id);
+          // The /sales/ask history rail lists persisted conversations —
+          // a fresh one exists now.
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.chats.all,
+          });
         } catch (err) {
           console.error(
             "[AskConversation] failed to create Ask conversation:",

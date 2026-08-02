@@ -1,11 +1,17 @@
 /**
- * Route handlers for the CRM "Ask" panel spec (`e2e/ask-panel.spec.ts`).
+ * Route handlers for the CRM "Ask" chat surfaces (`e2e/ask-panel.spec.ts`,
+ * `e2e/ask-chat-tab.spec.ts`).
  *
  * Deliberately a separate file from `chat.handlers.ts` / `sales.handlers.ts`
- * — the Ask panel exercises exactly two chat endpoints and nothing else:
+ * — a STATEFUL in-memory chat store covering exactly the endpoints the Ask
+ * drawer + /sales/ask page exercise:
  *
  *   - `POST /api/chats`                — lazy conversation create on first send
- *   - `POST /api/chats/:id/responses`  — Anthropic-style SSE stream
+ *   - `POST /api/chats/:id/responses`  — Anthropic-style SSE stream (records
+ *                                        the user turn + canned assistant turn)
+ *   - `GET  /api/chats/history`        — the history rail's list
+ *   - `GET  /api/chats/:id/messages`   — the history rail's open path
+ *   - `DELETE /api/chats/:id`          — the history rail's delete
  *
  * URL discipline: every pattern includes the `/api/` prefix (via `API_ROOT`);
  * an unprefixed pattern silently never matches because
@@ -32,11 +38,18 @@ export interface AskHandlerOptions {
   toolSteps?: Array<{ tool_name: string; summary: string }>;
 }
 
+interface StoredChat {
+  id: string;
+  title: string | null;
+  updatedAt: string;
+  messages: Array<{ role: "user" | "assistant"; content: string }>;
+}
+
 export async function setupAskHandlers(
   page: Page,
   options?: AskHandlerOptions,
 ) {
-  const chatId = options?.chatId ?? "chat-ask-e2e-001";
+  const firstChatId = options?.chatId ?? "chat-ask-e2e-001";
   const streamContent =
     options?.streamContent ??
     "Acme and Bluebird both have follow-ups due this week — start with Acme, their pilot decision is pending.";
@@ -47,23 +60,118 @@ export async function setupAskHandlers(
   // while the transcript shows only the user's own text.
   const capturedStreamInputs: string[] = [];
 
+  // In-memory store behind history/messages/delete — what the standalone
+  // backend persists in Postgres. First create keeps the caller-known id.
+  const chatStore: StoredChat[] = [];
+  let createdCount = 0;
+
+  function serializeStoredChat(chat: StoredChat) {
+    return {
+      ...createChatResponse({ id: chat.id, title: chat.title }),
+      updated_at: chat.updatedAt,
+    };
+  }
+
   // POST /api/chats — the panel creates the conversation lazily on first
-  // send. GETs (history sidebar etc.) fall through to the fixture mocks.
+  // send. GETs on subpaths are handled by the routes registered below.
   await page.route(`${API_ROOT}/chats`, async (route, request) => {
     if (request.method() !== "POST") {
       await route.fallback();
       return;
     }
+    const rawBody = request.postData() ?? "{}";
+    const body = JSON.parse(rawBody) as { title?: unknown };
+    createdCount += 1;
+    const chat: StoredChat = {
+      id: createdCount === 1 ? firstChatId : `chat-ask-e2e-${createdCount}`,
+      title: typeof body.title === "string" ? body.title : null,
+      updatedAt: new Date().toISOString(),
+      messages: [],
+    };
+    chatStore.unshift(chat);
     await route.fulfill({
       status: 201,
       contentType: "application/json",
-      body: JSON.stringify(createChatResponse({ id: chatId })),
+      body: JSON.stringify(serializeStoredChat(chat)),
     });
   });
 
-  // POST /api/chats/:id/responses — SSE stream (Anthropic-style events,
-  // matching what src/lib/chat/stream.ts parses).
   const escapedV1 = API_ROOT.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // GET /api/chats/history — the /sales/ask history rail. Registered
+  // after the fixture's empty-history catch-all, so this one wins.
+  await page.route(`${API_ROOT}/chats/history**`, async (route, request) => {
+    if (request.method() !== "GET") {
+      await route.fallback();
+      return;
+    }
+    const sorted = [...chatStore].sort((a, b) =>
+      b.updatedAt.localeCompare(a.updatedAt),
+    );
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        chats: sorted.map(serializeStoredChat),
+        total: sorted.length,
+        grouped: {},
+      }),
+    });
+  });
+
+  // GET /api/chats/:id/messages — the history rail's open path.
+  await page.route(
+    new RegExp(`${escapedV1}/chats/[^/]+/messages$`),
+    async (route, request) => {
+      if (request.method() !== "GET") {
+        await route.fallback();
+        return;
+      }
+      const id = new URL(request.url()).pathname.split("/").at(-2) as string;
+      const chat = chatStore.find((c) => c.id === id);
+      if (!chat) {
+        await route.fulfill({ status: 404, body: "" });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          chat: serializeStoredChat(chat),
+          messages: chat.messages.map((message, index) => ({
+            id: `msg-${chat.id}-${index}`,
+            chat_id: chat.id,
+            role: message.role,
+            content: message.content,
+            created_at: chat.updatedAt,
+          })),
+        }),
+      });
+    },
+  );
+
+  // DELETE /api/chats/:id — the history rail's delete.
+  await page.route(
+    new RegExp(`${escapedV1}/chats/[^/]+$`),
+    async (route, request) => {
+      if (request.method() !== "DELETE") {
+        await route.fallback();
+        return;
+      }
+      const id = new URL(request.url()).pathname.split("/").at(-1) as string;
+      const index = chatStore.findIndex((c) => c.id === id);
+      if (index === -1) {
+        await route.fulfill({ status: 404, body: "" });
+        return;
+      }
+      chatStore.splice(index, 1);
+      await route.fulfill({ status: 204, body: "" });
+    },
+  );
+
+  // POST /api/chats/:id/responses — SSE stream (Anthropic-style events,
+  // matching what src/lib/chat/stream.ts parses). Records the turn in
+  // the store so a later history-rail reload returns it.
   await page.route(
     new RegExp(`${escapedV1}/chats/[^/]+/responses$`),
     async (route, request) => {
@@ -96,6 +204,16 @@ export async function setupAskHandlers(
       }
       capturedStreamInputs.push(body.input);
 
+      const id = new URL(request.url()).pathname.split("/").at(-2) as string;
+      const chat = chatStore.find((c) => c.id === id);
+      if (chat) {
+        chat.messages.push(
+          { role: "user", content: body.input },
+          { role: "assistant", content: streamContent },
+        );
+        chat.updatedAt = new Date().toISOString();
+      }
+
       await route.fulfill({
         status: 200,
         contentType: "text/event-stream",
@@ -112,5 +230,5 @@ export async function setupAskHandlers(
     },
   );
 
-  return { chatId, streamContent, capturedStreamInputs };
+  return { chatId: firstChatId, streamContent, capturedStreamInputs };
 }

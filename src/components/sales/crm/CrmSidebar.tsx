@@ -97,6 +97,17 @@ export function CrmSidebar() {
         matches: (p) => p.startsWith("/sales/interviews"),
         icon: <InterviewsIcon />,
       },
+      // The dedicated AI-chat surface (founder ask 2026-08-02): sales
+      // work IS talking to the assistant ("what should I ask X today",
+      // "log what Y said") — it earns a first-class tab, not only the
+      // topbar pill/Ctrl+J drawer.
+      {
+        id: "chat",
+        label: "Chat",
+        href: "/sales/ask",
+        matches: (p) => p.startsWith("/sales/ask"),
+        icon: <ChatIcon />,
+      },
     ],
     [activeOpportunityCount, openInboxCount]
   );
@@ -204,8 +215,9 @@ export function CrmSidebar() {
           {insightItems.map((item) => (
             <CrmNavButton key={item.id} item={item} pathname={pathname} />
           ))}
-          {/* Ask lives in the global topbar ("Ask AI" pill) and on
-            Ctrl/Cmd+J via the always-mounted <AskPanel />. */}
+          {/* The Ask DRAWER additionally lives in the global topbar
+            ("Ask AI" pill) and on Ctrl/Cmd+J via the always-mounted
+            <AskPanel />; the Chat tab above is the full-page surface. */}
 
           <div className="crm-nav-section">Account</div>
           <button
@@ -358,6 +370,24 @@ function ContactsIcon() {
       <circle cx="9" cy="7" r="4" />
       <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function ChatIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   );
 }

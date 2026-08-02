@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { chatMessages, chats, db } from "@/db";
 import { mintId } from "@/db/ids";
 
@@ -45,6 +45,41 @@ export async function createChat(title: string | null): Promise<ChatRow> {
 export async function loadChat(id: string): Promise<ChatRow | null> {
   const rows = await db.select().from(chats).where(eq(chats.id, id)).limit(1);
   return rows[0] ?? null;
+}
+
+/** Conversation history for the /sales/ask rail — newest activity first. */
+export async function listChats(limit = 100): Promise<ChatRow[]> {
+  return db.select().from(chats).orderBy(desc(chats.updatedAt)).limit(limit);
+}
+
+/** Row delete cascades to the chat's messages (`chat_messages.chat_id` FK). */
+export async function deleteChat(id: string): Promise<boolean> {
+  const rows = await db.delete(chats).where(eq(chats.id, id)).returning();
+  return rows.length > 0;
+}
+
+export type ChatMessageRow = typeof chatMessages.$inferSelect;
+
+/** Flat wire shape `ChatMessageResponseSchema` parses. */
+export function serializeChatMessage(
+  row: ChatMessageRow,
+): Record<string, unknown> {
+  return {
+    id: row.id,
+    chat_id: row.chatId,
+    role: row.role === "assistant" ? "assistant" : "user",
+    content: row.content,
+    created_at: row.createdAt.toISOString(),
+  };
+}
+
+/** Every persisted turn, oldest first — the reload path for a transcript. */
+export async function loadMessages(chatId: string): Promise<ChatMessageRow[]> {
+  return db
+    .select()
+    .from(chatMessages)
+    .where(eq(chatMessages.chatId, chatId))
+    .orderBy(asc(chatMessages.createdAt), asc(chatMessages.id));
 }
 
 /** One persisted conversational turn — provider-neutral (plain text). */

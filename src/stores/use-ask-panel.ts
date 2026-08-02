@@ -4,6 +4,7 @@ import {
   initialAskState,
   type AskConversationState,
   type AskEvent,
+  type AskMessage,
 } from "@/lib/sales/ask-messages";
 
 /**
@@ -41,6 +42,13 @@ interface AskPanelState {
   stopStream: () => void;
   /** Abort any in-flight stream and reset to a fresh conversation. */
   startNewConversation: () => void;
+  /**
+   * Replace the session conversation with a persisted one (the
+   * /sales/ask history rail's open path). Aborts any in-flight stream
+   * first — the loaded transcript must never receive another chat's
+   * late chunks.
+   */
+  hydrateConversation: (chatId: string, messages: AskMessage[]) => void;
 }
 
 export const useAskPanel = create<AskPanelState>((set, get) => ({
@@ -62,5 +70,13 @@ export const useAskPanel = create<AskPanelState>((set, get) => ({
   startNewConversation: () => {
     get().streamAbort?.abort();
     set({ chatId: null, conversation: initialAskState, streamAbort: null });
+  },
+  hydrateConversation: (chatId, messages) => {
+    get().streamAbort?.abort();
+    set({
+      chatId,
+      conversation: { messages, status: "idle", error: null },
+      streamAbort: null,
+    });
   },
 }));

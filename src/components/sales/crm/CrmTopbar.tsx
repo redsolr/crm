@@ -19,7 +19,7 @@ const TOPBAR_SECTIONS: ReadonlyArray<{ prefix: string; label: string }> = [
   { prefix: "/sales/contacts", label: "Contacts" },
   { prefix: "/sales/reports", label: "Reports" },
   { prefix: "/sales/opportunity/", label: "Pipeline" },
-  { prefix: "/sales/ask", label: "Ask" },
+  { prefix: "/sales/ask", label: "Chat" },
   { prefix: "/sales", label: "Pipeline" },
 ];
 

@@ -44,6 +44,15 @@ The line: **code = autonomous, environment = ask.**
 - **No hardcoded colors** — Use theme CSS variables (`var(--theme-*)`, `var(--ctx-*)`). Check `globals.css` for available variables.
 - **Semantic class names** — Root element: kebab-case component name. Children: `{component}-{element}`. State: `is-active`, `is-expanded`.
 
+### Push / deploy gate (founder-controlled, 2026-08-02)
+
+**Commit freely; do NOT `git push` and do NOT deploy (`npx vercel`)
+until the founder explicitly says so** — a push triggers CI and the
+founder wants to review locally before anything moves. When work is
+done: run the full DoD, commit, and report "committed, awaiting your
+go to push/deploy". This gate stays until the founder removes it from
+this file.
+
 ### Definition of Done
 
 **A task is not done until all of the following pass locally:**

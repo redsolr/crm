@@ -1,7 +1,10 @@
 "use client";
 
 /**
- * `/sales/ask` — the FULL-PAGE Ask chat (2026-07-18).
+ * `/sales/ask` — the FULL-PAGE chat with the CRM's AI (sidebar tab
+ * "Chat"). ChatGPT-shape since 2026-08-02: a history rail on the left
+ * (`AskHistoryRail` — new chat, persisted conversations, delete) and
+ * the transcript + composer on the right.
  *
  * Same conversation as the drawer: both surfaces mount
  * `AskConversation` against the same `useAskPanel` store, so the
@@ -17,6 +20,7 @@
 import { useEffect } from "react";
 import { useAskPanel } from "@/stores/use-ask-panel";
 import { AskConversation, NewConversationIcon } from "./AskConversation";
+import { AskHistoryRail } from "./AskHistoryRail";
 
 export function SalesAskView() {
   const closePanel = useAskPanel((s) => s.closePanel);
@@ -34,7 +38,7 @@ export function SalesAskView() {
       data-testid="sales-ask-view"
     >
       <div className="crm-view-header">
-        <h1 className="crm-view-title">Ask</h1>
+        <h1 className="crm-view-title">Chat</h1>
         <span className="crm-view-meta">grounded in this workspace</span>
         <div className="flex-1" />
         <button
@@ -48,9 +52,12 @@ export function SalesAskView() {
         </button>
       </div>
 
-      <div className="sales-ask-body flex-1 min-h-0 flex justify-center overflow-hidden">
-        <div className="sales-ask-column w-full max-w-[720px] min-h-0 flex flex-col">
-          <AskConversation pageContext={null} />
+      <div className="sales-ask-body flex-1 min-h-0 flex overflow-hidden">
+        <AskHistoryRail />
+        <div className="sales-ask-main flex-1 min-w-0 min-h-0 flex justify-center">
+          <div className="sales-ask-column w-full max-w-[720px] min-h-0 flex flex-col">
+            <AskConversation pageContext={null} />
+          </div>
         </div>
       </div>
     </div>

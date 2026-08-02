@@ -12,8 +12,34 @@ import {
   askReducer,
   buildAskWireText,
   initialAskState,
+  toAskTranscript,
   type AskConversationState,
 } from "../ask-messages";
+
+describe("toAskTranscript", () => {
+  it("maps persisted turns to transcript bubbles in order", () => {
+    expect(
+      toAskTranscript([
+        { role: "user", content: "What should I ask Thonglor?" },
+        { role: "assistant", content: "Ask who owns the budget." },
+      ]),
+    ).toEqual([
+      { role: "user", content: "What should I ask Thonglor?" },
+      { role: "assistant", content: "Ask who owns the budget." },
+    ]);
+  });
+
+  it("drops system rows and empty/null content", () => {
+    expect(
+      toAskTranscript([
+        { role: "system", content: "grounding preamble" },
+        { role: "user", content: "" },
+        { role: "assistant", content: null },
+        { role: "user", content: "kept" },
+      ]),
+    ).toEqual([{ role: "user", content: "kept" }]);
+  });
+});
 
 describe("askReducer", () => {
   it("send appends the user message plus an empty assistant placeholder and starts streaming", () => {

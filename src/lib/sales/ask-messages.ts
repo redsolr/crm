@@ -53,6 +53,27 @@ export const initialAskState: AskConversationState = {
 };
 
 /**
+ * Map persisted wire messages (`GET /api/chats/:id/messages`) into
+ * transcript bubbles — the history-rail reload path. Drops system rows
+ * and empty/null content; tool steps are live-only and never persisted,
+ * so reloaded assistant turns carry text alone.
+ */
+export function toAskTranscript(
+  messages: ReadonlyArray<{
+    role: "user" | "assistant" | "system";
+    content: string | null;
+  }>,
+): AskMessage[] {
+  const transcript: AskMessage[] = [];
+  for (const message of messages) {
+    if (message.role === "system") continue;
+    if (message.content === null || message.content === "") continue;
+    transcript.push({ role: message.role, content: message.content });
+  }
+  return transcript;
+}
+
+/**
  * Drop a trailing assistant bubble that never received any text — unless
  * it carries tool steps (a run aborted after acting should still show
  * WHAT it did; the steps are real mutations, not partial prose).
