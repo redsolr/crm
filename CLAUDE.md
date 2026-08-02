@@ -112,9 +112,13 @@ Every write route resolves WHO is writing via `src/server/actor.ts`
 Records carry real `created_by_id`/`created_by_name`, comments carry
 `author_name`/`author_email`, activities carry real actors. Session-less
 callers (MOCK_AUTH, unit tests) fall back to the `usr_local`
-placeholder; AI writes (Ask tools + `/mcp`) stamp `Claude (agent)`
-(`AGENT_ACTOR_ID`, `actor_type: "agent"`). New write paths MUST thread
-an actor — never reintroduce a hardcoded author.
+placeholder; agent writes stamp WHO actually wrote (founder 2026-08-02):
+the `/mcp` door stamps `Claude (agent)` (`MCP_AGENT_ACTOR` — the
+founder's coding/ops tool) and the in-app Ask panel stamps
+`Ask assistant` (`ASK_AGENT_ACTOR` — the GPT-powered assistant users
+touch); the actor threads through `AskTool.execute(input, agent)`.
+New write paths MUST thread an actor — never reintroduce a hardcoded
+author.
 
 Known team gaps (queued, don't build unprompted): no in-app roles
 (every seat is equal until the first non-founder joins). Cross-user

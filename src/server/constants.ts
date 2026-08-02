@@ -13,10 +13,19 @@ export const CRM_WORKSPACE_ID = "ws_crm";
 export const LOCAL_ACTOR_ID = "usr_local";
 
 /**
- * The AI's own identity for writes it performs (Ask panel tool calls
- * and the /mcp agent door). Machine writes must be visibly
- * machine-attributed in timelines and `created_by` — never blended
- * into a human actor.
+ * Machine identities for agent writes — visibly machine-attributed in
+ * timelines and `created_by`, never blended into a human actor. TWO
+ * distinct agents exist (founder 2026-08-02): the `/mcp` door is
+ * Claude (the founder's coding/ops tool), while the in-app Ask panel
+ * is the GPT-powered assistant end users touch. Timelines name
+ * whichever actually wrote.
  */
-export const AGENT_ACTOR_ID = "agent_claude";
-export const AGENT_ACTOR_NAME = "Claude (agent)";
+export const MCP_AGENT_ACTOR = {
+  id: "agent_claude",
+  name: "Claude (agent)",
+} as const;
+
+export const ASK_AGENT_ACTOR = {
+  id: "agent_ask",
+  name: "Ask assistant",
+} as const;

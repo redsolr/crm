@@ -1,6 +1,7 @@
 import { createMcpHandler } from "mcp-handler";
 import * as z from "zod";
 import { ASK_TOOLS, type AskToolDefinition } from "@/server/ask-tools";
+import { MCP_AGENT_ACTOR } from "@/server/constants";
 
 /**
  * MCP server — the agent door to the CRM (public URL: `POST /mcp`, a
@@ -64,8 +65,11 @@ const handler = createMcpHandler(
           inputSchema: z.object(zodShapeFrom(tool.definition)),
         },
         async (input: unknown) => {
+          // The /mcp door IS Claude (the founder's coding/ops agent) —
+          // distinct from the GPT-powered in-app Ask assistant.
           const result = await tool.execute(
             (input ?? {}) as Record<string, unknown>,
+            MCP_AGENT_ACTOR,
           );
           return {
             content: [{ type: "text" as const, text: result.content }],

@@ -1,6 +1,7 @@
 import type OpenAI from "openai";
 import { ASK_TOOLS, ASK_TOOLS_BY_NAME } from "./ask-tools";
 import { appendMessage, loadHistory } from "./chats";
+import { ASK_AGENT_ACTOR } from "./constants";
 import { openaiClient, ASK_MODEL } from "./llm";
 
 /**
@@ -194,7 +195,7 @@ export async function runAskStream(
           );
         }
         const result = tool
-          ? await tool.execute(args)
+          ? await tool.execute(args, ASK_AGENT_ACTOR)
           : { content: `Unknown tool "${call.name}".`, isError: true };
         // The step summary IS the raw tool-result content — the shape
         // the platform emitted and the drawer renders as "✓ <summary>".

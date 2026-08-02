@@ -1,7 +1,6 @@
 import { and, eq, ilike, inArray } from "drizzle-orm";
 import { db, records, recordTypes, workflowStages } from "@/db";
 import { logActivity } from "./activities";
-import { AGENT_ACTOR_ID, AGENT_ACTOR_NAME } from "./constants";
 import { broadcastInvalidate } from "./realtime";
 import {
   listDefinitionsForType,
@@ -51,9 +50,20 @@ export interface AskToolDefinition {
   };
 }
 
+/** Which agent is writing — threaded from the door (Ask loop passes
+ *  the GPT assistant, /mcp passes Claude) so attribution names the
+ *  actual actor. */
+export interface AgentActor {
+  id: string;
+  name: string;
+}
+
 export interface AskTool {
   definition: AskToolDefinition;
-  execute(input: Record<string, unknown>): Promise<AskToolResult>;
+  execute(
+    input: Record<string, unknown>,
+    agent: AgentActor,
+  ): Promise<AskToolResult>;
 }
 
 // ---------------------------------------------------------------------------
@@ -153,12 +163,15 @@ function attrNote(errors: string[]): string {
     : "";
 }
 
-async function createSalesRecord(input: {
-  title: string;
-  typeKey: SalesRecordTypeKey;
-  stateKey: string;
-  parentId?: string;
-}): Promise<{ created: JoinedWorkItem; typeId: string } | { error: string }> {
+async function createSalesRecord(
+  input: {
+    title: string;
+    typeKey: SalesRecordTypeKey;
+    stateKey: string;
+    parentId?: string;
+  },
+  agent: AgentActor,
+): Promise<{ created: JoinedWorkItem; typeId: string } | { error: string }> {
   const type = await findTypeByKey(input.typeKey);
   if (type === null) {
     return {
@@ -173,7 +186,7 @@ async function createSalesRecord(input: {
     };
   }
   const created = await insertWorkItem({
-    createdBy: { id: AGENT_ACTOR_ID, name: AGENT_ACTOR_NAME },
+    createdBy: { id: agent.id, name: agent.name },
     body: {
       title: input.title,
       type_key: input.typeKey,
@@ -188,7 +201,7 @@ async function createSalesRecord(input: {
     entityId: created.record.id,
     entityIdentifier: created.record.identifier,
     metadata: { title: created.record.title, via: "ask_agent" },
-    actor: { id: AGENT_ACTOR_ID, type: "agent", name: AGENT_ACTOR_NAME },
+    actor: { id: agent.id, type: "agent", name: agent.name },
   });
   return { created, typeId: type.id };
 }
@@ -239,7 +252,7 @@ const findCrmRecord: AskTool = {
       required: ["query"],
     },
   },
-  async execute(input) {
+  async execute(input, agent) {
     const query = typeof input.query === "string" ? input.query.trim() : "";
     if (query === "") {
       return { content: "A non-empty query is required.", isError: true };
@@ -295,7 +308,7 @@ const createAccount: AskTool = {
       required: ["name", "source"],
     },
   },
-  async execute(input) {
+  async execute(input, agent) {
     const name = typeof input.name === "string" ? input.name.trim() : "";
     if (name === "") {
       return { content: "A non-empty account name is required.", isError: true };
@@ -315,7 +328,7 @@ const createAccount: AskTool = {
         title: name,
         typeKey: "account",
         stateKey: "active",
-      });
+      }, agent);
       if ("error" in result) return { content: result.error, isError: true };
       const attrErrors = await applyAttributeValues(
         result.created.record.id,
@@ -376,7 +389,7 @@ const createOpportunity: AskTool = {
       required: ["account_id", "use_case"],
     },
   },
-  async execute(input) {
+  async execute(input, agent) {
     const accountRef =
       typeof input.account_id === "string" ? input.account_id.trim() : "";
     if (accountRef === "") {
@@ -422,7 +435,7 @@ const createOpportunity: AskTool = {
         typeKey: "opportunity",
         stateKey: stage,
         parentId: account.id,
-      });
+      }, agent);
       if ("error" in result) return { content: result.error, isError: true };
       const attrErrors = await applyAttributeValues(
         result.created.record.id,
@@ -484,7 +497,7 @@ const updateOpportunity: AskTool = {
       required: ["opportunity_id"],
     },
   },
-  async execute(input) {
+  async execute(input, agent) {
     const opportunityRef =
       typeof input.opportunity_id === "string" ? input.opportunity_id.trim() : "";
     if (opportunityRef === "") {
@@ -539,7 +552,7 @@ const updateOpportunity: AskTool = {
           entityIdentifier: opportunity.identifier,
           changes: { state_key: { from: opportunity.stateKey, to: stage } },
           metadata: { via: "ask_agent" },
-          actor: { id: AGENT_ACTOR_ID, type: "agent", name: AGENT_ACTOR_NAME },
+          actor: { id: agent.id, type: "agent", name: agent.name },
         });
         changes.push(`stage → ${stage}`);
       }
@@ -609,7 +622,7 @@ const logCallNote: AskTool = {
       required: ["record_id", "summary"],
     },
   },
-  async execute(input) {
+  async execute(input, agent) {
     const recordRef =
       typeof input.record_id === "string" ? input.record_id.trim() : "";
     const summary =
@@ -640,7 +653,7 @@ const logCallNote: AskTool = {
         typeKey: "call_note",
         stateKey: "active",
         parentId: parent.id,
-      });
+      }, agent);
       if ("error" in result) return { content: result.error, isError: true };
       const attrErrors = await applyAttributeValues(
         result.created.record.id,
@@ -691,7 +704,7 @@ const createCommitment: AskTool = {
       required: ["record_id", "title", "due_date"],
     },
   },
-  async execute(input) {
+  async execute(input, agent) {
     const recordRef =
       typeof input.record_id === "string" ? input.record_id.trim() : "";
     const title = typeof input.title === "string" ? input.title.trim() : "";
@@ -719,7 +732,7 @@ const createCommitment: AskTool = {
         typeKey: "commitment",
         stateKey: "open",
         parentId: parent.id,
-      });
+      }, agent);
       if ("error" in result) return { content: result.error, isError: true };
       const attrErrors = await applyAttributeValues(
         result.created.record.id,
