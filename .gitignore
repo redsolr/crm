@@ -64,9 +64,13 @@ node_modules/
 # Sentry Config File
 .env.sentry-build-plugin
 
-# OpenAPI codegen output — regenerate via `npm run openapi:gen`. Source
-# of truth is openapi/openapi.yaml (synced from platform).
-/src/lib/generated/
+# OpenAPI codegen output is COMMITTED (2026-08-03): git-integration
+# Vercel deploys build from the repo alone, and the generator needs
+# Java (absent on Vercel builders) — an ignored client made every
+# push-triggered production build fail on `@/lib/generated/api`.
+# Regenerate via `npm run openapi:gen` after editing
+# openapi/openapi.yaml (source of truth, synced from platform); CI
+# fails if the committed client drifts from the spec. Never hand-edit.
 
 # Realtime worker (Cloudflare) — local secrets + wrangler state
 realtime/.dev.vars

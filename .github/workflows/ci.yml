@@ -33,8 +33,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Generate OpenAPI client (gitignored, needed by tsc/build)
-        run: npm run openapi:gen
+      - name: Regenerate OpenAPI client + fail on drift (client is committed for Vercel builds)
+        run: |
+          npm run openapi:gen
+          git diff --exit-code src/lib/generated
       - name: Typecheck
         run: npx tsc --noEmit
       - name: Unit tests
