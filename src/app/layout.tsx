@@ -122,7 +122,12 @@ export default function RootLayout({
             <QueryProvider>
               <AuthSync />
               <div className="flex w-full h-full min-h-screen">
-                <div className="flex-1 flex flex-col min-h-screen">
+                {/* min-w-0: same guard as the mock-auth branch above —
+                    the 2026-08-03 responsive fix landed only there, so
+                    real-auth sessions still overflowed phone viewports
+                    (455px topbar min-content). Keep both branches'
+                    wrappers IDENTICAL. */}
+                <div className="flex-1 min-w-0 flex flex-col min-h-screen">
                   {children}
                 </div>
               </div>
