@@ -68,13 +68,21 @@ export function useRealtimeConnection(): void {
     let cursorSweep: ReturnType<typeof setInterval> | null = null;
     // Invalidate frames coalesce — a busy room must not refetch-storm
     // the cache (see invalidation-coalescer.ts for the CI incident).
+    // cancelRefetch:false is load-bearing: the default CANCELS an
+    // in-flight refetch and restarts it, so when refetch latency
+    // exceeds the invalidate cadence the query never completes and
+    // views freeze on stale rows (the CI stage-select stuck at "trial"
+    // for 45s). Letting the current fetch finish keeps data flowing;
+    // the next window refetches again anyway.
     const invalidations = createInvalidationCoalescer(() => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.workItems.all,
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.sales.all,
-      });
+      void queryClient.invalidateQueries(
+        { queryKey: queryKeys.workItems.all },
+        { cancelRefetch: false },
+      );
+      void queryClient.invalidateQueries(
+        { queryKey: queryKeys.sales.all },
+        { cancelRefetch: false },
+      );
     });
 
     const sendView = () => {
