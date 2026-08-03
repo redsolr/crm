@@ -1,6 +1,5 @@
 import {
   LAST_ACCOUNT_COOKIE,
-  clearLastAccount,
   parseLastAccount,
   readLastAccount,
   serializeLastAccount,
@@ -27,14 +26,6 @@ describe("last-account", () => {
   });
 
   it("returns null with no cookie set", () => {
-    expect(readLastAccount()).toBeNull();
-  });
-
-  it("clearLastAccount removes the cookie", () => {
-    document.cookie = `${LAST_ACCOUNT_COOKIE}=${serializeLastAccount({
-      email: "admin@jurisimus.com",
-    })}; path=/`;
-    clearLastAccount();
     expect(readLastAccount()).toBeNull();
   });
 

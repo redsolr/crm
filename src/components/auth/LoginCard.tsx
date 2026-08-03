@@ -3,11 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useAuth } from "@/stores/use-auth";
-import {
-  clearLastAccount,
-  readLastAccount,
-  type LastAccount,
-} from "@/lib/last-account";
+import { readLastAccount, type LastAccount } from "@/lib/last-account";
 import { PasswordInput } from "./PasswordInput";
 import { FieldError } from "./FieldError";
 import { SubmitButton } from "./SubmitButton";
@@ -79,11 +75,6 @@ export function LoginCard({
       ?.focus();
   }
 
-  function useAnotherAccount() {
-    clearLastAccount();
-    setLastAccount(null);
-  }
-
   function validateEmail(email: string): string | null {
     if (!email) return "Email is required";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
@@ -132,10 +123,12 @@ export function LoginCard({
 
       {lastAccount !== null && (
         <>
+          {/* No "Use another account" affordance (founder call
+              2026-08-03): the full form + provider buttons sit right
+              below, and any other login replaces the cookie. */}
           <LastAccountCard
             account={lastAccount}
             onContinueWithPassword={continueWithPassword}
-            onUseAnotherAccount={useAnotherAccount}
           />
           <AuthDivider />
         </>

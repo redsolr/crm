@@ -19,7 +19,6 @@ import { GoogleIcon, AppleIcon } from "./SocialButton";
 interface LastAccountCardProps {
   account: LastAccount;
   onContinueWithPassword: () => void;
-  onUseAnotherAccount: () => void;
 }
 
 function methodLabel(method: string | undefined): string {
@@ -75,7 +74,6 @@ function oauthHref(account: LastAccount): string | null {
 export function LastAccountCard({
   account,
   onContinueWithPassword,
-  onUseAnotherAccount,
 }: LastAccountCardProps) {
   const href = oauthHref(account);
   const label = `${methodLabel(account.method)} as ${account.email}`;
@@ -132,14 +130,6 @@ export function LastAccountCard({
           {body}
         </button>
       )}
-      <button
-        type="button"
-        className="last-account-switch mt-2 text-ctx-purple text-[13px] font-semibold cursor-pointer"
-        data-testid="login-last-account-clear"
-        onClick={onUseAnotherAccount}
-      >
-        Use another account
-      </button>
     </div>
   );
 }

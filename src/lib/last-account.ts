@@ -10,8 +10,9 @@
  * callback knows the identity + method at the right moment.
  *
  * Contains only what the login page displays (email, name, avatar,
- * method) — never tokens. Survives logout by design; "Use another
- * account" on the login page clears it.
+ * method) — never tokens. Survives logout by design; signing in with a
+ * different account replaces it (no manual clear — founder call
+ * 2026-08-03).
  */
 
 export const LAST_ACCOUNT_COOKIE = "crm-last-account";
@@ -61,7 +62,3 @@ export function readLastAccount(): LastAccount | null {
   return parseLastAccount(entry.slice(LAST_ACCOUNT_COOKIE.length + 1));
 }
 
-/** Forget the last account ("Use another account" on the login page). */
-export function clearLastAccount(): void {
-  document.cookie = `${LAST_ACCOUNT_COOKIE}=; path=/; max-age=0`;
-}

@@ -293,7 +293,7 @@ test.describe("Login Page — Continue as last account", () => {
     await expect(page.getByTestId("login-password-input")).toBeFocused();
   });
 
-  test("Use another account dismisses the card and forgets the cookie", async ({
+  test("card has no dismiss affordance — the form below IS the alternative", async ({
     page,
     baseURL,
   }) => {
@@ -304,11 +304,10 @@ test.describe("Login Page — Continue as last account", () => {
     await page.goto("/login");
 
     await expect(page.getByTestId("login-last-account")).toBeVisible();
-    await page.getByTestId("login-last-account-clear").click();
-    await expect(page.getByTestId("login-last-account")).toHaveCount(0);
-    // The cookie is gone — a reload doesn't resurrect the card.
-    await page.reload();
-    await expect(page.getByTestId("login-page")).toBeVisible();
-    await expect(page.getByTestId("login-last-account")).toHaveCount(0);
+    // Founder call 2026-08-03: no "Use another account" — the email
+    // form and provider buttons render alongside the card instead.
+    await expect(page.getByTestId("login-last-account-clear")).toHaveCount(0);
+    await expect(page.getByTestId("login-email-form")).toBeVisible();
+    await expect(page.getByTestId("login-btn-google")).toBeVisible();
   });
 });
