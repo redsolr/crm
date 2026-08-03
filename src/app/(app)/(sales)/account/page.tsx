@@ -17,6 +17,7 @@
 import { formatCurrency, formatSeatPrice } from "@/lib/format-currency";
 import { LoadingDots } from "@/components/shared/LoadingDots";
 import { ThemeCard } from "@/components/shared/ThemeCard";
+import { InvitesSection } from "@/components/account/InvitesSection";
 import { useAuth } from "@/stores/use-auth";
 import { useTheme, type ThemeMode } from "@/stores/use-theme";
 import { useUserSettings } from "@/stores/use-user-settings";
@@ -122,6 +123,9 @@ export default function AccountPage() {
             ))}
           </div>
         </section>
+
+        {/* ── Team — owned invite flow (2026-08-03) ── */}
+        <InvitesSection />
 
         {/* ── Subscription ── */}
         <section

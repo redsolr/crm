@@ -90,7 +90,9 @@ production bugs on 2026-07-31 (org-bootstrap deadlock, usage-summary
 404, views 404). The tier: bootstrap zero-404 sweep · sales loop w/ saved views ·
 daily motions (inbox/stage/reports reconcile) · **deal lifecycle**
 (full funnel + lost-with-reason + not-now revisit RESURFACING) ·
-/mcp door · two-seat teamwork · realtime multiplayer (env-gated on
+/mcp door · two-seat teamwork · **invite flow** (admin invite →
+branded /invite/<code> accept → REAL WorkOS user provisioned, then
+deleted in cleanup) · realtime multiplayer (env-gated on
 REALTIME_URL/SECRET — skips without the worker) · real-LLM (see
 below — skips without RUN_REAL_LLM_E2E). It drives the actual email+password login against the
 crm WorkOS Staging env (credentials in `.env.local`: `E2E_WORKOS_*` +

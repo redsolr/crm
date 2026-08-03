@@ -56,6 +56,11 @@ export const queryKeys = {
       [...queryKeys.workspaces.all, workspaceId] as const,
   },
 
+  // Seat invites (own-the-invite-flow arc)
+  invites: {
+    all: ["invites"] as const,
+  },
+
   // Chat
   chats: {
     all: ["chats"] as const,

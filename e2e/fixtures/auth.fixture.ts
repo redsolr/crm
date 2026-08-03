@@ -155,6 +155,11 @@ export const test = base.extend<{
       if (request.method() !== "GET") return route.fallback();
       await route.fulfill(emptyJson({ data: [] }));
     });
+    // Seat invites (account → Team section) — `{ data: SeatInvite[] }`.
+    await page.route(`${API_ROOT}/invites**`, async (route, request) => {
+      if (request.method() !== "GET") return route.fallback();
+      await route.fulfill(emptyJson({ data: [] }));
+    });
     // Communication threads LIST — the matters explorer's communications
     // tree background-fetches this on views that never registered the
     // matter-intake handlers (tripwire hit 2026-07-10, matters-lab spec).

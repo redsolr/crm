@@ -285,3 +285,32 @@ export const comments = pgTable("comments", {
     .notNull()
     .defaultNow(),
 });
+
+/**
+ * CRM-native seat invites (own-the-invite-flow arc, 2026-08-03).
+ * The invite record is the source of truth for WHO may enter; WorkOS
+ * is a silent backend — the accept flow pre-creates the AuthKit user
+ * server-side, so invitees never see a WorkOS-hosted screen and WorkOS
+ * sends no emails. v1 is link-first: the creator copies the
+ * `/invite/<code>` URL and shares it themselves.
+ */
+export const invites = pgTable("invites", {
+  id: text("id").primaryKey(),
+  /** URL token — the secret. High-entropy base58, never logged. */
+  code: text("code").notNull().unique(),
+  email: text("email").notNull(),
+  invitedById: text("invited_by_id").notNull(),
+  invitedByName: text("invited_by_name"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  /** Set the moment the AuthKit user is provisioned via accept. */
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  /** AuthKit user id once provisioned (accept) — audit trail. */
+  workosUserId: text("workos_user_id"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
