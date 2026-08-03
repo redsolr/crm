@@ -252,7 +252,14 @@ test.describe("Login Page — Continue as last account", () => {
     await expect(card).toBeVisible();
     await expect(card).toContainText("Kreethup Hiranphan");
     await expect(card).toContainText("admin@jurisimus.com");
-    await expect(card).toContainText("Continue with Google");
+    // The method affordance is the provider icon + chevron; the wordy
+    // label lives in aria-label/title (founder polish 2026-08-03).
+    await expect(
+      page.getByTestId("login-last-account-continue"),
+    ).toHaveAttribute(
+      "aria-label",
+      "Continue with Google as admin@jurisimus.com",
+    );
     await expect(
       page.getByTestId("login-last-account-continue"),
     ).toHaveAttribute(
@@ -273,8 +280,12 @@ test.describe("Login Page — Continue as last account", () => {
     });
     await page.goto("/login");
 
-    const card = page.getByTestId("login-last-account");
-    await expect(card).toContainText("Continue with password");
+    await expect(
+      page.getByTestId("login-last-account-continue"),
+    ).toHaveAttribute(
+      "aria-label",
+      "Continue with password as crm-e2e@jurisimus.com",
+    );
     await page.getByTestId("login-last-account-continue").click();
     await expect(page.getByTestId("login-email-input")).toHaveValue(
       "crm-e2e@jurisimus.com",

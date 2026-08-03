@@ -14,6 +14,7 @@
  */
 
 import type { LastAccount } from "@/lib/last-account";
+import { GoogleIcon, AppleIcon } from "./SocialButton";
 
 interface LastAccountCardProps {
   account: LastAccount;
@@ -30,6 +31,33 @@ function methodLabel(method: string | undefined): string {
     default:
       return "Continue with password";
   }
+}
+
+/** Right-edge affordance: the provider's icon + a chevron — the card
+ *  itself is the button, so no grey helper text competing with the
+ *  form (founder feedback 2026-08-03: the label read as disabled). */
+function MethodBadge({ method }: { method: string | undefined }) {
+  return (
+    <span className="last-account-method flex-shrink-0 flex items-center gap-2 text-ctx-muted">
+      {method === "GoogleOAuth" ? (
+        <GoogleIcon />
+      ) : method === "AppleOAuth" ? (
+        <AppleIcon />
+      ) : null}
+      <svg
+        className="w-4 h-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M9 18l6-6-6-6" />
+      </svg>
+    </span>
+  );
 }
 
 function oauthHref(account: LastAccount): string | null {
@@ -50,10 +78,15 @@ export function LastAccountCard({
   onUseAnotherAccount,
 }: LastAccountCardProps) {
   const href = oauthHref(account);
+  const label = `${methodLabel(account.method)} as ${account.email}`;
   const body = (
     <>
       <span
-        className="last-account-avatar w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-ctx-purple-light text-ctx-purple font-semibold text-[17px]"
+        className="last-account-avatar w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white font-semibold text-[17px]"
+        style={{
+          background:
+            "var(--ctx-accent-gradient, linear-gradient(135deg, #FF385C 0%, #E61E4D 50%, #D70466 100%))",
+        }}
         aria-hidden
       >
         {(account.name ?? account.email).charAt(0).toUpperCase()}
@@ -68,14 +101,12 @@ export function LastAccountCard({
           {account.email}
         </span>
       </span>
-      <span className="last-account-method flex-shrink-0 text-ctx-muted text-[12px] font-medium">
-        {methodLabel(account.method)}
-      </span>
+      <MethodBadge method={account.method} />
     </>
   );
 
   const cardClass =
-    "last-account-card w-full py-3 px-4 bg-white rounded-xl border border-ctx-line flex items-center gap-3 cursor-pointer transition-all hover:shadow-sm";
+    "last-account-card w-full py-3 px-4 bg-white rounded-xl border border-ctx-line flex items-center gap-3 cursor-pointer transition-all hover:shadow-md hover:border-ctx-purple/40";
 
   return (
     <div className="last-account mb-6" data-testid="login-last-account">
@@ -83,6 +114,8 @@ export function LastAccountCard({
         <a
           href={href}
           className={cardClass}
+          aria-label={label}
+          title={label}
           data-testid="login-last-account-continue"
         >
           {body}
@@ -91,6 +124,8 @@ export function LastAccountCard({
         <button
           type="button"
           className={cardClass}
+          aria-label={label}
+          title={label}
           data-testid="login-last-account-continue"
           onClick={onContinueWithPassword}
         >
