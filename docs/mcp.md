@@ -44,6 +44,20 @@ tool there publishes it here with no route change.
 | `update_opportunity` | Stage moves + attribute updates |
 | `log_call_note` | Call note linked to its account/opportunity |
 | `create_commitment` | A promise made to a firm — lands in the Inbox, ranked by due date |
+| `list_commitments` | List commitments by status / title / due window — soonest due first |
+| `complete_commitment` | Mark a commitment done or dropped, with an optional timeline note |
+
+## Delegated-work loop (Claude ↔ CRM)
+
+Commitments double as a founder→agent task channel: create a
+commitment titled `Claude: <instruction>` (any record — the `Claude
+Ops` account exists for tasks that belong to no deal), and a scheduled
+Claude Code session polls `list_commitments(query: "Claude:")`, does
+the work, replies with `log_call_note` on the same parent, and calls
+`complete_commitment`. Until the founder pushes/deploys this build,
+prod serves only the original six tools — the poller falls back to
+`find_crm_record` for discovery and leaves completion to the founder's
+inbox tick.
 
 ## Connect from Claude Code
 

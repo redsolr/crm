@@ -25,12 +25,14 @@ describe("Ask wire contract", () => {
 });
 
 describe("Ask sales tools", () => {
-  it("exposes exactly the 6 sales tools by name", () => {
+  it("exposes exactly the 8 sales tools by name", () => {
     expect(ASK_TOOLS.map((t) => t.definition.name).sort()).toEqual([
+      "complete_commitment",
       "create_account",
       "create_commitment",
       "create_opportunity",
       "find_crm_record",
+      "list_commitments",
       "log_call_note",
       "update_opportunity",
     ]);

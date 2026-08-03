@@ -1,9 +1,10 @@
-import { and, eq, ilike, inArray } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray } from "drizzle-orm";
 import { db, records, recordTypes, workflowStages } from "@/db";
 import { logActivity } from "./activities";
 import { broadcastInvalidate } from "./realtime";
 import {
   listDefinitionsForType,
+  listValuesForItem,
   upsertValue,
   validateBareValue,
 } from "./attributes";
@@ -15,7 +16,7 @@ import {
 } from "./work-items";
 
 /**
- * The 5 sales agent tools, rewired from the platform's workspace loop
+ * The sales agent tools, rewired from the platform's workspace loop
  * to the CRM's own Postgres (backend-swap: Ask chat). Definitions,
  * required/optional splits, self-correction error messages, and the
  * CONTINUE-THROUGH attribute-write semantics mirror
@@ -755,6 +756,241 @@ const createCommitment: AskTool = {
   },
 };
 
+const COMMITMENT_STATUSES = ["open", "done", "dropped"] as const;
+type CommitmentStatus = (typeof COMMITMENT_STATUSES)[number];
+
+const listCommitments: AskTool = {
+  definition: {
+    name: "list_commitments",
+    description:
+      "List commitments (promises tracked in the Inbox) with status, due date, and the record they belong to. Use it to review what's open ('what's on my plate'), find overdue promises, or poll for delegated work by title prefix. Returns id, title, status, due_date, promised_to, and parent for each row, soonest due first.",
+    input_schema: {
+      type: "object",
+      properties: {
+        status: {
+          type: "string",
+          enum: [...COMMITMENT_STATUSES, "all"],
+          description: "Filter by commitment status. Defaults to open.",
+        },
+        query: {
+          type: "string",
+          description:
+            "Optional title substring filter (e.g. a delegation prefix like 'Claude:').",
+        },
+        due_before: {
+          type: "string",
+          description:
+            "Optional YYYY-MM-DD — only commitments due on or before this date (rows without a due date are excluded).",
+        },
+        limit: {
+          type: "number",
+          description: "Maximum rows to return. Default 20, max 50.",
+        },
+      },
+      required: [],
+    },
+  },
+  async execute(input) {
+    const status: CommitmentStatus | "all" =
+      typeof input.status === "string" &&
+      ([...COMMITMENT_STATUSES, "all"] as readonly string[]).includes(
+        input.status,
+      )
+        ? (input.status as CommitmentStatus | "all")
+        : "open";
+    const query = typeof input.query === "string" ? input.query.trim() : "";
+    const dueBefore =
+      typeof input.due_before === "string" ? input.due_before.trim() : "";
+    const limit =
+      typeof input.limit === "number" && Number.isFinite(input.limit)
+        ? Math.min(Math.max(Math.trunc(input.limit), 1), 50)
+        : 20;
+    try {
+      const commitmentType = await findTypeByKey("commitment");
+      if (commitmentType === null) {
+        return {
+          content:
+            "This CRM has no commitment record type — the pipeline template is not seeded.",
+          isError: true,
+        };
+      }
+      const filters = [eq(recordTypes.key, "commitment")];
+      if (status !== "all") filters.push(eq(workflowStages.key, status));
+      if (query !== "") {
+        filters.push(ilike(records.title, `%${escapeLikePattern(query)}%`));
+      }
+      const rows = await db
+        .select({
+          id: records.id,
+          identifier: records.identifier,
+          title: records.title,
+          parentId: records.parentId,
+          stateKey: workflowStages.key,
+        })
+        .from(records)
+        .innerJoin(recordTypes, eq(records.typeId, recordTypes.id))
+        .innerJoin(workflowStages, eq(records.stateId, workflowStages.id))
+        .where(and(...filters))
+        .orderBy(desc(records.updatedAt))
+        .limit(limit);
+      if (rows.length === 0) {
+        return { content: "No commitments match those filters." };
+      }
+
+      const definitions = await listDefinitionsForType(commitmentType.id);
+      const keyByDefinitionId = new Map(definitions.map((d) => [d.id, d.key]));
+      const parentIds = [
+        ...new Set(rows.map((r) => r.parentId).filter((p): p is string => p !== null)),
+      ];
+      const parents =
+        parentIds.length > 0
+          ? await db
+              .select({ id: records.id, title: records.title })
+              .from(records)
+              .where(inArray(records.id, parentIds))
+          : [];
+      const parentById = new Map(parents.map((p) => [p.id, p.title]));
+
+      const out = [];
+      for (const row of rows) {
+        const values = await listValuesForItem(row.id);
+        const attrs: Record<string, unknown> = {};
+        for (const v of values) {
+          const key = keyByDefinitionId.get(v.definitionId);
+          if (key !== undefined) attrs[key] = v.value;
+        }
+        const dueDate = typeof attrs.due_date === "string" ? attrs.due_date : null;
+        if (dueBefore !== "" && (dueDate === null || dueDate > dueBefore)) {
+          continue;
+        }
+        out.push({
+          id: row.id,
+          identifier: row.identifier,
+          title: row.title,
+          status: row.stateKey,
+          due_date: dueDate,
+          promised_to:
+            typeof attrs.promised_to === "string" ? attrs.promised_to : null,
+          parent:
+            row.parentId !== null
+              ? { id: row.parentId, title: parentById.get(row.parentId) ?? null }
+              : null,
+        });
+      }
+      if (out.length === 0) {
+        return { content: "No commitments match those filters." };
+      }
+      out.sort((a, b) => {
+        if (a.due_date === null) return b.due_date === null ? 0 : 1;
+        if (b.due_date === null) return -1;
+        return a.due_date.localeCompare(b.due_date);
+      });
+      return { content: JSON.stringify(out) };
+    } catch (err) {
+      console.error("[ask-tools] list_commitments failed:", err);
+      return { content: "Could not list commitments — try again.", isError: true };
+    }
+  },
+};
+
+const completeCommitment: AskTool = {
+  definition: {
+    name: "complete_commitment",
+    description:
+      "Mark a commitment done (default) or dropped — the promise leaves the open Inbox. Resolve the commitment id with list_commitments or find_crm_record first. Optionally record a short completion note on the activity timeline.",
+    input_schema: {
+      type: "object",
+      properties: {
+        commitment_id: {
+          type: "string",
+          description: "The commitment record id from list_commitments or find_crm_record.",
+        },
+        status: {
+          type: "string",
+          enum: ["done", "dropped"],
+          description: "Target status. Defaults to done.",
+        },
+        note: {
+          type: "string",
+          description:
+            "Optional short note on how it was completed (or why dropped), recorded in the activity timeline.",
+        },
+      },
+      required: ["commitment_id"],
+    },
+  },
+  async execute(input, agent) {
+    const commitmentRef =
+      typeof input.commitment_id === "string" ? input.commitment_id.trim() : "";
+    if (commitmentRef === "") {
+      return {
+        content:
+          "commitment_id is required — resolve it with list_commitments or find_crm_record first.",
+        isError: true,
+      };
+    }
+    const target: CommitmentStatus =
+      input.status === "dropped" ? "dropped" : "done";
+    try {
+      const commitment = (
+        await findSalesRecords(commitmentRef, ["commitment"], 1)
+      ).at(0);
+      if (commitment === undefined) {
+        return {
+          content: `No commitment matches "${commitmentRef}". Call list_commitments or find_crm_record to resolve it first.`,
+          isError: true,
+        };
+      }
+      if (commitment.stateKey === target) {
+        return {
+          content: `Commitment "${commitment.title}" is already ${target}.`,
+        };
+      }
+      const commitmentType = await findTypeByKey("commitment");
+      if (commitmentType === null) {
+        return {
+          content:
+            "This CRM has no commitment record type — the pipeline template is not seeded.",
+          isError: true,
+        };
+      }
+      const stageRow = await resolveStage(commitmentType, target);
+      if (stageRow === null) {
+        return {
+          content: `The commitment workflow has no "${target}" state — check the pipeline template.`,
+          isError: true,
+        };
+      }
+      await db
+        .update(records)
+        .set({ stateId: stageRow.id, updatedAt: new Date() })
+        .where(eq(records.id, commitment.id));
+      broadcastInvalidate("records");
+      const note = typeof input.note === "string" ? input.note.trim() : "";
+      await logActivity({
+        type: "work_item_status_changed",
+        entityId: commitment.id,
+        entityIdentifier: commitment.identifier,
+        changes: { state_key: { from: commitment.stateKey, to: target } },
+        metadata: { via: "ask_agent", ...(note !== "" ? { note } : {}) },
+        actor: { id: agent.id, type: "agent", name: agent.name },
+      });
+      return {
+        content: `Marked commitment "${commitment.title}" ${target}.${note !== "" ? ` Note recorded: ${note}` : ""}`,
+      };
+    } catch (err) {
+      console.error(
+        `[ask-tools] complete_commitment failed ("${commitmentRef}"):`,
+        err,
+      );
+      return {
+        content: `Could not update the commitment: ${errMessage(err)}`,
+        isError: true,
+      };
+    }
+  },
+};
+
 export const ASK_TOOLS: AskTool[] = [
   findCrmRecord,
   createAccount,
@@ -762,6 +998,8 @@ export const ASK_TOOLS: AskTool[] = [
   updateOpportunity,
   logCallNote,
   createCommitment,
+  listCommitments,
+  completeCommitment,
 ];
 
 export const ASK_TOOLS_BY_NAME = new Map(
