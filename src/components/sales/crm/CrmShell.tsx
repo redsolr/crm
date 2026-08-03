@@ -20,9 +20,10 @@
  */
 
 import { ReactNode, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Inter } from "next/font/google";
 import { useAppContext } from "@/stores/use-app-context";
+import { useLayoutUI } from "@/stores/use-layout-ui";
 import { useEnabledModules } from "@/lib/modules/enabled-modules";
 import { useRealtimeConnection } from "@/lib/realtime/use-realtime-connection";
 import { LoadingDots } from "@/components/shared/LoadingDots";
@@ -36,6 +37,14 @@ const inter = Inter({ subsets: ["latin"] });
 
 export function CrmShell({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const { isMobileSidebarOpen, closeMobileSidebar } = useLayoutUI();
+
+  // Any navigation dismisses the mobile drawer — nav buttons, deep
+  // links, and back/forward all land here.
+  useEffect(() => {
+    closeMobileSidebar();
+  }, [pathname, closeMobileSidebar]);
   // Hydrates the app-context store (org + workspace fetch → setWorkspaces).
   // MUST run here, not just in the sidebar: `useEnabledModules` reads the
   // store, and the sidebar only mounts after the gate below passes — without
@@ -68,7 +77,7 @@ export function CrmShell({ children }: { children: ReactNode }) {
   if (!ready || gated) {
     return (
       <div
-        className={`crm-app flex h-screen w-screen items-center justify-center ${inter.className}`}
+        className={`crm-app flex h-dvh w-full items-center justify-center ${inter.className}`}
       >
         <LoadingDots label="Loading CRM" />
       </div>
@@ -77,10 +86,18 @@ export function CrmShell({ children }: { children: ReactNode }) {
 
   return (
     <div
-      className={`crm-app flex h-screen w-screen overflow-hidden ${inter.className}`}
+      className={`crm-app flex h-dvh w-full overflow-hidden ${inter.className}`}
       data-testid="crm-shell"
     >
       <CrmSidebar />
+      {isMobileSidebarOpen && (
+        <div
+          className="crm-sidebar-backdrop"
+          data-testid="crm-sidebar-backdrop"
+          aria-hidden
+          onClick={closeMobileSidebar}
+        />
+      )}
       <div className="crm-content-col flex-1 min-w-0 flex flex-col">
         <CrmTopbar />
         <main className="crm-main">{children}</main>

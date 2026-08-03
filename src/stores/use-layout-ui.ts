@@ -32,19 +32,28 @@ export function getOverlayFromPath(pathname: string): OverlayView {
 
 interface LayoutUIState {
   isAccountMenuOpen: boolean;
+  /** Mobile-only sidebar drawer (<768px). Desktop ignores this — the
+   *  rail is always visible there; CSS scopes the drawer behavior. */
+  isMobileSidebarOpen: boolean;
   returnPath: string;
 
   setReturnPath: (path: string) => void;
   toggleAccountMenu: () => void;
   closeAccountMenu: () => void;
+  toggleMobileSidebar: () => void;
+  closeMobileSidebar: () => void;
 }
 
 export const useLayoutUI = create<LayoutUIState>((set) => ({
   isAccountMenuOpen: false,
+  isMobileSidebarOpen: false,
   returnPath: "/",
 
   setReturnPath: (path) => set({ returnPath: path }),
   toggleAccountMenu: () =>
     set((s) => ({ isAccountMenuOpen: !s.isAccountMenuOpen })),
   closeAccountMenu: () => set({ isAccountMenuOpen: false }),
+  toggleMobileSidebar: () =>
+    set((s) => ({ isMobileSidebarOpen: !s.isMobileSidebarOpen })),
+  closeMobileSidebar: () => set({ isMobileSidebarOpen: false }),
 }));

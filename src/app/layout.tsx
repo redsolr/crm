@@ -109,7 +109,10 @@ export default function RootLayout({
           <QueryProvider>
             <E2EAuthInit />
             <div className="flex w-full h-full min-h-screen">
-              <div className="flex-1 flex flex-col min-h-screen">
+              {/* min-w-0: without it this flex item's min-width is its
+                  content's min-content, which pushes the whole page
+                  wider than a phone viewport (455px on /sales). */}
+              <div className="flex-1 min-w-0 flex flex-col min-h-screen">
                 {children}
               </div>
             </div>

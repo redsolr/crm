@@ -115,7 +115,7 @@ export function CrmRecordTable<Row>({
         </div>
       )}
 
-      <div className="crm-record-table-scroll flex-1 min-h-0 overflow-y-auto">
+      <div className="crm-record-table-scroll flex-1 min-h-0 overflow-auto">
         <table className="crm-table" data-testid={`${testIdPrefix}-table`}>
           <thead>
             <tr>

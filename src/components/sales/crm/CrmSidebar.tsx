@@ -44,7 +44,8 @@ export function CrmSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
-  const { isAccountMenuOpen, toggleAccountMenu } = useLayoutUI();
+  const { isAccountMenuOpen, toggleAccountMenu, isMobileSidebarOpen } =
+    useLayoutUI();
   const { workspaces, currentWorkspace, setCurrentWorkspace } =
     useAppContext();
   const { bundle } = useSalesWorkspaceBundle();
@@ -175,6 +176,7 @@ export function CrmSidebar() {
     <aside
       className="crm-sidebar"
       data-testid="sales-explorer"
+      data-mobile-open={isMobileSidebarOpen ? "true" : undefined}
       aria-label="CRM navigation"
     >
       {/* Product context selector (ADR-001: one CRM workspace per

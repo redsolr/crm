@@ -26,7 +26,7 @@ import * as RadioGroup from "@radix-ui/react-radio-group";
 const BACKDROP = "fixed inset-0 z-50 flex items-center justify-center bg-black/60";
 
 const CARD_BASE =
-  "bg-[var(--theme-bg-secondary)] rounded-2xl border border-[var(--theme-border-secondary)] w-full mx-4 p-8";
+  "bg-[var(--theme-bg-secondary)] rounded-2xl border border-[var(--theme-border-secondary)] w-full mx-4 p-6 md:p-8 max-h-[calc(100dvh-2rem)] overflow-y-auto";
 
 const SIZE = {
   compact: "max-w-md",

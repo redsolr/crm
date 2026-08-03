@@ -609,6 +609,41 @@ body.is-dragging .project-board-card {
   border-right: 1px solid var(--theme-border-primary);
 }
 
+/* ── Mobile (<768px): the rail becomes an overlay drawer ──
+   The topbar hamburger (.crm-topbar-menu-btn) toggles
+   `data-mobile-open` on the aside; CrmShell renders the backdrop.
+   Desktop never sets the attribute, so ≥768px is untouched. */
+@media (max-width: 767px) {
+  .crm-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 60;
+    width: min(var(--crm-sidebar-width), 84vw);
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: 12px 0 32px rgba(0, 0, 0, 0.35);
+  }
+  .crm-sidebar[data-mobile-open="true"] {
+    transform: translateX(0);
+  }
+}
+
+.crm-sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .crm-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(0, 0, 0, 0.5);
+  }
+}
+
 /* ── Workspace selector — the PRODUCT context switch ──
    One CRM workspace per product's GTM motion (ADR-001), so this sits
    at the TOP of the rail like OpenAI's project picker — it is not a
@@ -842,6 +877,20 @@ body.is-dragging .project-board-card {
   min-height: 52px;
 }
 
+@media (max-width: 767px) {
+  .crm-view-header {
+    flex-wrap: wrap;
+    row-gap: 6px;
+    padding: 10px 12px;
+  }
+  /* Wide record tables scroll inside their own container (the
+     .crm-record-table-scroll wrapper is overflow-x:auto) instead of
+     crushing columns; the page body never scrolls sideways. */
+  .crm-table {
+    min-width: 640px;
+  }
+}
+
 .crm-view-title {
   font-size: 14.5px;
   font-weight: 650;
@@ -997,6 +1046,41 @@ body.is-dragging .project-board-card {
   min-width: 90px;
 }
 
+/* Hamburger — mobile-only chrome; desktop keeps the always-on rail. */
+.crm-topbar-menu-btn {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .crm-topbar-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    color: var(--theme-text-secondary);
+  }
+  .crm-topbar-menu-btn:hover {
+    background: var(--theme-bg-hover);
+    color: var(--theme-text-primary);
+  }
+  /* The crumb yields — search keeps the room. Presence is ambient
+     chrome, first to go on a phone topbar. */
+  .crm-topbar {
+    gap: 8px;
+    padding: 0 10px;
+  }
+  .crm-topbar-crumb {
+    min-width: 0;
+    flex-shrink: 0;
+  }
+  .crm-topbar-presence {
+    display: none;
+  }
+}
+
 .crm-topbar-center {
   flex: 1;
   display: flex;
@@ -1035,6 +1119,20 @@ body.is-dragging .project-board-card {
   gap: 2px;
   padding: 0 20px;
   border-bottom: 1px solid var(--theme-border-primary);
+}
+
+@media (max-width: 767px) {
+  /* The strip (view toggle + switcher + actions) is wider than a
+     phone; scroll it in place — overflow≠visible also stops its
+     min-content from propagating 455px up the flex chain and forcing
+     the whole shell past the viewport. */
+  .crm-tabs {
+    overflow-x: auto;
+    padding: 0 12px;
+  }
+  .crm-tabs > * {
+    flex-shrink: 0;
+  }
 }
 
 .crm-tab-btn {
@@ -1472,6 +1570,14 @@ body.is-dragging .project-board-card {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
   gap: 12px;
+}
+
+@media (max-width: 767px) {
+  /* minmax(380px, …) would force sideways scroll on a 390px phone —
+     single column instead. */
+  .crm-reports-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .crm-report-card {

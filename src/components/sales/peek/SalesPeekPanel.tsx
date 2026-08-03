@@ -186,7 +186,7 @@ export function SalesPeekPanel({ bundle, workItemId, onClose }: Props) {
       ref={panelRef}
       role="dialog"
       aria-label="Record details"
-      className="sales-peek-panel absolute right-0 top-0 bottom-0 z-30 w-[37%] min-w-[380px] max-w-[560px] flex flex-col bg-[var(--theme-bg-secondary)] border-l border-[var(--theme-border-secondary)] shadow-[-12px_0_32px_rgba(0,0,0,0.4)]"
+      className="sales-peek-panel absolute right-0 top-0 bottom-0 z-30 w-full md:w-[37%] md:min-w-[380px] md:max-w-[560px] flex flex-col bg-[var(--theme-bg-secondary)] border-l border-[var(--theme-border-secondary)] shadow-[-12px_0_32px_rgba(0,0,0,0.4)]"
       data-testid="sales-peek-panel"
     >
       {/* ── Header ── */}

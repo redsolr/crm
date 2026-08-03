@@ -63,7 +63,10 @@ export function AskHistoryRail() {
 
   return (
     <aside
-      className="ask-history-rail w-[230px] flex-shrink-0 min-h-0 flex flex-col border-r border-[var(--theme-border-primary)]"
+      // Desktop-only for now: on phones the transcript takes the full
+      // width; history returns via the drawer/palette when the mobile
+      // arc grows a history affordance.
+      className="ask-history-rail hidden md:flex w-[230px] flex-shrink-0 min-h-0 flex-col border-r border-[var(--theme-border-primary)]"
       data-testid="ask-history-rail"
       aria-label="Chat history"
     >
