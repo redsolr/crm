@@ -990,6 +990,22 @@ body.is-dragging .project-board-card {
   border-bottom: 1px solid var(--theme-border-primary);
 }
 
+@media (max-width: 767px) {
+  /* Chips overflow a phone — scroll the row in place, never wrap
+     (wrapping eats vertical space the list needs). */
+  .crm-chip-row {
+    overflow-x: auto;
+    padding: 8px 12px;
+    scrollbar-width: none;
+  }
+  .crm-chip-row::-webkit-scrollbar {
+    display: none;
+  }
+  .crm-chip-row > * {
+    flex-shrink: 0;
+  }
+}
+
 .crm-chip {
   padding: 3.5px 10px;
   border-radius: 6px;
@@ -1330,6 +1346,132 @@ body.is-dragging .project-board-card {
   border-color: var(--theme-text-muted);
 }
 
+/* ── Mobile record cards (<768px) ──
+   The table swaps for a card list (Attio/HubSpot mobile pattern):
+   first column = card title, the rest = labelled field rows, tap =
+   open row. The filter bar collapses behind a "Filters" toggle.
+   Desktop (≥768px) never shows any of this. */
+
+.crm-card-list {
+  display: none;
+}
+
+.crm-table-filter-toggle {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .crm-record-table-scroll {
+    display: none;
+  }
+
+  .crm-table-filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--theme-text-secondary);
+    border-bottom: 1px solid var(--theme-border-primary);
+    background: var(--theme-bg-secondary);
+    text-align: left;
+  }
+
+  .crm-table-filter-toggle[data-open="true"] {
+    color: var(--theme-text-primary);
+  }
+
+  .crm-table-filter-toggle-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    font-size: 10.5px;
+    color: var(--theme-accent);
+    background: var(--theme-accent-subtle);
+    border: 1px solid var(--theme-accent-border);
+  }
+
+  /* Collapsed unless the toggle opened it. */
+  .crm-table-filter-bar {
+    display: none;
+    padding: 8px 12px;
+  }
+
+  .crm-table-filter-bar[data-mobile-open="true"] {
+    display: flex;
+  }
+
+  .crm-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 10px 12px 14px;
+  }
+
+  .crm-card {
+    text-align: left;
+    background: var(--theme-bg-secondary);
+    border: 1px solid var(--theme-border-primary);
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+  }
+
+  .crm-card:active {
+    background: var(--theme-bg-hover);
+  }
+
+  .crm-card-title {
+    font-size: 13.5px;
+    font-weight: 650;
+    color: var(--theme-text-primary);
+    min-width: 0;
+  }
+
+  .crm-card-fields {
+    display: grid;
+    grid-template-columns: minmax(92px, 36%) minmax(0, 1fr);
+    gap: 5px 10px;
+    margin: 9px 0 0;
+  }
+
+  .crm-card-field {
+    display: contents;
+  }
+
+  .crm-card-field-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--theme-text-muted);
+    align-self: center;
+  }
+
+  .crm-card-field-value {
+    font-size: 12.5px;
+    color: var(--theme-text-secondary);
+    min-width: 0;
+    overflow-wrap: anywhere;
+    margin: 0;
+  }
+
+  .crm-card-list-empty {
+    padding: 32px 0;
+    text-align: center;
+    font-size: 13px;
+    color: var(--theme-text-muted);
+  }
+}
+
 .crm-cell-editable {
   cursor: text;
 }
@@ -1381,6 +1523,33 @@ body.is-dragging .project-board-card {
   gap: 8px;
   padding: 8px 20px;
   border-bottom: 1px solid var(--theme-border-primary);
+}
+
+@media (max-width: 767px) {
+  /* Saved-view switcher + actions scroll in place on a phone. */
+  .crm-table-toolbar {
+    overflow-x: auto;
+    padding: 8px 12px;
+    scrollbar-width: none;
+  }
+  .crm-table-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+  .crm-table-toolbar > * {
+    flex-shrink: 0;
+  }
+
+  /* Kanban: columns keep their 272px width; the board pans with
+     scroll-snap so a flick lands on a column edge (mobile-board
+     standard). `.board-scroll` / `.project-board-column` are the
+     shared Board primitives. */
+  .board-scroll {
+    scroll-snap-type: x proximity;
+    scroll-padding-left: 12px;
+  }
+  .project-board-column {
+    scroll-snap-align: start;
+  }
 }
 
 .crm-view-switcher {

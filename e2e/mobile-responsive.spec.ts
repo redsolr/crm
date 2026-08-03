@@ -9,11 +9,20 @@
  * - Core surfaces (pipeline, companies table, reports) render without
  *   the page body scrolling sideways — wide content scrolls inside
  *   its own container.
+ *
+ * Card-list claims (2026-08-03, second slice):
+ * - Record tables (pipeline, companies, contacts) swap for card
+ *   lists on phones; tapping a card opens the row's peek panel.
+ * - The table filter bar collapses behind a "Filters" toggle.
  */
 
 import { test, expect } from "./fixtures/auth.fixture";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
-import { STEP_TIMEOUT } from "./helpers/sales-ui";
+import {
+  createAccountViaUi,
+  createOpportunityViaUi,
+  STEP_TIMEOUT,
+} from "./helpers/sales-ui";
 
 test.use({ viewport: { width: 390, height: 844 } });
 
@@ -105,16 +114,93 @@ test.describe("Mobile shell (390px)", () => {
   }) => {
     await expectNoBodyHorizontalScroll(authedPage);
 
-    await authedPage.goto("/sales/companies");
-    await expect(authedPage.getByTestId("crm-topbar")).toBeVisible({
-      timeout: STEP_TIMEOUT,
-    });
-    await expectNoBodyHorizontalScroll(authedPage);
+    for (const path of [
+      "/sales/companies",
+      "/sales/reports",
+      "/sales/contacts",
+      "/sales/inbox",
+      "/sales/interviews",
+    ]) {
+      await authedPage.goto(path);
+      await expect(authedPage.getByTestId("crm-topbar")).toBeVisible({
+        timeout: STEP_TIMEOUT,
+      });
+      await expectNoBodyHorizontalScroll(authedPage);
+    }
+  });
 
-    await authedPage.goto("/sales/reports");
-    await expect(authedPage.getByTestId("crm-topbar")).toBeVisible({
+  test("pipeline table renders as a card list; tap opens the peek", async ({
+    authedPage,
+  }) => {
+    // The mock store starts empty — seed one deal through the phone UI
+    // (which also proves the create modals work as bottom sheets).
+    await createAccountViaUi(authedPage, "Mobile Firm");
+    await createOpportunityViaUi(authedPage, "Mobile Firm — matter_chaos");
+
+    // Table mode is the default — on a phone it must render as cards.
+    const cards = authedPage.getByTestId("sales-pipeline-card");
+    await expect(cards.first()).toBeVisible({ timeout: STEP_TIMEOUT });
+    await expect(
+      authedPage.getByTestId("sales-pipeline-table"),
+    ).toBeHidden();
+
+    await cards.first().click();
+    await expect(authedPage.getByTestId("sales-peek-panel")).toBeVisible({
       timeout: STEP_TIMEOUT,
     });
+  });
+
+  test("filter bar collapses behind the Filters toggle", async ({
+    authedPage,
+  }) => {
+    await createAccountViaUi(authedPage, "Filter Firm");
+    await createOpportunityViaUi(authedPage, "Filter Firm — drafting");
+
+    const toggle = authedPage.getByTestId("sales-pipeline-filter-toggle");
+    const bar = authedPage.getByTestId("sales-pipeline-filter-bar");
+
+    await expect(toggle).toBeVisible({ timeout: STEP_TIMEOUT });
+    await expect(bar).toBeHidden();
+
+    await toggle.click();
+    await expect(bar).toBeVisible();
+    // Filtering still works from the phone bar.
+    await authedPage
+      .getByTestId("sales-pipeline-filter-title")
+      .fill("zzz-no-such-deal");
+    await expect(
+      authedPage.getByTestId("sales-pipeline-cards-no-match"),
+    ).toBeVisible();
+
+    await toggle.click();
+    await expect(bar).toBeHidden();
+  });
+
+  test("contacts render as cards on a phone", async ({ authedPage }) => {
+    await createAccountViaUi(authedPage, "Contact Firm");
+
+    await authedPage.goto("/sales/contacts");
+    await authedPage.getByTestId("sales-add-contact-button").click();
+    await authedPage
+      .getByTestId("sales-contact-first-name-input")
+      .fill("Malee");
+    await authedPage
+      .getByTestId("sales-contact-last-name-input")
+      .fill("Suksawat");
+    await authedPage
+      .getByTestId("sales-contact-account-select")
+      .selectOption({ label: "Contact Firm" });
+    await authedPage
+      .getByTestId("sales-contact-email-input")
+      .fill("malee@firm.co.th");
+    await authedPage.getByRole("button", { name: "Create contact" }).click();
+
+    await expect(
+      authedPage.getByTestId("sales-contacts-card").first(),
+    ).toBeVisible({ timeout: STEP_TIMEOUT });
+    await expect(
+      authedPage.getByTestId("sales-contacts-table"),
+    ).toBeHidden();
     await expectNoBodyHorizontalScroll(authedPage);
   });
 });

@@ -597,7 +597,7 @@ export function InterviewMode({
               )}
             </p>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="block">
                 <span className="block text-xs font-medium text-[var(--theme-text-secondary)] uppercase tracking-wider mb-1.5">
                   Outcome

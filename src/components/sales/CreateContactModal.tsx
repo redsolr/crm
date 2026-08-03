@@ -88,7 +88,7 @@ export function CreateContactModal({
       </Modal.Description>
       <Modal.Body>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="First name" required>
               <input
                 type="text"
@@ -126,7 +126,7 @@ export function CreateContactModal({
               ))}
             </select>
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Role">
               <input
                 type="text"

@@ -472,8 +472,12 @@ function StageRoster({
     );
   }
 
+  // x-scroll wrapper: the roster keeps ~640px min-width on phones
+  // (dense report data — scroll-in-place beats a card re-layout here);
+  // without it the table blows the report card past the viewport.
   return (
-    <table className="crm-roster-table crm-table" data-testid="report-roster">
+    <div className="crm-roster-scroll overflow-x-auto">
+      <table className="crm-roster-table crm-table" data-testid="report-roster">
       <thead>
         <tr>
           <th className="text-left pl-5 w-[140px]">Stage</th>
@@ -556,7 +560,8 @@ function StageRoster({
           ),
         )}
       </tbody>
-    </table>
+      </table>
+    </div>
   );
 }
 

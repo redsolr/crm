@@ -23,10 +23,14 @@ import * as RadioGroup from "@radix-ui/react-radio-group";
 
 // ── Tokens ──────────────────────────────────────────────────────────────────
 
-const BACKDROP = "fixed inset-0 z-50 flex items-center justify-center bg-black/60";
+// Phones (<768px): the dialog docks to the bottom edge as a sheet
+// (full width, rounded top) — the mobile-native dialog idiom. ≥768px
+// keeps the centered card.
+const BACKDROP =
+  "fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60";
 
 const CARD_BASE =
-  "bg-[var(--theme-bg-secondary)] rounded-2xl border border-[var(--theme-border-secondary)] w-full mx-4 p-6 md:p-8 max-h-[calc(100dvh-2rem)] overflow-y-auto";
+  "bg-[var(--theme-bg-secondary)] rounded-t-2xl rounded-b-none md:rounded-2xl border border-[var(--theme-border-secondary)] w-full mx-0 md:mx-4 p-6 md:p-8 max-h-[calc(100dvh-2rem)] overflow-y-auto";
 
 const SIZE = {
   compact: "max-w-md",
@@ -123,7 +127,7 @@ function Body({ children }: { children: React.ReactNode }) {
 
 function Columns({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-8">
+    <div className="flex flex-col md:flex-row gap-8">
       {children}
     </div>
   );
@@ -132,7 +136,7 @@ function Columns({ children }: { children: React.ReactNode }) {
 function Column({ children, divider }: { children: React.ReactNode; divider?: boolean }) {
   return (
     <>
-      {divider && <div className="border-l border-[var(--theme-border-secondary)]" />}
+      {divider && <div className="hidden md:block border-l border-[var(--theme-border-secondary)]" />}
       <div className="flex-1 min-w-0">{children}</div>
     </>
   );
