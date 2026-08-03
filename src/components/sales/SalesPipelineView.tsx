@@ -179,7 +179,7 @@ export function SalesPipelineView() {
 
   return (
     <div
-      className="sales-pipeline-view flex-1 min-w-0 flex flex-col"
+      className="sales-pipeline-view flex-1 min-w-0 min-h-0 flex flex-col"
       data-testid="sales-pipeline"
     >
       <div className="crm-view-header">
