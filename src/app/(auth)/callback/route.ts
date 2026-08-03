@@ -5,8 +5,23 @@ import {
   LAST_ACCOUNT_MAX_AGE_SECONDS,
   serializeLastAccount,
 } from "@/lib/last-account";
+import { classifyLoginError, LOGIN_ERROR_PARAM } from "@/lib/login-error";
 
 const clientId = process.env.WORKOS_CLIENT_ID!;
+
+/** Bounce to /login with a visible error code — never a silent loop. */
+function loginRedirect(
+  request: NextRequest,
+  error?: string,
+  errorDescription?: string,
+): NextResponse {
+  const url = new URL("/login", request.url);
+  url.searchParams.set(
+    LOGIN_ERROR_PARAM,
+    classifyLoginError(error, errorDescription),
+  );
+  return NextResponse.redirect(url);
+}
 
 /**
  * OAuth callback handler.
@@ -23,13 +38,26 @@ const clientId = process.env.WORKOS_CLIENT_ID!;
  * Also records WHO signed in (and how) in the non-httpOnly
  * `crm-last-account` cookie so the login page can offer "Continue as
  * <account>" after logout — see `src/lib/last-account.ts`.
+ *
+ * Failures never bounce silently: WorkOS error params (or a thrown
+ * OauthException) are classified via `src/lib/login-error.ts` and sent
+ * to `/login?error=<code>` so the login page can explain — the
+ * invite-only rejection especially (`not_invited`).
  */
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
 
   if (!code) {
-    console.error("[callback] Missing authorization code");
-    return NextResponse.redirect(new URL("/login", request.url));
+    // WorkOS reports failures (not-invited sign-in, cancelled consent, …)
+    // by redirecting back with error params instead of a code.
+    const error = request.nextUrl.searchParams.get("error") ?? undefined;
+    const errorDescription =
+      request.nextUrl.searchParams.get("error_description") ?? undefined;
+    console.error("[callback] No authorization code:", {
+      error,
+      errorDescription,
+    });
+    return loginRedirect(request, error, errorDescription);
   }
 
   try {
@@ -62,6 +90,16 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("[callback] Auth failed:", error);
-    return NextResponse.redirect(new URL("/login", request.url));
+    // OauthException carries `error` + `errorDescription`; read them
+    // structurally so classification works whatever the SDK throws.
+    const { error: code, errorDescription } = error as {
+      error?: unknown;
+      errorDescription?: unknown;
+    };
+    return loginRedirect(
+      request,
+      typeof code === "string" ? code : undefined,
+      typeof errorDescription === "string" ? errorDescription : undefined,
+    );
   }
 }

@@ -157,6 +157,31 @@ test.describe("Login Page", () => {
     await expect(page.getByTestId("login-last-account")).toHaveCount(0);
   });
 
+  test("shows no error banner without the error param", async () => {
+    await expect(page.getByTestId("login-error-banner")).toHaveCount(0);
+  });
+
+  test("explains a not-invited callback bounce", async () => {
+    await page.goto("/login?error=not_invited");
+    const banner = page.getByTestId("login-error-banner");
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText("hasn't been invited");
+    // The form stays usable underneath.
+    await expect(page.getByTestId("login-email-form")).toBeVisible();
+  });
+
+  test("shows a generic message for other callback failures", async () => {
+    await page.goto("/login?error=auth_failed");
+    await expect(page.getByTestId("login-error-banner")).toContainText(
+      "Sign-in didn't complete",
+    );
+    // Unknown codes fall back to the same generic message.
+    await page.goto("/login?error=some_future_code");
+    await expect(page.getByTestId("login-error-banner")).toContainText(
+      "Sign-in didn't complete",
+    );
+  });
+
   test("redirects authenticated users to /sales", async () => {
     await page.addInitScript(() => {
       // This test wants the AUTHENTICATED path — lift the suite-wide
