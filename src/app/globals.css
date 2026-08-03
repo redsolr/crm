@@ -990,21 +990,6 @@ body.is-dragging .project-board-card {
   border-bottom: 1px solid var(--theme-border-primary);
 }
 
-@media (max-width: 767px) {
-  /* Chips overflow a phone — scroll the row in place, never wrap
-     (wrapping eats vertical space the list needs). */
-  .crm-chip-row {
-    overflow-x: auto;
-    padding: 8px 12px;
-    scrollbar-width: none;
-  }
-  .crm-chip-row::-webkit-scrollbar {
-    display: none;
-  }
-  .crm-chip-row > * {
-    flex-shrink: 0;
-  }
-}
 
 .crm-chip {
   padding: 3.5px 10px;
@@ -1062,13 +1047,17 @@ body.is-dragging .project-board-card {
   min-width: 90px;
 }
 
-/* Hamburger — mobile-only chrome; desktop keeps the always-on rail. */
-.crm-topbar-menu-btn {
+/* Topbar icon buttons — mobile-only chrome sharing one 30px chassis:
+   the hamburger (drawer) and the search icon (opens the palette).
+   Desktop keeps the always-on rail + full search box instead. */
+.crm-topbar-menu-btn,
+.crm-topbar-search-btn {
   display: none;
 }
 
 @media (max-width: 767px) {
-  .crm-topbar-menu-btn {
+  .crm-topbar-menu-btn,
+  .crm-topbar-search-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1078,7 +1067,8 @@ body.is-dragging .project-board-card {
     border-radius: 7px;
     color: var(--theme-text-secondary);
   }
-  .crm-topbar-menu-btn:hover {
+  .crm-topbar-menu-btn:hover,
+  .crm-topbar-search-btn:hover {
     background: var(--theme-bg-hover);
     color: var(--theme-text-primary);
   }
@@ -1137,16 +1127,31 @@ body.is-dragging .project-board-card {
   border-bottom: 1px solid var(--theme-border-primary);
 }
 
+/* ── Mobile x-scroll strips ──
+   The tab strip, filter chips, and saved-view toolbar all scroll in
+   place on phones: sideways pan only (overflow-y hidden — a scroll
+   container otherwise wiggles vertically on touch drag), no visible
+   scrollbar, children keep natural width. overflow≠visible also stops
+   their min-content propagating up the flex chain and forcing the
+   shell past the viewport. */
 @media (max-width: 767px) {
-  /* The strip (view toggle + switcher + actions) is wider than a
-     phone; scroll it in place — overflow≠visible also stops its
-     min-content from propagating 455px up the flex chain and forcing
-     the whole shell past the viewport. */
-  .crm-tabs {
+  .crm-tabs,
+  .crm-chip-row,
+  .crm-table-toolbar {
     overflow-x: auto;
-    padding: 0 12px;
+    overflow-y: hidden;
+    padding-left: 12px;
+    padding-right: 12px;
+    scrollbar-width: none;
   }
-  .crm-tabs > * {
+  .crm-tabs::-webkit-scrollbar,
+  .crm-chip-row::-webkit-scrollbar,
+  .crm-table-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+  .crm-tabs > *,
+  .crm-chip-row > *,
+  .crm-table-toolbar > * {
     flex-shrink: 0;
   }
 }
@@ -1487,18 +1492,15 @@ body.is-dragging .project-board-card {
    Phone topbar = ☰ · section title · 🔍 · ✦. The full search box,
    Ask label, and per-view CTA pairs are desktop chrome. */
 
-.crm-topbar-search-btn {
-  display: none;
-}
-
 .crm-header-add {
   display: none;
 }
 
 @media (max-width: 767px) {
-  /* Search box → icon (opens the ⌘K palette). The crumb becomes the
-     persistent title — with the whole view scrolling (below), it is
-     the only always-visible context. */
+  /* Search box → icon (opens the ⌘K palette; the icon's chassis is
+     shared with the hamburger — see "Topbar icon buttons"). The crumb
+     becomes the persistent title — with the whole view scrolling
+     (below), it is the only always-visible context. */
   .crm-topbar-center {
     display: none;
   }
@@ -1506,22 +1508,6 @@ body.is-dragging .project-board-card {
   .crm-topbar-crumb {
     flex: 1;
     font-size: 13px;
-  }
-
-  .crm-topbar-search-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 30px;
-    height: 30px;
-    border-radius: 7px;
-    color: var(--theme-text-secondary);
-  }
-
-  .crm-topbar-search-btn:hover {
-    background: var(--theme-bg-hover);
-    color: var(--theme-text-primary);
   }
 
   /* Ask keeps only the spark. */
@@ -1654,19 +1640,6 @@ body.is-dragging .project-board-card {
 }
 
 @media (max-width: 767px) {
-  /* Saved-view switcher + actions scroll in place on a phone. */
-  .crm-table-toolbar {
-    overflow-x: auto;
-    padding: 8px 12px;
-    scrollbar-width: none;
-  }
-  .crm-table-toolbar::-webkit-scrollbar {
-    display: none;
-  }
-  .crm-table-toolbar > * {
-    flex-shrink: 0;
-  }
-
   /* Kanban: columns keep their 272px width; the board pans with
      scroll-snap so a flick lands on a column edge (mobile-board
      standard). `.board-scroll` / `.project-board-column` are the

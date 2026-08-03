@@ -82,6 +82,27 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
+/**
+ * The one page frame BOTH auth branches render. Extracted after the
+ * 2026-08-03/04 incident pair: the branches carried hand-copied
+ * wrapper divs, the responsive `min-w-0` fix landed in only one, and
+ * every real-auth session overflowed phone viewports while e2e
+ * (mock-auth) stayed green. One component = divergence impossible.
+ *
+ * min-w-0: without it this flex item's min-width is its content's
+ * min-content, which pushes the whole page wider than a phone
+ * viewport (455px topbar on /sales).
+ */
+function AppFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex w-full h-full min-h-screen">
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -108,29 +129,13 @@ export default function RootLayout({
         {isMockAuth ? (
           <QueryProvider>
             <E2EAuthInit />
-            <div className="flex w-full h-full min-h-screen">
-              {/* min-w-0: without it this flex item's min-width is its
-                  content's min-content, which pushes the whole page
-                  wider than a phone viewport (455px on /sales). */}
-              <div className="flex-1 min-w-0 flex flex-col min-h-screen">
-                {children}
-              </div>
-            </div>
+            <AppFrame>{children}</AppFrame>
           </QueryProvider>
         ) : (
           <AuthKitProvider>
             <QueryProvider>
               <AuthSync />
-              <div className="flex w-full h-full min-h-screen">
-                {/* min-w-0: same guard as the mock-auth branch above —
-                    the 2026-08-03 responsive fix landed only there, so
-                    real-auth sessions still overflowed phone viewports
-                    (455px topbar min-content). Keep both branches'
-                    wrappers IDENTICAL. */}
-                <div className="flex-1 min-w-0 flex flex-col min-h-screen">
-                  {children}
-                </div>
-              </div>
+              <AppFrame>{children}</AppFrame>
             </QueryProvider>
           </AuthKitProvider>
         )}

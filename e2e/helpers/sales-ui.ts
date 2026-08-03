@@ -50,6 +50,41 @@ export async function ensureBoardMode(page: Page) {
   });
 }
 
+/** Phone-flow twins of the create helpers below — on <768px the
+ *  header CTA pair is CSS-hidden behind the "+ New" menu, so mobile
+ *  specs seed through it (which also exercises the menu itself). */
+export async function createAccountViaMobileMenu(page: Page, name: string) {
+  await page.getByTestId("sales-header-add-button").click();
+  await page.getByTestId("sales-header-add-company").click();
+  await page.getByTestId("sales-account-name-input").fill(name);
+  await page
+    .getByTestId("sales-account-source-select")
+    .selectOption("referral");
+  await page.getByRole("button", { name: "Add company" }).click();
+  await expect(page.getByTestId("sales-account-name-input")).toHaveCount(0, {
+    timeout: STEP_TIMEOUT,
+  });
+}
+
+export async function createOpportunityViaMobileMenu(
+  page: Page,
+  title: string,
+) {
+  await page.getByTestId("sales-header-add-button").click();
+  await page.getByTestId("sales-header-add-opportunity").click();
+  await page.getByTestId("sales-opportunity-title-input").fill(title);
+  await page
+    .getByTestId("sales-opportunity-account-select")
+    .selectOption({ index: 1 });
+  await page
+    .getByTestId("sales-opportunity-use-case-select")
+    .selectOption("matter_chaos");
+  await page.getByRole("button", { name: "Create opportunity" }).click();
+  await expect(
+    page.getByTestId("sales-opportunity-title-input"),
+  ).toHaveCount(0, { timeout: STEP_TIMEOUT });
+}
+
 /** Creates an account through the Add-company modal (source: referral). */
 export async function createAccountViaUi(page: Page, name: string) {
   await page.getByTestId("sales-add-account-button").click();

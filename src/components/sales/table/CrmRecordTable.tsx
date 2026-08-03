@@ -36,6 +36,7 @@ import {
   type TableSort,
 } from "./table-model";
 import { CrmCellEditor } from "./CrmCellEditor";
+import { CrmCard, CrmCardField } from "./CrmCard";
 
 interface Props<Row> {
   rows: Row[];
@@ -273,52 +274,24 @@ export function CrmRecordTable<Row>({
       <div className="crm-card-list" data-testid={`${testIdPrefix}-cards`}>
         {visibleRows.map((row) => {
           const rowId = getRowId(row);
-          const cardBody = (
-            <>
-              <div className="crm-card-title">{titleColumn.render(row)}</div>
-              <dl className="crm-card-fields">
-                {cardColumns.map((column) => {
-                  const value = column.getValue(row);
-                  if (value === null || value === "") return null;
-                  return (
-                    <div key={column.id} className="crm-card-field">
-                      <dt className="crm-card-field-label">{column.label}</dt>
-                      <dd className="crm-card-field-value">
-                        {column.render(row)}
-                      </dd>
-                    </div>
-                  );
-                })}
-              </dl>
-            </>
-          );
-          return onRowClick ? (
-            <div
+          return (
+            <CrmCard
               key={rowId}
-              className="crm-card"
-              data-testid={`${testIdPrefix}-card`}
-              data-row-id={rowId}
-              role="button"
-              tabIndex={0}
-              onClick={() => onRowClick(row)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onRowClick(row);
-                }
-              }}
+              testId={`${testIdPrefix}-card`}
+              rowId={rowId}
+              title={titleColumn.render(row)}
+              onOpen={onRowClick ? () => onRowClick(row) : undefined}
             >
-              {cardBody}
-            </div>
-          ) : (
-            <div
-              key={rowId}
-              className="crm-card"
-              data-testid={`${testIdPrefix}-card`}
-              data-row-id={rowId}
-            >
-              {cardBody}
-            </div>
+              {cardColumns.map((column) => {
+                const value = column.getValue(row);
+                if (value === null || value === "") return null;
+                return (
+                  <CrmCardField key={column.id} label={column.label}>
+                    {column.render(row)}
+                  </CrmCardField>
+                );
+              })}
+            </CrmCard>
           );
         })}
         {visibleRows.length === 0 && (

@@ -24,6 +24,7 @@ import { CompanyLogo } from "./CompanyLogo";
 import { PersonAvatar } from "./PersonAvatar";
 import { CreateContactModal } from "./CreateContactModal";
 import { SalesPeekPanel } from "./peek/SalesPeekPanel";
+import { CrmCard, CrmCardField } from "./table/CrmCard";
 
 export function SalesContactsView() {
   const { bundle, isLoading: bundleLoading } = useSalesWorkspaceBundle();
@@ -219,91 +220,65 @@ export function SalesContactsView() {
               ? accountsById[contact.parent_id]
               : undefined;
             return (
-              <div
+              <CrmCard
                 key={contact.id}
-                className="crm-card"
-                data-testid="sales-contacts-card"
-                data-row-id={contact.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => setPeekId(contact.id)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    setPeekId(contact.id);
-                  }
-                }}
+                testId="sales-contacts-card"
+                rowId={contact.id}
+                onOpen={() => setPeekId(contact.id)}
+                title={
+                  <span className="flex items-center gap-2 min-w-0">
+                    <PersonAvatar name={contact.title} size={18} />
+                    <span className="truncate">{contact.title}</span>
+                  </span>
+                }
               >
-                <div className="crm-card-title flex items-center gap-2">
-                  <PersonAvatar name={contact.title} size={18} />
-                  <span className="truncate">{contact.title}</span>
-                </div>
-                <dl className="crm-card-fields">
-                  {account && (
-                    <div className="crm-card-field">
-                      <dt className="crm-card-field-label">Company</dt>
-                      <dd className="crm-card-field-value">
-                        <span className="flex items-center gap-1.5 min-w-0">
-                          <CompanyLogo
-                            name={account.title}
-                            domain={
-                              accountAttrsById[account.id]?.domain ?? null
-                            }
-                            size={14}
-                          />
-                          <span className="truncate">{account.title}</span>
-                        </span>
-                      </dd>
-                    </div>
-                  )}
-                  {attrs?.role && (
-                    <div className="crm-card-field">
-                      <dt className="crm-card-field-label">Role</dt>
-                      <dd className="crm-card-field-value">{attrs.role}</dd>
-                    </div>
-                  )}
-                  {attrs?.email && (
-                    <div className="crm-card-field">
-                      <dt className="crm-card-field-label">Email</dt>
-                      <dd className="crm-card-field-value">
-                        <a
-                          href={`mailto:${attrs.email}`}
-                          className="hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {attrs.email}
-                        </a>
-                      </dd>
-                    </div>
-                  )}
-                  {attrs?.decisionRole && (
-                    <div className="crm-card-field">
-                      <dt className="crm-card-field-label">Decision role</dt>
-                      <dd className="crm-card-field-value">
-                        <span className="crm-tag">
-                          {attrs.decisionRole.replace(/_/g, " ")}
-                        </span>
-                      </dd>
-                    </div>
-                  )}
-                  {attrs?.linkedinUrl && (
-                    <div className="crm-card-field">
-                      <dt className="crm-card-field-label">LinkedIn</dt>
-                      <dd className="crm-card-field-value">
-                        <a
-                          href={attrs.linkedinUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Profile ↗
-                        </a>
-                      </dd>
-                    </div>
-                  )}
-                </dl>
-              </div>
+                {account && (
+                  <CrmCardField label="Company">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <CompanyLogo
+                        name={account.title}
+                        domain={accountAttrsById[account.id]?.domain ?? null}
+                        size={14}
+                      />
+                      <span className="truncate">{account.title}</span>
+                    </span>
+                  </CrmCardField>
+                )}
+                {attrs?.role && (
+                  <CrmCardField label="Role">{attrs.role}</CrmCardField>
+                )}
+                {attrs?.email && (
+                  <CrmCardField label="Email">
+                    <a
+                      href={`mailto:${attrs.email}`}
+                      className="hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {attrs.email}
+                    </a>
+                  </CrmCardField>
+                )}
+                {attrs?.decisionRole && (
+                  <CrmCardField label="Decision role">
+                    <span className="crm-tag">
+                      {attrs.decisionRole.replace(/_/g, " ")}
+                    </span>
+                  </CrmCardField>
+                )}
+                {attrs?.linkedinUrl && (
+                  <CrmCardField label="LinkedIn">
+                    <a
+                      href={attrs.linkedinUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Profile ↗
+                    </a>
+                  </CrmCardField>
+                )}
+              </CrmCard>
             );
           })}
         </div>

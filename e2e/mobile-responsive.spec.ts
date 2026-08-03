@@ -17,40 +17,12 @@
  */
 
 import { test, expect } from "./fixtures/auth.fixture";
-import type { Page } from "@playwright/test";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
-import { STEP_TIMEOUT } from "./helpers/sales-ui";
-
-/** Phone-flow seeding — goes through the mobile "+ New" menu (the
- *  desktop CTA pair is CSS-hidden below 768px). */
-async function addCompanyMobile(page: Page, name: string) {
-  await page.getByTestId("sales-header-add-button").click();
-  await page.getByTestId("sales-header-add-company").click();
-  await page.getByTestId("sales-account-name-input").fill(name);
-  await page
-    .getByTestId("sales-account-source-select")
-    .selectOption("referral");
-  await page.getByRole("button", { name: "Add company" }).click();
-  await expect(page.getByTestId("sales-account-name-input")).toHaveCount(0, {
-    timeout: STEP_TIMEOUT,
-  });
-}
-
-async function addOpportunityMobile(page: Page, title: string) {
-  await page.getByTestId("sales-header-add-button").click();
-  await page.getByTestId("sales-header-add-opportunity").click();
-  await page.getByTestId("sales-opportunity-title-input").fill(title);
-  await page
-    .getByTestId("sales-opportunity-account-select")
-    .selectOption({ index: 1 });
-  await page
-    .getByTestId("sales-opportunity-use-case-select")
-    .selectOption("matter_chaos");
-  await page.getByRole("button", { name: "Create opportunity" }).click();
-  await expect(
-    page.getByTestId("sales-opportunity-title-input"),
-  ).toHaveCount(0, { timeout: STEP_TIMEOUT });
-}
+import {
+  createAccountViaMobileMenu,
+  createOpportunityViaMobileMenu,
+  STEP_TIMEOUT,
+} from "./helpers/sales-ui";
 
 test.use({ viewport: { width: 390, height: 844 } });
 
@@ -162,8 +134,8 @@ test.describe("Mobile shell (390px)", () => {
   }) => {
     // The mock store starts empty — seed one deal through the phone UI
     // (the "+ New" menu; also proves the modals work as bottom sheets).
-    await addCompanyMobile(authedPage, "Mobile Firm");
-    await addOpportunityMobile(authedPage, "Mobile Firm — matter_chaos");
+    await createAccountViaMobileMenu(authedPage, "Mobile Firm");
+    await createOpportunityViaMobileMenu(authedPage, "Mobile Firm — matter_chaos");
 
     // Table mode is the default — on a phone it must render as cards.
     const cards = authedPage.getByTestId("sales-pipeline-card");
@@ -181,8 +153,8 @@ test.describe("Mobile shell (390px)", () => {
   test("filter bar and saved views collapse behind the Filters toggle", async ({
     authedPage,
   }) => {
-    await addCompanyMobile(authedPage, "Filter Firm");
-    await addOpportunityMobile(authedPage, "Filter Firm — drafting");
+    await createAccountViaMobileMenu(authedPage, "Filter Firm");
+    await createOpportunityViaMobileMenu(authedPage, "Filter Firm — drafting");
 
     const toggle = authedPage.getByTestId("sales-pipeline-filter-toggle");
     const bar = authedPage.getByTestId("sales-pipeline-filter-bar");
@@ -231,7 +203,7 @@ test.describe("Mobile shell (390px)", () => {
   });
 
   test("contacts render as cards on a phone", async ({ authedPage }) => {
-    await addCompanyMobile(authedPage, "Contact Firm");
+    await createAccountViaMobileMenu(authedPage, "Contact Firm");
 
     await authedPage.goto("/sales/contacts");
     await authedPage.getByTestId("sales-add-contact-button").click();
