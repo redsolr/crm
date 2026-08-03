@@ -17,12 +17,40 @@
  */
 
 import { test, expect } from "./fixtures/auth.fixture";
+import type { Page } from "@playwright/test";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
-import {
-  createAccountViaUi,
-  createOpportunityViaUi,
-  STEP_TIMEOUT,
-} from "./helpers/sales-ui";
+import { STEP_TIMEOUT } from "./helpers/sales-ui";
+
+/** Phone-flow seeding — goes through the mobile "+ New" menu (the
+ *  desktop CTA pair is CSS-hidden below 768px). */
+async function addCompanyMobile(page: Page, name: string) {
+  await page.getByTestId("sales-header-add-button").click();
+  await page.getByTestId("sales-header-add-company").click();
+  await page.getByTestId("sales-account-name-input").fill(name);
+  await page
+    .getByTestId("sales-account-source-select")
+    .selectOption("referral");
+  await page.getByRole("button", { name: "Add company" }).click();
+  await expect(page.getByTestId("sales-account-name-input")).toHaveCount(0, {
+    timeout: STEP_TIMEOUT,
+  });
+}
+
+async function addOpportunityMobile(page: Page, title: string) {
+  await page.getByTestId("sales-header-add-button").click();
+  await page.getByTestId("sales-header-add-opportunity").click();
+  await page.getByTestId("sales-opportunity-title-input").fill(title);
+  await page
+    .getByTestId("sales-opportunity-account-select")
+    .selectOption({ index: 1 });
+  await page
+    .getByTestId("sales-opportunity-use-case-select")
+    .selectOption("matter_chaos");
+  await page.getByRole("button", { name: "Create opportunity" }).click();
+  await expect(
+    page.getByTestId("sales-opportunity-title-input"),
+  ).toHaveCount(0, { timeout: STEP_TIMEOUT });
+}
 
 test.use({ viewport: { width: 390, height: 844 } });
 
@@ -133,9 +161,9 @@ test.describe("Mobile shell (390px)", () => {
     authedPage,
   }) => {
     // The mock store starts empty — seed one deal through the phone UI
-    // (which also proves the create modals work as bottom sheets).
-    await createAccountViaUi(authedPage, "Mobile Firm");
-    await createOpportunityViaUi(authedPage, "Mobile Firm — matter_chaos");
+    // (the "+ New" menu; also proves the modals work as bottom sheets).
+    await addCompanyMobile(authedPage, "Mobile Firm");
+    await addOpportunityMobile(authedPage, "Mobile Firm — matter_chaos");
 
     // Table mode is the default — on a phone it must render as cards.
     const cards = authedPage.getByTestId("sales-pipeline-card");
@@ -150,20 +178,24 @@ test.describe("Mobile shell (390px)", () => {
     });
   });
 
-  test("filter bar collapses behind the Filters toggle", async ({
+  test("filter bar and saved views collapse behind the Filters toggle", async ({
     authedPage,
   }) => {
-    await createAccountViaUi(authedPage, "Filter Firm");
-    await createOpportunityViaUi(authedPage, "Filter Firm — drafting");
+    await addCompanyMobile(authedPage, "Filter Firm");
+    await addOpportunityMobile(authedPage, "Filter Firm — drafting");
 
     const toggle = authedPage.getByTestId("sales-pipeline-filter-toggle");
     const bar = authedPage.getByTestId("sales-pipeline-filter-bar");
+    const views = authedPage.getByTestId("sales-pipeline-view-switcher");
 
     await expect(toggle).toBeVisible({ timeout: STEP_TIMEOUT });
     await expect(bar).toBeHidden();
+    await expect(views).toBeHidden();
 
     await toggle.click();
     await expect(bar).toBeVisible();
+    // The saved-view switcher lives in the same collapse on phones.
+    await expect(views).toBeVisible();
     // Filtering still works from the phone bar.
     await authedPage
       .getByTestId("sales-pipeline-filter-title")
@@ -176,8 +208,30 @@ test.describe("Mobile shell (390px)", () => {
     await expect(bar).toBeHidden();
   });
 
+  test("topbar search icon opens the command palette", async ({
+    authedPage,
+  }) => {
+    // The full search box is desktop chrome; phones get the icon.
+    await expect(authedPage.locator(".crm-topbar-search")).toBeHidden();
+    await authedPage.getByTestId("crm-topbar-search-btn").click();
+    await expect(
+      authedPage.getByTestId("crm-command-palette-input"),
+    ).toBeVisible();
+  });
+
+  test("view header scrolls away with the page (topbar stays)", async ({
+    authedPage,
+  }) => {
+    // Structural claim: on phones the view root is the scroller, so
+    // header/tabs/chips leave the viewport as you scroll.
+    const overflowY = await authedPage
+      .getByTestId("sales-pipeline")
+      .evaluate((el) => getComputedStyle(el).overflowY);
+    expect(overflowY).toBe("auto");
+  });
+
   test("contacts render as cards on a phone", async ({ authedPage }) => {
-    await createAccountViaUi(authedPage, "Contact Firm");
+    await addCompanyMobile(authedPage, "Contact Firm");
 
     await authedPage.goto("/sales/contacts");
     await authedPage.getByTestId("sales-add-contact-button").click();

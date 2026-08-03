@@ -35,6 +35,10 @@ interface LayoutUIState {
   /** Mobile-only sidebar drawer (<768px). Desktop ignores this — the
    *  rail is always visible there; CSS scopes the drawer behavior. */
   isMobileSidebarOpen: boolean;
+  /** Command palette (⌘K). Store-held (not palette-local state) so the
+   *  mobile topbar's search icon can open it — on phones the palette
+   *  IS the search surface. */
+  isCommandPaletteOpen: boolean;
   returnPath: string;
 
   setReturnPath: (path: string) => void;
@@ -42,11 +46,15 @@ interface LayoutUIState {
   closeAccountMenu: () => void;
   toggleMobileSidebar: () => void;
   closeMobileSidebar: () => void;
+  toggleCommandPalette: () => void;
+  openCommandPalette: () => void;
+  closeCommandPalette: () => void;
 }
 
 export const useLayoutUI = create<LayoutUIState>((set) => ({
   isAccountMenuOpen: false,
   isMobileSidebarOpen: false,
+  isCommandPaletteOpen: false,
   returnPath: "/",
 
   setReturnPath: (path) => set({ returnPath: path }),
@@ -56,4 +64,8 @@ export const useLayoutUI = create<LayoutUIState>((set) => ({
   toggleMobileSidebar: () =>
     set((s) => ({ isMobileSidebarOpen: !s.isMobileSidebarOpen })),
   closeMobileSidebar: () => set({ isMobileSidebarOpen: false }),
+  toggleCommandPalette: () =>
+    set((s) => ({ isCommandPaletteOpen: !s.isCommandPaletteOpen })),
+  openCommandPalette: () => set({ isCommandPaletteOpen: true }),
+  closeCommandPalette: () => set({ isCommandPaletteOpen: false }),
 }));

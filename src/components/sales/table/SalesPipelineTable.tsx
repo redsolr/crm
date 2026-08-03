@@ -250,18 +250,6 @@ export function SalesPipelineTable({
   // this wrapper, Playwright strict mode rejects ambiguous testids.
   return (
     <div className="sales-pipeline-table-view flex-1 min-h-0 flex flex-col">
-      <div className="crm-table-toolbar">
-        <CrmViewSwitcher
-          surface="crm_pipeline"
-          state={{ filters, sort }}
-          defaultState={DEFAULT_VIEW_STATE}
-          onApplyState={(state) => {
-            setFilters(state.filters);
-            setSort(state.sort);
-          }}
-          testIdPrefix="sales-pipeline"
-        />
-      </div>
       <CrmRecordTable<WorkItem>
         rows={opportunities}
         columns={columns}
@@ -272,6 +260,18 @@ export function SalesPipelineTable({
         onFiltersChange={setFilters}
         onRowClick={(opp) => onOpenOpportunity(opp.id)}
         testIdPrefix="sales-pipeline"
+        toolbar={
+          <CrmViewSwitcher
+            surface="crm_pipeline"
+            state={{ filters, sort }}
+            defaultState={DEFAULT_VIEW_STATE}
+            onApplyState={(state) => {
+              setFilters(state.filters);
+              setSort(state.sort);
+            }}
+            testIdPrefix="sales-pipeline"
+          />
+        }
         renderFooter={(visible) => {
           const total = visible.reduce(
             (sum, opp) => sum + (attributesById[opp.id]?.valueEstimate ?? 0),

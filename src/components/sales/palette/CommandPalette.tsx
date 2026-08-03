@@ -25,6 +25,7 @@ import {
 import { useTransitionWorkItem } from "@/lib/sales/use-sales-mutations";
 import { PIPELINE_STAGE_ORDER } from "@/lib/sales/constants";
 import type { WorkItem } from "@/lib/workItemsApi";
+import { useLayoutUI } from "@/stores/use-layout-ui";
 import { CreateAccountModal } from "../CreateAccountModal";
 import { CreateOpportunityModal } from "../CreateOpportunityModal";
 import { CreateContactModal } from "../CreateContactModal";
@@ -60,7 +61,11 @@ export function CommandPalette() {
   const contacts = useContactsQuery(workspaceId);
   const transition = useTransitionWorkItem();
 
-  const [open, setOpen] = useState(false);
+  // Open state lives in the layout store so the mobile topbar's
+  // search icon can open the palette (on phones it IS the search).
+  const open = useLayoutUI((s) => s.isCommandPaletteOpen);
+  const toggleCommandPalette = useLayoutUI((s) => s.toggleCommandPalette);
+  const closeCommandPalette = useLayoutUI((s) => s.closeCommandPalette);
   const [query, setQuery] = useState("");
   const [level, setLevel] = useState<PaletteLevel>({ kind: "root" });
   const [selected, setSelected] = useState(0);
@@ -68,18 +73,18 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const close = useCallback(() => {
-    setOpen(false);
+    closeCommandPalette();
     setQuery("");
     setLevel({ kind: "root" });
     setSelected(0);
-  }, []);
+  }, [closeCommandPalette]);
 
   // Global hotkey — ⌘K / Ctrl+K toggles; ignore when a modal is up.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setOpen((prev) => !prev);
+        toggleCommandPalette();
         setQuery("");
         setLevel({ kind: "root" });
         setSelected(0);
@@ -87,7 +92,7 @@ export function CommandPalette() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [toggleCommandPalette]);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();

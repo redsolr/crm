@@ -289,7 +289,7 @@ export function SalesCompaniesView() {
 
   return (
     <div
-      className="sales-companies-view flex-1 min-w-0 flex flex-col min-h-0"
+      className="sales-companies-view crm-mobile-page-scroll flex-1 min-w-0 flex flex-col min-h-0"
       data-testid="sales-companies-view"
     >
       <div className="crm-view-header">
@@ -307,16 +307,6 @@ export function SalesCompaniesView() {
           </span>
         )}
         <div className="flex-1" />
-        <CrmViewSwitcher
-          surface="crm_companies"
-          state={{ filters, sort }}
-          defaultState={DEFAULT_VIEW_STATE}
-          onApplyState={(state) => {
-            setFilters(state.filters);
-            setSort(state.sort);
-          }}
-          testIdPrefix="sales-companies"
-        />
       </div>
 
       {rows.length === 0 ? (
@@ -337,6 +327,22 @@ export function SalesCompaniesView() {
           onFiltersChange={setFilters}
           onRowClick={(account) => setPeekId(account.id)}
           testIdPrefix="sales-companies"
+          toolbar={
+            // Moved out of the view header (2026-08-04 mobile pass) so
+            // both record tables carry their saved-view controls the
+            // same way — desktop gets a toolbar row like Pipeline's,
+            // phones collapse it behind the Filters toggle.
+            <CrmViewSwitcher
+              surface="crm_companies"
+              state={{ filters, sort }}
+              defaultState={DEFAULT_VIEW_STATE}
+              onApplyState={(state) => {
+                setFilters(state.filters);
+                setSort(state.sort);
+              }}
+              testIdPrefix="sales-companies"
+            />
+          }
           renderFooter={(visible) => {
             const totalOpportunities = visible.reduce(
               (n, account) =>

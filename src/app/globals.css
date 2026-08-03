@@ -1360,9 +1360,24 @@ body.is-dragging .project-board-card {
   display: none;
 }
 
+/* Desktop: transparent wrapper — the toolbar + filter-bar rows render
+   as if they were siblings (unchanged layout). Mobile (below) turns it
+   into the collapsible block behind the Filters toggle. */
+.crm-table-controls {
+  display: contents;
+}
+
 @media (max-width: 767px) {
   .crm-record-table-scroll {
     display: none;
+  }
+
+  .crm-table-controls {
+    display: none;
+  }
+
+  .crm-table-controls[data-mobile-open="true"] {
+    display: block;
   }
 
   .crm-table-filter-toggle {
@@ -1396,14 +1411,10 @@ body.is-dragging .project-board-card {
     border: 1px solid var(--theme-accent-border);
   }
 
-  /* Collapsed unless the toggle opened it. */
+  /* Inside the opened controls block the bar keeps its flex layout,
+     just with phone padding. */
   .crm-table-filter-bar {
-    display: none;
     padding: 8px 12px;
-  }
-
-  .crm-table-filter-bar[data-mobile-open="true"] {
-    display: flex;
   }
 
   .crm-card-list {
@@ -1469,6 +1480,123 @@ body.is-dragging .project-board-card {
     text-align: center;
     font-size: 13px;
     color: var(--theme-text-muted);
+  }
+}
+
+/* ── Mobile chrome declutter (2026-08-04) ──
+   Phone topbar = ☰ · section title · 🔍 · ✦. The full search box,
+   Ask label, and per-view CTA pairs are desktop chrome. */
+
+.crm-topbar-search-btn {
+  display: none;
+}
+
+.crm-header-add {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  /* Search box → icon (opens the ⌘K palette). The crumb becomes the
+     persistent title — with the whole view scrolling (below), it is
+     the only always-visible context. */
+  .crm-topbar-center {
+    display: none;
+  }
+
+  .crm-topbar-crumb {
+    flex: 1;
+    font-size: 13px;
+  }
+
+  .crm-topbar-search-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    color: var(--theme-text-secondary);
+  }
+
+  .crm-topbar-search-btn:hover {
+    background: var(--theme-bg-hover);
+    color: var(--theme-text-primary);
+  }
+
+  /* Ask keeps only the spark. */
+  .crm-ask-ai-label {
+    display: none;
+  }
+
+  /* Two side-by-side header CTAs → one "+ New" menu. */
+  .crm-header-cta-desktop {
+    display: none;
+  }
+
+  .crm-header-add {
+    display: block;
+  }
+}
+
+.crm-header-add-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.crm-header-add-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 41;
+  min-width: 180px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--theme-bg-secondary);
+  border: 1px solid var(--theme-border-secondary);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.crm-header-add-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  color: var(--theme-text-primary);
+}
+
+.crm-header-add-menu button:hover {
+  background: var(--theme-bg-hover);
+}
+
+.crm-header-add-menu button:disabled {
+  opacity: 0.4;
+}
+
+/* ── Mobile page scroll (2026-08-04) ──
+   Vertical space is scarce: the view header / tabs / chips scroll
+   AWAY with the content (only the slim topbar stays pinned), instead
+   of pinning ~250px of chrome above a short inner scroller. The view
+   root becomes the scroller; the inner flex/scroll wrappers relax to
+   natural height. Desktop keeps the fixed-chrome layout. */
+@media (max-width: 767px) {
+  .crm-mobile-page-scroll {
+    overflow-y: auto;
+  }
+
+  .crm-mobile-page-scroll .sales-pipeline-table-view,
+  .crm-mobile-page-scroll .crm-record-table {
+    flex: none;
+    min-height: auto;
+  }
+
+  .crm-mobile-page-scroll .crm-card-list {
+    flex: none;
+    min-height: auto;
+    overflow-y: visible;
   }
 }
 

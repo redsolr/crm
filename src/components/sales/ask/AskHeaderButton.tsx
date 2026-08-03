@@ -44,7 +44,8 @@ export function AskHeaderButton() {
       className="crm-ask-ai-button flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-secondary)] text-[12.5px] font-medium text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] hover:border-[var(--theme-border-hover)] transition-colors"
     >
       <AskSparkleIcon />
-      Ask AI
+      {/* Label is desktop-only (CSS) — phones keep just the spark. */}
+      <span className="crm-ask-ai-label">Ask AI</span>
     </button>
   );
 }

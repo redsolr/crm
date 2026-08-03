@@ -82,7 +82,7 @@ export function SalesContactsView() {
 
   return (
     <div
-      className="sales-contacts-view flex-1 min-w-0 flex flex-col min-h-0"
+      className="sales-contacts-view crm-mobile-page-scroll flex-1 min-w-0 flex flex-col min-h-0"
       data-testid="sales-contacts-view"
     >
       <div className="crm-view-header">

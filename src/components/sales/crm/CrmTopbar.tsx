@@ -26,7 +26,7 @@ const TOPBAR_SECTIONS: ReadonlyArray<{ prefix: string; label: string }> = [
 
 export function CrmTopbar() {
   const pathname = usePathname();
-  const { toggleMobileSidebar } = useLayoutUI();
+  const { toggleMobileSidebar, openCommandPalette } = useLayoutUI();
   const section =
     TOPBAR_SECTIONS.find((s) => pathname.startsWith(s.prefix))?.label ?? "CRM";
 
@@ -48,12 +48,42 @@ export function CrmTopbar() {
       <div className="crm-topbar-center">
         <GlobalSearchBar />
       </div>
+      {/* Mobile-only (CSS-hidden ≥768px): the search box above is too
+          wide for a phone topbar — this icon opens the ⌘K palette,
+          which carries record search + create verbs. */}
+      <button
+        type="button"
+        className="crm-topbar-search-btn"
+        aria-label="Search"
+        data-testid="crm-topbar-search-btn"
+        onClick={openCommandPalette}
+      >
+        <SearchIcon />
+      </button>
       {/* Presence is ambient chrome — cut first when width is scarce. */}
       <span className="crm-topbar-presence">
         <PresenceAvatarStack compact />
       </span>
       <AskHeaderButton />
     </header>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.8-3.8" />
+    </svg>
   );
 }
 

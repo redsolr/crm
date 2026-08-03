@@ -107,6 +107,9 @@ export function SalesPipelineView() {
   const [filter, setFilter] = useState<SalesFilterId>("all");
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showOpportunityModal, setShowOpportunityModal] = useState(false);
+  // Mobile-only "+" action menu — collapses the two header CTAs into
+  // one button (single-add is the mobile-CRM standard).
+  const [showAddMenu, setShowAddMenu] = useState(false);
   const [showClosed, setShowClosed] = useState(false);
   // Card click opens the right-snap peek panel; expand promotes to the
   // full detail route (web-app mini-panel pattern).
@@ -179,7 +182,7 @@ export function SalesPipelineView() {
 
   return (
     <div
-      className="sales-pipeline-view flex-1 min-w-0 min-h-0 flex flex-col"
+      className="sales-pipeline-view crm-mobile-page-scroll flex-1 min-w-0 min-h-0 flex flex-col"
       data-testid="sales-pipeline"
     >
       <div className="crm-view-header">
@@ -203,7 +206,7 @@ export function SalesPipelineView() {
         <button
           data-testid="sales-add-account-button"
           onClick={() => setShowAccountModal(true)}
-          className="crm-btn-ghost"
+          className="crm-btn-ghost crm-header-cta-desktop"
         >
           + Company
         </button>
@@ -211,10 +214,56 @@ export function SalesPipelineView() {
           data-testid="sales-add-opportunity-button"
           onClick={() => setShowOpportunityModal(true)}
           disabled={allAccounts.length === 0}
-          className="crm-btn-primary"
+          className="crm-btn-primary crm-header-cta-desktop"
         >
           + Opportunity
         </button>
+        {/* Mobile-only single "+" (CSS-hidden ≥768px) — opens a small
+            action menu instead of two side-by-side CTAs. */}
+        <div className="crm-header-add relative">
+          <button
+            data-testid="sales-header-add-button"
+            onClick={() => setShowAddMenu((v) => !v)}
+            className="crm-btn-primary"
+            aria-haspopup="menu"
+            aria-expanded={showAddMenu}
+          >
+            + New
+          </button>
+          {showAddMenu && (
+            <>
+              <button
+                type="button"
+                className="crm-header-add-backdrop"
+                aria-label="Close menu"
+                onClick={() => setShowAddMenu(false)}
+              />
+              <div className="crm-header-add-menu" role="menu">
+                <button
+                  role="menuitem"
+                  data-testid="sales-header-add-opportunity"
+                  disabled={allAccounts.length === 0}
+                  onClick={() => {
+                    setShowAddMenu(false);
+                    setShowOpportunityModal(true);
+                  }}
+                >
+                  New opportunity
+                </button>
+                <button
+                  role="menuitem"
+                  data-testid="sales-header-add-company"
+                  onClick={() => {
+                    setShowAddMenu(false);
+                    setShowAccountModal(true);
+                  }}
+                >
+                  New company
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Board ⇄ Table as first-class tabs (Attio tab-strip pattern). */}

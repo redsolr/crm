@@ -49,6 +49,10 @@ interface Props<Row> {
   /** Prefix for every data-testid this table emits
    *  (`{prefix}-table`, `{prefix}-row`, `{prefix}-cell-{col}`, …). */
   testIdPrefix: string;
+  /** Saved-view switcher (or other table-level controls). Desktop
+   *  renders it as its own row above the filter bar; on phones it
+   *  collapses into the same "Filters" toggle as the filter bar. */
+  toolbar?: ReactNode;
   /** Attio-style calculation row rendered under the table, given the
    *  currently VISIBLE (filtered) rows. */
   renderFooter?: (visibleRows: Row[]) => ReactNode;
@@ -69,6 +73,7 @@ export function CrmRecordTable<Row>({
   onFiltersChange,
   onRowClick,
   testIdPrefix,
+  toolbar,
   renderFooter,
 }: Props<Row>) {
   const [editing, setEditing] = useState<EditingCell | null>(null);
@@ -88,7 +93,7 @@ export function CrmRecordTable<Row>({
 
   return (
     <div className="crm-record-table flex-1 min-h-0 flex flex-col">
-      {filterableColumns.length > 0 && (
+      {(filterableColumns.length > 0 || toolbar) && (
         <button
           type="button"
           className="crm-table-filter-toggle"
@@ -106,10 +111,17 @@ export function CrmRecordTable<Row>({
           <span aria-hidden="true">{filtersOpen ? "▴" : "▾"}</span>
         </button>
       )}
+      {/* Desktop: display:contents — the toolbar + filter rows render
+          as siblings, exactly as before. Mobile: one collapsible block
+          behind the Filters toggle. */}
+      <div
+        className="crm-table-controls"
+        data-mobile-open={filtersOpen ? "true" : undefined}
+      >
+      {toolbar && <div className="crm-table-toolbar">{toolbar}</div>}
       {filterableColumns.length > 0 && (
         <div
           className="crm-table-filter-bar"
-          data-mobile-open={filtersOpen ? "true" : undefined}
           data-testid={`${testIdPrefix}-filter-bar`}
         >
           {filterableColumns.map((column) => (
@@ -147,6 +159,7 @@ export function CrmRecordTable<Row>({
           ))}
         </div>
       )}
+      </div>
 
       <div className="crm-record-table-scroll flex-1 min-h-0 overflow-auto">
         <table className="crm-table" data-testid={`${testIdPrefix}-table`}>
