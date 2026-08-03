@@ -22,6 +22,7 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/queries/query-keys";
+import { createInvalidationCoalescer } from "./invalidation-coalescer";
 import {
   useRealtimeStore,
   type RealtimeCursor,
@@ -65,6 +66,16 @@ export function useRealtimeConnection(): void {
     let pingTimer: ReturnType<typeof setInterval> | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let cursorSweep: ReturnType<typeof setInterval> | null = null;
+    // Invalidate frames coalesce — a busy room must not refetch-storm
+    // the cache (see invalidation-coalescer.ts for the CI incident).
+    const invalidations = createInvalidationCoalescer(() => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.workItems.all,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.sales.all,
+      });
+    });
 
     const sendView = () => {
       if (socket?.readyState !== WebSocket.OPEN) return;
@@ -149,12 +160,7 @@ export function useRealtimeConnection(): void {
               s.removeCursor(data.peer.id);
             }
           } else if (data.type === "invalidate") {
-            void queryClient.invalidateQueries({
-              queryKey: queryKeys.workItems.all,
-            });
-            void queryClient.invalidateQueries({
-              queryKey: queryKeys.sales.all,
-            });
+            invalidations.schedule();
           }
         };
         socket.onclose = () => {
@@ -201,6 +207,7 @@ export function useRealtimeConnection(): void {
       if (pingTimer) clearInterval(pingTimer);
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (cursorSweep) clearInterval(cursorSweep);
+      invalidations.dispose();
       socket?.close();
       useRealtimeStore.getState().reset();
     };

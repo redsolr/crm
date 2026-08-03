@@ -10,6 +10,7 @@
  */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ApiError } from "@/lib/api-client";
 import {
   workItemsApi,
   type CreateWorkItemRequest,
@@ -184,22 +185,53 @@ export function useComputeAttributeValue() {
   });
 }
 
+/**
+ * Transition a work item to an explicit target state, recovering from
+ * ONE optimistic-concurrency conflict. A 412 means the cached version
+ * lagged a concurrent write (peer edit, or a realtime refetch racing
+ * the click — the 2026-08-03 CI red): the user picked a concrete
+ * target stage, so re-reading and retrying once with the fresh version
+ * honors their action exactly as redoing the dropdown would. Exported
+ * for unit tests; a second 412 propagates.
+ */
+export async function transitionWithConflictRetry(
+  api: Pick<typeof workItemsApi, "updateWorkItem" | "getWorkItem">,
+  input: { id: string; version: number; state_key: string },
+): Promise<WorkItem> {
+  try {
+    const { workItem } = await api.updateWorkItem(
+      input.id,
+      { state_key: input.state_key },
+      input.version,
+    );
+    return workItem;
+  } catch (err) {
+    if (!(err instanceof ApiError) || err.status !== 412) throw err;
+    console.warn(
+      `[transition] version conflict on ${input.id} — re-reading and retrying once`,
+    );
+    const { workItem: fresh } = await api.getWorkItem(input.id);
+    const { workItem } = await api.updateWorkItem(
+      input.id,
+      { state_key: input.state_key },
+      fresh.version,
+    );
+    return workItem;
+  }
+}
+
 /** PATCH `/work_items/:id` to move it along its workflow.
  *  Required `If-Match` header is set by `workItemsApi.updateWorkItem`. */
 export function useTransitionWorkItem() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: {
-      id: string;
-      version: number;
-      state_key: string;
-    }) => {
-      const { workItem } = await workItemsApi.updateWorkItem(
-        input.id,
-        { state_key: input.state_key },
-        input.version,
+    mutationFn: (input: { id: string; version: number; state_key: string }) =>
+      transitionWithConflictRetry(workItemsApi, input),
+    onError: (err, input) => {
+      console.error(
+        `[useTransitionWorkItem] transition of ${input.id} to ${input.state_key} failed:`,
+        err,
       );
-      return workItem;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
