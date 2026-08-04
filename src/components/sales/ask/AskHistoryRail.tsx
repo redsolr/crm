@@ -65,8 +65,11 @@ export function AskHistoryRail() {
     <aside
       // Desktop-only for now: on phones the transcript takes the full
       // width; history returns via the drawer/palette when the mobile
-      // arc grows a history affordance.
-      className="ask-history-rail hidden md:flex w-[230px] flex-shrink-0 min-h-0 flex-col border-r border-[var(--theme-border-primary)]"
+      // arc grows a history affordance. Carries the two-tone shell
+      // surface (--claude-sidebar vs the content bg) so the rail reads
+      // as a distinct pane, not a hairline on black — same doctrine as
+      // the main app sidebar.
+      className="ask-history-rail hidden md:flex w-[230px] flex-shrink-0 min-h-0 flex-col border-r border-[var(--theme-border-primary)] bg-[var(--claude-sidebar)]"
       data-testid="ask-history-rail"
       aria-label="Chat history"
     >
@@ -75,7 +78,7 @@ export function AskHistoryRail() {
           type="button"
           onClick={startNewConversation}
           data-testid="ask-history-new"
-          className="ask-history-new w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[var(--theme-border-primary)] bg-[var(--theme-bg-tertiary)] text-[13px] text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-hover)] transition-colors"
+          className="ask-history-new w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[var(--theme-border-secondary)] hover:border-[var(--theme-border-hover)] bg-[var(--theme-bg-tertiary)] text-[13px] text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-hover)] transition-colors"
         >
           <NewConversationIcon />
           New chat

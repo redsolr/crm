@@ -302,8 +302,14 @@ export function AskConversation({ pageContext }: AskConversationProps) {
         data-testid="crm-ask-messages"
       >
         {showEmptyState ? (
-          <div className="crm-ask-empty flex flex-col gap-2 pt-6">
-            <p className="text-[13px] text-[var(--theme-text-secondary)] mb-1.5">
+          // Centered in the empty viewport (ChatGPT pattern) — a real
+          // heading plus tappable suggestion cards; the composer stays
+          // anchored at the bottom so nothing jumps on first send.
+          <div className="crm-ask-empty h-full flex flex-col justify-center gap-2 pb-10">
+            <h2 className="crm-ask-empty-title text-[16px] font-semibold text-[var(--theme-text-primary)]">
+              Ask about this workspace
+            </h2>
+            <p className="text-[13px] text-[var(--theme-text-secondary)] mb-2">
               Ask about your pipeline, companies, and calls — answers ground
               in this workspace&apos;s records.
             </p>
@@ -316,7 +322,7 @@ export function AskConversation({ pageContext }: AskConversationProps) {
                   setDraft(suggestion);
                   textareaRef.current?.focus();
                 }}
-                className="crm-ask-suggestion w-full text-left px-3 py-2 text-[13px] text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] bg-[var(--theme-bg-tertiary)] hover:bg-[var(--theme-bg-hover)] border border-[var(--theme-border-primary)] rounded-lg transition-colors"
+                className="crm-ask-suggestion w-full text-left px-3.5 py-2.5 text-[13.5px] text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] bg-[var(--theme-bg-tertiary)] hover:bg-[var(--theme-bg-hover)] border border-[var(--theme-border-secondary)] hover:border-[var(--theme-border-hover)] rounded-lg transition-colors"
               >
                 {suggestion}
               </button>
@@ -329,7 +335,7 @@ export function AskConversation({ pageContext }: AskConversationProps) {
                 <div
                   key={i}
                   data-testid="crm-ask-message-user"
-                  className="crm-ask-message-user self-end max-w-[85%] px-3 py-2 rounded-xl rounded-br-sm bg-[var(--theme-bg-tertiary)] border border-[var(--theme-border-primary)] text-[13px] text-[var(--theme-text-primary)] whitespace-pre-wrap"
+                  className="crm-ask-message-user self-end max-w-[85%] px-3.5 py-2 rounded-xl rounded-br-sm bg-[var(--theme-bg-hover)] text-[14px] text-[var(--theme-text-primary)] whitespace-pre-wrap"
                 >
                   {message.content}
                 </div>
@@ -337,7 +343,7 @@ export function AskConversation({ pageContext }: AskConversationProps) {
                 <div
                   key={i}
                   data-testid="crm-ask-message-assistant"
-                  className="crm-ask-message-assistant self-start max-w-full text-[13px] leading-relaxed text-[var(--theme-text-primary)] whitespace-pre-wrap"
+                  className="crm-ask-message-assistant self-start max-w-full text-[14px] leading-relaxed text-[var(--theme-text-primary)] whitespace-pre-wrap"
                 >
                   {message.steps !== undefined && message.steps.length > 0 && (
                     <div className="crm-ask-tool-steps flex flex-col gap-1 mb-1.5">
@@ -372,7 +378,7 @@ export function AskConversation({ pageContext }: AskConversationProps) {
           <div
             role="alert"
             data-testid="crm-ask-error"
-            className="crm-ask-error mt-3 px-3 py-2 rounded-lg border border-[var(--theme-border-primary)] bg-[var(--theme-bg-tertiary)] text-[12.5px] text-[var(--theme-text-secondary)]"
+            className="crm-ask-error mt-3 px-3 py-2 rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-tertiary)] text-[12.5px] text-[var(--theme-text-secondary)]"
           >
             {conversation.error}
           </div>
@@ -381,8 +387,14 @@ export function AskConversation({ pageContext }: AskConversationProps) {
       </div>
 
       {/* ── Composer ── */}
-      <div className="crm-ask-composer flex-shrink-0 border-t border-[var(--theme-border-primary)] px-3 py-3">
-        <div className="crm-ask-composer-box flex items-end gap-2 rounded-xl border border-[var(--theme-border-primary)] bg-[var(--theme-bg-tertiary)] px-3 py-2">
+      {/* No separator line above — the elevated box IS the boundary
+          (ChatGPT pattern). Surface + outline sit two ladder tiers
+          above the page so the input reads as THE object on the page
+          (border-ladder rule: hairline steps vanish in a dim room);
+          focus-within lifts the outline to the hover tier — a real
+          focus ring. */}
+      <div className="crm-ask-composer flex-shrink-0 px-3 pb-3 pt-1">
+        <div className="crm-ask-composer-box flex items-end gap-2 rounded-xl border border-[var(--theme-border-secondary)] focus-within:border-[var(--theme-border-hover)] bg-[var(--theme-bg-hover)] px-4 py-3 transition-colors">
           <textarea
             ref={textareaRef}
             rows={2}
@@ -395,7 +407,7 @@ export function AskConversation({ pageContext }: AskConversationProps) {
             }
             data-testid="crm-ask-input"
             aria-label="Ask a question"
-            className="crm-ask-textarea flex-1 resize-none bg-transparent text-[13px] text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-muted)] focus:outline-none disabled:opacity-60"
+            className="crm-ask-textarea flex-1 resize-none bg-transparent text-[14px] text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-muted)] focus:outline-none disabled:opacity-60"
           />
           {streaming ? (
             <button
@@ -403,7 +415,7 @@ export function AskConversation({ pageContext }: AskConversationProps) {
               onClick={stopStream}
               title="Stop generating"
               data-testid="crm-ask-stop"
-              className="crm-ask-stop-button flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-hover)] border border-[var(--theme-border-primary)] transition-colors"
+              className="crm-ask-stop-button flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-active)] border border-[var(--theme-border-secondary)] transition-colors"
             >
               <StopIcon />
             </button>
@@ -414,7 +426,7 @@ export function AskConversation({ pageContext }: AskConversationProps) {
               disabled={draft.trim() === ""}
               title="Send"
               data-testid="crm-ask-send"
-              className="crm-ask-send-button flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-hover)] border border-[var(--theme-border-primary)] disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+              className="crm-ask-send-button flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-active)] border border-[var(--theme-border-secondary)] disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
             >
               <SendIcon />
             </button>
