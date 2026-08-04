@@ -61,6 +61,49 @@ test.describe("Chat tab", () => {
       timeout: STEP_TIMEOUT,
     });
 
+    // A text-only paste is ignored (no extra attachment)…
+    await authedPage.evaluate(() => {
+      const textarea = document.querySelector(
+        '[data-testid="crm-ask-input"]',
+      );
+      if (textarea === null) throw new Error("composer not found");
+      const dt = new DataTransfer();
+      dt.setData("text/plain", "just words");
+      textarea.dispatchEvent(
+        new ClipboardEvent("paste", {
+          clipboardData: dt,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+    await expect(authedPage.getByTestId("crm-ask-attachment")).toHaveCount(1);
+
+    // …the ✕ removes a staged screenshot…
+    await authedPage.getByTestId("crm-ask-attachment-remove").click();
+    await expect(authedPage.getByTestId("crm-ask-attachment")).toHaveCount(0);
+
+    // …and re-pasting stages it again for the send below.
+    await authedPage.evaluate((pngBase64) => {
+      const textarea = document.querySelector(
+        '[data-testid="crm-ask-input"]',
+      );
+      if (textarea === null) throw new Error("composer not found");
+      const bytes = Uint8Array.from(atob(pngBase64), (c) => c.charCodeAt(0));
+      const dt = new DataTransfer();
+      dt.items.add(new File([bytes], "shot.png", { type: "image/png" }));
+      textarea.dispatchEvent(
+        new ClipboardEvent("paste", {
+          clipboardData: dt,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    }, TINY_PNG);
+    await expect(authedPage.getByTestId("crm-ask-attachment")).toHaveCount(1, {
+      timeout: STEP_TIMEOUT,
+    });
+
     // Send — the request body carries the image as a data URL.
     const requestPromise = authedPage.waitForRequest(
       (r) =>

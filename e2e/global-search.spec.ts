@@ -192,6 +192,28 @@ test.describe("Global search", () => {
     await expect(authedPage.getByTestId("sales-nav-pipeline")).toBeVisible();
   });
 
+  test("suggestions are fully keyboard-driven: ↓ selects, Enter routes", async ({
+    authedPage,
+  }) => {
+    await setupSalesHandlers(authedPage);
+    await authedPage.goto("/sales");
+    await expect(authedPage.getByTestId("sales-pipeline")).toBeVisible({
+      timeout: STEP_TIMEOUT,
+    });
+
+    await authedPage.keyboard.press("/");
+    await expect(authedPage.getByTestId("crm-search-nav")).toBeVisible({
+      timeout: STEP_TIMEOUT,
+    });
+    // No recents → index 0 = Pipeline; ↓ moves to Inbox; Enter routes.
+    await authedPage.keyboard.press("ArrowDown");
+    await authedPage.keyboard.press("Enter");
+    await expect(authedPage).toHaveURL(/\/sales\/inbox$/, {
+      timeout: STEP_TIMEOUT,
+    });
+    await expect(authedPage.getByTestId("crm-search-dropdown")).toHaveCount(0);
+  });
+
   test("suggestions stay clickable on the ≥1440px screen-centered branch", async ({
     authedPage,
   }) => {
