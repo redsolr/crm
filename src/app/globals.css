@@ -1354,12 +1354,14 @@ body.is-dragging .project-board-card {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--theme-text-muted);
-  padding: 10px 12px;
+  /* Dense rows (founder 2026-08-02): Attio-class ~34px rhythm — the
+     inline stage select sets the row floor, padding stays tight. */
+  padding: 7px 12px;
   border-bottom: 1px solid var(--theme-border-secondary);
 }
 
 .crm-table tbody td {
-  padding: 9px 12px;
+  padding: 5px 12px;
   border-bottom: 1px solid var(--theme-border-primary);
   color: var(--theme-text-secondary);
 }
