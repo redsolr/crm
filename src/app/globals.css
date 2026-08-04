@@ -909,9 +909,11 @@ body.is-dragging .project-board-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 20px;
+  /* Chrome compression (founder 2026-08-02): every header row earns
+     its height — the data, not the chrome, owns the screen. */
+  padding: 8px 20px;
   border-bottom: 1px solid var(--theme-border-primary);
-  min-height: 52px;
+  min-height: 44px;
 }
 
 @media (max-width: 767px) {
@@ -1023,7 +1025,7 @@ body.is-dragging .project-board-card {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 20px;
+  padding: 5px 20px;
   border-bottom: 1px solid var(--theme-border-primary);
 }
 
@@ -1530,6 +1532,28 @@ body.is-dragging .project-board-card {
    into the collapsible block behind the Filters toggle. */
 .crm-table-controls {
   display: contents;
+}
+
+/* Desktop: view-switcher toolbar + column filters MERGE into one row
+   (they were two stacked strips — "so many lines"). The filter inputs
+   right-align; wrap only when genuinely out of width. */
+@media (min-width: 768px) {
+  .crm-table-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--theme-border-primary);
+  }
+  .crm-table-controls .crm-table-toolbar {
+    border-bottom: none;
+    padding: 5px 8px 5px 20px;
+  }
+  .crm-table-controls .crm-table-filter-bar {
+    border-bottom: none;
+    background: transparent;
+    margin-left: auto;
+    padding: 5px 20px 5px 8px;
+  }
 }
 
 @media (max-width: 767px) {
