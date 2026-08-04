@@ -1437,15 +1437,44 @@ body.is-dragging .project-board-card {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
-/* "+" on the row's bottom boundary — insert a record below. Jira
-   behavior: invisible until the pointer is ON the boundary zone
-   itself (the button is its own hover target), NOT on mere row hover
-   — row hover belongs to the drag grip. */
-.crm-row-insert-btn {
+/* Insert-below affordance on the row's bottom boundary. Jira
+   behavior: a thin invisible hover ZONE spans the row width along the
+   boundary line; hovering anywhere on the line reveals the "+" in the
+   gutter plus an insert line across the row. Row hover alone shows
+   nothing — that belongs to the drag grip. The zone escapes the
+   gutter cell via absolute positioning (table cells don't clip);
+   60vw comfortably crosses the visible row. */
+.crm-row-insert-zone {
+  position: absolute;
+  left: 0;
+  bottom: -5px;
+  width: 60vw;
+  height: 10px;
+  z-index: 5;
+  display: block;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* The insert line across the row, revealed on zone hover. */
+.crm-row-insert-zone::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: transparent;
+  pointer-events: none;
+}
+
+.crm-row-insert-icon {
   position: absolute;
   left: 1px;
-  bottom: -8px;
-  z-index: 5;
+  top: 50%;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1456,12 +1485,16 @@ body.is-dragging .project-board-card {
   border: 1px solid var(--theme-border-hover);
   color: var(--theme-text-primary);
   opacity: 0;
-  cursor: pointer;
   transition: opacity 0.1s ease;
 }
 
-.crm-row-insert-btn:hover,
-.crm-row-insert-btn:focus-visible {
+.crm-row-insert-zone:hover::after,
+.crm-row-insert-zone:focus-visible::after {
+  background: var(--theme-border-hover);
+}
+
+.crm-row-insert-zone:hover .crm-row-insert-icon,
+.crm-row-insert-zone:focus-visible .crm-row-insert-icon {
   opacity: 1;
   background: var(--theme-bg-hover);
 }

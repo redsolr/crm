@@ -214,7 +214,7 @@ export function CrmRecordTable<Row>({
       {inlineCreate !== undefined && manualOrderActive && (
         <button
           type="button"
-          className="crm-row-insert-btn"
+          className="crm-row-insert-zone"
           aria-label="Insert a row below"
           data-testid={`${testIdPrefix}-insert-after`}
           onClick={(e) => {
@@ -222,7 +222,9 @@ export function CrmRecordTable<Row>({
             setCreateSlot(rowIndex + 1);
           }}
         >
-          <Plus size={12} aria-hidden="true" />
+          <span className="crm-row-insert-icon" aria-hidden="true">
+            <Plus size={12} />
+          </span>
         </button>
       )}
     </td>
