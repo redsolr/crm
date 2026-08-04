@@ -188,39 +188,63 @@ export function useComputeAttributeValue() {
   });
 }
 
+/** Total PATCH attempts before a 412 propagates (1 + 2 re-reads). */
+export const MAX_CONFLICT_ATTEMPTS = 3;
+
 /**
- * Transition a work item to an explicit target state, recovering from
- * ONE optimistic-concurrency conflict. A 412 means the cached version
- * lagged a concurrent write (peer edit, or a realtime refetch racing
- * the click — the 2026-08-03 CI red): the user picked a concrete
- * target stage, so re-reading and retrying once with the fresh version
- * honors their action exactly as redoing the dropdown would. Exported
- * for unit tests; a second 412 propagates.
+ * PATCH a work item, recovering from optimistic-concurrency conflicts
+ * by re-reading the fresh version and retrying (bounded). A 412 means
+ * the cached version lagged a concurrent write (peer edit, a realtime
+ * refetch racing the click, or the PREVIOUS action's own late retry —
+ * the 2026-08-04 CI red proved one re-read cannot survive two rapid
+ * actions whose retries interleave: the re-read landed between the
+ * earlier write's read and commit, "expected v4, got v3"). The user
+ * committed a concrete target (stage or rank), so re-reading and
+ * retrying honors their action exactly as redoing it would; after
+ * MAX_CONFLICT_ATTEMPTS the conflict propagates.
  */
-export async function transitionWithConflictRetry(
+async function patchWithConflictRetry(
+  api: Pick<typeof workItemsApi, "updateWorkItem" | "getWorkItem">,
+  id: string,
+  body: { state_key: string } | { position: number },
+  initialVersion: number,
+  label: string,
+): Promise<WorkItem> {
+  let version = initialVersion;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const { workItem } = await api.updateWorkItem(id, body, version);
+      return workItem;
+    } catch (err) {
+      if (
+        !(err instanceof ApiError) ||
+        err.status !== 412 ||
+        attempt >= MAX_CONFLICT_ATTEMPTS
+      ) {
+        throw err;
+      }
+      console.warn(
+        `[${label}] version conflict on ${id} (attempt ${attempt}/${MAX_CONFLICT_ATTEMPTS}) — re-reading and retrying`,
+      );
+      const { workItem: fresh } = await api.getWorkItem(id);
+      version = fresh.version;
+    }
+  }
+}
+
+/** Stage transition with bounded conflict recovery. Exported for unit
+ *  tests. */
+export function transitionWithConflictRetry(
   api: Pick<typeof workItemsApi, "updateWorkItem" | "getWorkItem">,
   input: { id: string; version: number; state_key: string },
 ): Promise<WorkItem> {
-  try {
-    const { workItem } = await api.updateWorkItem(
-      input.id,
-      { state_key: input.state_key },
-      input.version,
-    );
-    return workItem;
-  } catch (err) {
-    if (!(err instanceof ApiError) || err.status !== 412) throw err;
-    console.warn(
-      `[transition] version conflict on ${input.id} — re-reading and retrying once`,
-    );
-    const { workItem: fresh } = await api.getWorkItem(input.id);
-    const { workItem } = await api.updateWorkItem(
-      input.id,
-      { state_key: input.state_key },
-      fresh.version,
-    );
-    return workItem;
-  }
+  return patchWithConflictRetry(
+    api,
+    input.id,
+    { state_key: input.state_key },
+    input.version,
+    "transition",
+  );
 }
 
 /** PATCH `/work_items/:id` to move it along its workflow.
@@ -254,37 +278,19 @@ export interface PositionWrite {
   position: number;
 }
 
-/**
- * PATCH one row's rank, recovering from ONE optimistic-concurrency
- * conflict (same rationale as `transitionWithConflictRetry` — the user
- * committed a concrete target rank; a 412 just means the cached
- * version lagged a peer write or realtime refetch). Exported for unit
- * tests; a second 412 propagates.
- */
-export async function reorderWithConflictRetry(
+/** Rank write with bounded conflict recovery (same discipline as
+ *  `transitionWithConflictRetry`). Exported for unit tests. */
+export function reorderWithConflictRetry(
   api: Pick<typeof workItemsApi, "updateWorkItem" | "getWorkItem">,
   write: PositionWrite,
 ): Promise<WorkItem> {
-  try {
-    const { workItem } = await api.updateWorkItem(
-      write.id,
-      { position: write.position },
-      write.version,
-    );
-    return workItem;
-  } catch (err) {
-    if (!(err instanceof ApiError) || err.status !== 412) throw err;
-    console.warn(
-      `[reorder] version conflict on ${write.id} — re-reading and retrying once`,
-    );
-    const { workItem: fresh } = await api.getWorkItem(write.id);
-    const { workItem } = await api.updateWorkItem(
-      write.id,
-      { position: write.position },
-      fresh.version,
-    );
-    return workItem;
-  }
+  return patchWithConflictRetry(
+    api,
+    write.id,
+    { position: write.position },
+    write.version,
+    "reorder",
+  );
 }
 
 /** The server's list order — position asc, created_at asc, id asc. */

@@ -28,7 +28,7 @@ describe("transitionWithConflictRetry", () => {
     expect(api.getWorkItem).not.toHaveBeenCalled();
   });
 
-  it("on 412: re-reads the fresh version and retries the SAME target once", async () => {
+  it("on 412: re-reads the fresh version and retries the SAME target", async () => {
     const api = {
       updateWorkItem: jest
         .fn()
@@ -58,7 +58,36 @@ describe("transitionWithConflictRetry", () => {
     );
   });
 
-  it("a second 412 propagates — no infinite retry", async () => {
+  it("recovers from TWO conflicts — the interleaved-retries CI race", async () => {
+    // The 2026-08-04 shape: the re-read lands between a concurrent
+    // write's read and commit, so the second PATCH 412s too; the third
+    // re-read finally sees the settled version.
+    const api = {
+      updateWorkItem: jest
+        .fn()
+        .mockRejectedValueOnce(conflict())
+        .mockRejectedValueOnce(conflict())
+        .mockResolvedValueOnce({ workItem: WON }),
+      getWorkItem: jest
+        .fn()
+        .mockResolvedValueOnce({ workItem: { id: "wi_1", version: 4 } })
+        .mockResolvedValueOnce({ workItem: { id: "wi_1", version: 5 } }),
+    };
+    const out = await transitionWithConflictRetry(api, {
+      id: "wi_1",
+      version: 3,
+      state_key: "won",
+    });
+    expect(out).toBe(WON);
+    expect(api.updateWorkItem).toHaveBeenNthCalledWith(
+      3,
+      "wi_1",
+      { state_key: "won" },
+      5,
+    );
+  });
+
+  it("exhausts after MAX_CONFLICT_ATTEMPTS PATCHes — no infinite retry", async () => {
     const api = {
       updateWorkItem: jest.fn().mockRejectedValue(conflict()),
       getWorkItem: jest
@@ -72,7 +101,8 @@ describe("transitionWithConflictRetry", () => {
         state_key: "won",
       }),
     ).rejects.toBeInstanceOf(ApiError);
-    expect(api.updateWorkItem).toHaveBeenCalledTimes(2);
+    expect(api.updateWorkItem).toHaveBeenCalledTimes(3);
+    expect(api.getWorkItem).toHaveBeenCalledTimes(2);
   });
 
   it("non-412 errors propagate untouched", async () => {

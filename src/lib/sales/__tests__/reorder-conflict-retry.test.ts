@@ -33,7 +33,7 @@ describe("reorderWithConflictRetry", () => {
     expect(api.getWorkItem).not.toHaveBeenCalled();
   });
 
-  it("on 412: re-reads the fresh version and retries the SAME rank once", async () => {
+  it("on 412: re-reads the fresh version and retries the SAME rank", async () => {
     const api = {
       updateWorkItem: jest
         .fn()
@@ -63,7 +63,7 @@ describe("reorderWithConflictRetry", () => {
     );
   });
 
-  it("a second 412 propagates — no infinite retry", async () => {
+  it("exhausts after MAX_CONFLICT_ATTEMPTS PATCHes — no infinite retry", async () => {
     const api = {
       updateWorkItem: jest.fn().mockRejectedValue(conflict()),
       getWorkItem: jest
@@ -73,7 +73,8 @@ describe("reorderWithConflictRetry", () => {
     await expect(
       reorderWithConflictRetry(api, { id: "wi_1", version: 3, position: 1536 }),
     ).rejects.toBeInstanceOf(ApiError);
-    expect(api.updateWorkItem).toHaveBeenCalledTimes(2);
+    expect(api.updateWorkItem).toHaveBeenCalledTimes(3);
+    expect(api.getWorkItem).toHaveBeenCalledTimes(2);
   });
 
   it("non-412 errors propagate untouched", async () => {
