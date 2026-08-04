@@ -17,7 +17,7 @@
  * table's own filter bar + sort + saved views layer on top.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { WorkItem } from "@/lib/workItemsApi";
 import type { SalesWorkspaceBundle } from "@/lib/sales/use-sales-workspace";
 import type { OpportunityAttributeSnapshot } from "@/lib/sales/use-opportunity-attributes";
@@ -48,12 +48,16 @@ const DEFAULT_VIEW_STATE: CrmTableViewState = { filters: {}, sort: null };
 
 interface Props {
   bundle: SalesWorkspaceBundle;
-  /** Chip-filtered opportunity list (the caller owns the chip row). */
+  /** Chip-filtered opportunity list (the caller owns the chip state). */
   opportunities: WorkItem[];
   accountsById: Record<string, WorkItem>;
   attributesById: Record<string, OpportunityAttributeSnapshot>;
   accountAttributesById: Record<string, AccountAttributeSnapshot>;
   onOpenOpportunity: (id: string) => void;
+  /** Chip strip rendered INSIDE the toolbar row (Jira-class single
+   *  control strip — chips · view switcher · column filters share one
+   *  line in table mode). */
+  filterChips?: ReactNode;
 }
 
 export function SalesPipelineTable({
@@ -63,6 +67,7 @@ export function SalesPipelineTable({
   attributesById,
   accountAttributesById,
   onOpenOpportunity,
+  filterChips,
 }: Props) {
   const upsert = useUpsertAttributeValue();
   const transition = useTransitionWorkItem();
@@ -261,16 +266,19 @@ export function SalesPipelineTable({
         onRowClick={(opp) => onOpenOpportunity(opp.id)}
         testIdPrefix="sales-pipeline"
         toolbar={
-          <CrmViewSwitcher
-            surface="crm_pipeline"
-            state={{ filters, sort }}
-            defaultState={DEFAULT_VIEW_STATE}
-            onApplyState={(state) => {
-              setFilters(state.filters);
-              setSort(state.sort);
-            }}
-            testIdPrefix="sales-pipeline"
-          />
+          <>
+            {filterChips}
+            <CrmViewSwitcher
+              surface="crm_pipeline"
+              state={{ filters, sort }}
+              defaultState={DEFAULT_VIEW_STATE}
+              onApplyState={(state) => {
+                setFilters(state.filters);
+                setSort(state.sort);
+              }}
+              testIdPrefix="sales-pipeline"
+            />
+          </>
         }
         renderFooter={(visible) => {
           const total = visible.reduce(

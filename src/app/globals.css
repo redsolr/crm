@@ -1342,7 +1342,8 @@ body.is-dragging .project-board-card {
 
 .crm-table {
   width: 100%;
-  font-size: 13px;
+  /* Jira-class 14px body (founder 2026-08-04 — 13px read too small). */
+  font-size: 14px;
   border-collapse: collapse;
 }
 
@@ -1547,6 +1548,14 @@ body.is-dragging .project-board-card {
   .crm-table-controls .crm-table-toolbar {
     border-bottom: none;
     padding: 5px 8px 5px 20px;
+  }
+  /* Chips inside the toolbar row shed their standalone-strip chrome
+     and separate from the view switcher with a hairline. */
+  .crm-table-toolbar .crm-chip-row {
+    border-bottom: none;
+    padding: 0 10px 0 0;
+    margin-right: 6px;
+    border-right: 1px solid var(--theme-border-secondary);
   }
   .crm-table-controls .crm-table-filter-bar {
     border-bottom: none;

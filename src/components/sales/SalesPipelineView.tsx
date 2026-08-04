@@ -317,8 +317,11 @@ export function SalesPipelineView() {
         </button>
       </div>
 
-      {/* Chips slice record lists — the Summary owns its own slicing. */}
-      {viewMode !== "summary" && (
+      {/* Chips slice record lists — the Summary owns its own slicing.
+          Table mode: the chips ride the table's toolbar ROW (Jira-class
+          single control strip) instead of owning a strip of their own;
+          the kanban keeps the standalone row. */}
+      {viewMode === "kanban" && (
         <FilterChips value={filter} onChange={setFilter} />
       )}
 
@@ -346,6 +349,7 @@ export function SalesPipelineView() {
           attributesById={attributesByOpportunityId}
           accountAttributesById={accountAttributesById}
           onOpenOpportunity={openPeek}
+          filterChips={<FilterChips value={filter} onChange={setFilter} />}
         />
       ) : (
         <SalesKanbanBoard
