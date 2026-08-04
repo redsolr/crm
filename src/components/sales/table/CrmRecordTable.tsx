@@ -13,6 +13,16 @@
  *     commit on Enter/blur (select/boolean commit on change), Escape
  *     cancels; the commit callback per column owns the mutation.
  *
+ * Jira-style list interactions (2026-08-04, both opt-in via props):
+ *
+ *   - `onReorder` — drag-to-rearrange rows by a lead-column grip.
+ *     Active only while NO column sort is applied (manual rank is only
+ *     truthful in rank order — Jira's rule); the owner receives the
+ *     moved row + the full visible order and persists positions.
+ *   - `inlineCreate` — a hover "+" between rows plus a persistent
+ *     "+ Create" row at the table bottom; the owner renders the form
+ *     row content for the chosen slot (`before`/`after` neighbors).
+ *
  * Sort + filter state is CONTROLLED by the owner so saved views
  * (`/api/views`) can serialize/restore it. Row projection is the pure
  * `applyTableFilters` / `applyTableSort` from table-model.ts.
@@ -20,13 +30,29 @@
  * Mobile (<768px): the table swaps for a card list (Attio/HubSpot
  * mobile pattern) — first column renders as the card title, the rest
  * as labelled field rows; tap opens the row (peek). Inline cell
- * editing is desktop-only — on a phone, edits happen in the peek
- * panel. The filter bar collapses behind a "Filters" toggle. Both
- * layouts render; CSS picks one, so hydration never guesses the
- * viewport.
+ * editing, drag ordering, and inline create are desktop-only — on a
+ * phone, edits happen in the peek panel. The filter bar collapses
+ * behind a "Filters" toggle. Both layouts render; CSS picks one, so
+ * hydration never guesses the viewport.
  */
 
 import { useState, type ReactNode } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS as DndCss } from "@dnd-kit/utilities";
+import { GripVertical, Plus } from "lucide-react";
 import {
   applyTableFilters,
   applyTableSort,
@@ -38,6 +64,14 @@ import {
 import { CrmCellEditor } from "./CrmCellEditor";
 import { CrmCard, CrmCardField } from "./CrmCard";
 
+/** Insertion slot for `inlineCreate` — the visible neighbors of the
+ *  form row (null = list edge). */
+export interface InlineCreateSlot<Row> {
+  before: Row | null;
+  after: Row | null;
+  close: () => void;
+}
+
 interface Props<Row> {
   rows: Row[];
   columns: ReadonlyArray<CrmColumn<Row>>;
@@ -47,6 +81,15 @@ interface Props<Row> {
   filters: TableFilters;
   onFiltersChange: (filters: TableFilters) => void;
   onRowClick?: (row: Row) => void;
+  /** Jira-style drag-to-rearrange. On drop the owner receives the
+   *  moved row plus the FULL visible order and owns persisting ranks.
+   *  Handles hide while a column sort is applied. */
+  onReorder?: (moved: Row, finalOrder: Row[]) => void;
+  /** Jira-style inline create — the owner renders the form row for
+   *  the chosen insertion slot. Between-row "+" affordances hide
+   *  while a column sort is applied; the bottom "+ Create" row is
+   *  always available. */
+  inlineCreate?: (slot: InlineCreateSlot<Row>) => ReactNode;
   /** Prefix for every data-testid this table emits
    *  (`{prefix}-table`, `{prefix}-row`, `{prefix}-cell-{col}`, …). */
   testIdPrefix: string;
@@ -64,6 +107,13 @@ interface EditingCell {
   columnId: string;
 }
 
+/** The drag plumbing a sortable row hands to its lead cell. */
+interface SortableDragProps {
+  setActivatorNodeRef: (element: HTMLElement | null) => void;
+  listeners: ReturnType<typeof useSortable>["listeners"];
+  attributes: ReturnType<typeof useSortable>["attributes"];
+}
+
 export function CrmRecordTable<Row>({
   rows,
   columns,
@@ -73,6 +123,8 @@ export function CrmRecordTable<Row>({
   filters,
   onFiltersChange,
   onRowClick,
+  onReorder,
+  inlineCreate,
   testIdPrefix,
   toolbar,
   renderFooter,
@@ -80,6 +132,32 @@ export function CrmRecordTable<Row>({
   const [editing, setEditing] = useState<EditingCell | null>(null);
   // Mobile-only: the filter bar collapses behind this toggle (<768px).
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Inline-create slot: index into the visible rows the form renders
+  // AT (form sits before that row); "end" pins to the table bottom.
+  const [createSlot, setCreateSlot] = useState<number | "end" | null>(null);
+  // Post-drop order override so the dropped row doesn't snap back
+  // during the gap before the owner's optimistic cache patch lands.
+  // Keyed to the rows-prop identity: any rows change (optimistic
+  // patch, refetch, rollback) is fresher truth than the drop-time
+  // snapshot, so the override silently expires with it — no effect,
+  // no reset bookkeeping.
+  const [orderOverride, setOrderOverride] = useState<{
+    forRows: Row[];
+    ids: string[];
+  } | null>(null);
+  const localOrder =
+    orderOverride !== null && orderOverride.forRows === rows
+      ? orderOverride.ids
+      : null;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  // Manual rank is only truthful while no column sort is applied
+  // (Jira's rule) — sorting hides the grips and the between-row "+".
+  const manualOrderActive = sort === null;
+  const hasLeadColumn = onReorder !== undefined || inlineCreate !== undefined;
 
   const filterableColumns = columns.filter((c) => c.filter !== undefined);
   const activeFilterCount = filterableColumns.filter(
@@ -90,7 +168,231 @@ export function CrmRecordTable<Row>({
     columns,
     sort,
   );
+  const displayRows = localOrder
+    ? (() => {
+        const orderIndex = new Map(localOrder.map((id, i) => [id, i]));
+        return [...visibleRows].sort(
+          (a, b) =>
+            (orderIndex.get(getRowId(a)) ?? 0) -
+            (orderIndex.get(getRowId(b)) ?? 0),
+        );
+      })()
+    : visibleRows;
   const [titleColumn, ...cardColumns] = columns;
+  const colCount = columns.length + (hasLeadColumn ? 1 : 0);
+  const slotIndex =
+    createSlot === "end" ? displayRows.length : createSlot;
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!onReorder || !over || active.id === over.id) return;
+    const ids = displayRows.map(getRowId);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+    const finalOrder = arrayMove(displayRows, oldIndex, newIndex);
+    setOrderOverride({ forRows: rows, ids: finalOrder.map(getRowId) });
+    onReorder(displayRows[oldIndex], finalOrder);
+  }
+
+  const renderLeadCell = (rowIndex: number, drag?: SortableDragProps) => (
+    <td className="crm-table-lead-cell">
+      {onReorder !== undefined && manualOrderActive && drag && (
+        <button
+          type="button"
+          className="crm-drag-handle"
+          aria-label="Drag to reorder"
+          data-testid={`${testIdPrefix}-drag-handle`}
+          ref={drag.setActivatorNodeRef}
+          {...drag.attributes}
+          {...drag.listeners}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical size={13} aria-hidden="true" />
+        </button>
+      )}
+      {inlineCreate !== undefined && manualOrderActive && (
+        <button
+          type="button"
+          className="crm-row-insert-btn"
+          aria-label="Insert a row below"
+          data-testid={`${testIdPrefix}-insert-after`}
+          onClick={(e) => {
+            e.stopPropagation();
+            setCreateSlot(rowIndex + 1);
+          }}
+        >
+          <Plus size={12} aria-hidden="true" />
+        </button>
+      )}
+    </td>
+  );
+
+  const renderRowCells = (row: Row, rowId: string) =>
+    columns.map((column) => {
+      const isEditing =
+        editing?.rowId === rowId && editing.columnId === column.id;
+      const editable = column.edit !== undefined;
+      return (
+        <td
+          key={column.id}
+          className={`${
+            column.align === "right" ? "text-right tabular-nums" : ""
+          } ${editable ? "crm-cell-editable" : ""} ${
+            column.cellClassName ?? ""
+          }`}
+          data-testid={`${testIdPrefix}-cell-${column.id}`}
+          onClick={
+            editable
+              ? (e) => {
+                  // Editing a cell must not open the row's peek panel.
+                  e.stopPropagation();
+                  setEditing({ rowId, columnId: column.id });
+                }
+              : undefined
+          }
+        >
+          {isEditing && column.edit ? (
+            <CrmCellEditor
+              dataType={column.edit.dataType}
+              options={column.edit.options}
+              initialValue={column.edit.getEditValue(row)}
+              testId={`${testIdPrefix}-edit-${column.id}`}
+              onCommit={(raw) => column.edit?.commit(row, raw)}
+              onClose={() => setEditing(null)}
+            />
+          ) : (
+            column.render(row)
+          )}
+        </td>
+      );
+    });
+
+  const renderCreateRow = (index: number) => (
+    <tr
+      key={`inline-create-${index}`}
+      className="crm-inline-create-row"
+      data-testid={`${testIdPrefix}-inline-create-row`}
+    >
+      <td colSpan={colCount} className="crm-inline-create-cell">
+        {inlineCreate?.({
+          before: displayRows[index - 1] ?? null,
+          after: displayRows[index] ?? null,
+          close: () => setCreateSlot(null),
+        })}
+      </td>
+    </tr>
+  );
+
+  const bodyRows: ReactNode[] = [];
+  displayRows.forEach((row, rowIndex) => {
+    if (slotIndex === rowIndex && createSlot !== "end") {
+      bodyRows.push(renderCreateRow(rowIndex));
+    }
+    const rowId = getRowId(row);
+    bodyRows.push(
+      onReorder !== undefined ? (
+        <CrmSortableRow
+          key={rowId}
+          rowId={rowId}
+          disabled={!manualOrderActive}
+          onClick={onRowClick ? () => onRowClick(row) : undefined}
+          testIdPrefix={testIdPrefix}
+        >
+          {(drag) => (
+            <>
+              {renderLeadCell(rowIndex, drag)}
+              {renderRowCells(row, rowId)}
+            </>
+          )}
+        </CrmSortableRow>
+      ) : (
+        <tr
+          key={rowId}
+          className="crm-record-table-row"
+          data-testid={`${testIdPrefix}-row`}
+          data-row-id={rowId}
+          onClick={onRowClick ? () => onRowClick(row) : undefined}
+        >
+          {hasLeadColumn && renderLeadCell(rowIndex)}
+          {renderRowCells(row, rowId)}
+        </tr>
+      ),
+    );
+  });
+  if (slotIndex === displayRows.length) {
+    bodyRows.push(renderCreateRow(displayRows.length));
+  }
+
+  const table = (
+    <table className="crm-table" data-testid={`${testIdPrefix}-table`}>
+      <thead>
+        <tr>
+          {hasLeadColumn && <th className="crm-table-lead-th" />}
+          {columns.map((column) => (
+            <th
+              key={column.id}
+              className={`${
+                column.align === "right" ? "text-right" : "text-left"
+              } ${column.headerClassName ?? ""}`}
+            >
+              {column.sortable ? (
+                <button
+                  type="button"
+                  className="crm-table-sort-btn"
+                  data-testid={`${testIdPrefix}-sort-${column.id}`}
+                  data-direction={
+                    sort?.columnId === column.id ? sort.direction : "none"
+                  }
+                  onClick={() => onSortChange(cycleSort(sort, column.id))}
+                >
+                  {column.label}
+                  <span className="crm-table-sort-icon" aria-hidden="true">
+                    {sort?.columnId === column.id
+                      ? sort.direction === "asc"
+                        ? "▲"
+                        : "▼"
+                      : ""}
+                  </span>
+                </button>
+              ) : (
+                column.label
+              )}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {bodyRows}
+        {displayRows.length === 0 && (
+          <tr className="crm-record-table-empty-row">
+            <td
+              colSpan={colCount}
+              className="text-center text-[var(--theme-text-muted)] py-8"
+              data-testid={`${testIdPrefix}-no-match`}
+            >
+              No records match the current filters.
+            </td>
+          </tr>
+        )}
+        {inlineCreate !== undefined && createSlot !== "end" && (
+          <tr className="crm-table-create-row">
+            <td colSpan={colCount}>
+              <button
+                type="button"
+                className="crm-table-create-btn"
+                data-testid={`${testIdPrefix}-create-row-button`}
+                onClick={() => setCreateSlot("end")}
+              >
+                <Plus size={13} aria-hidden="true" />
+                Create
+              </button>
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  );
 
   return (
     <div className="crm-record-table flex-1 min-h-0 flex flex-col">
@@ -168,116 +470,27 @@ export function CrmRecordTable<Row>({
           list owns the layout. */}
       <div className="crm-table-shell">
       <div className="crm-record-table-scroll flex-1 min-h-0 overflow-auto">
-        <table className="crm-table" data-testid={`${testIdPrefix}-table`}>
-          <thead>
-            <tr>
-              {columns.map((column) => (
-                <th
-                  key={column.id}
-                  className={`${
-                    column.align === "right" ? "text-right" : "text-left"
-                  } ${column.headerClassName ?? ""}`}
-                >
-                  {column.sortable ? (
-                    <button
-                      type="button"
-                      className="crm-table-sort-btn"
-                      data-testid={`${testIdPrefix}-sort-${column.id}`}
-                      data-direction={
-                        sort?.columnId === column.id ? sort.direction : "none"
-                      }
-                      onClick={() => onSortChange(cycleSort(sort, column.id))}
-                    >
-                      {column.label}
-                      <span className="crm-table-sort-icon" aria-hidden="true">
-                        {sort?.columnId === column.id
-                          ? sort.direction === "asc"
-                            ? "▲"
-                            : "▼"
-                          : ""}
-                      </span>
-                    </button>
-                  ) : (
-                    column.label
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {visibleRows.map((row) => {
-              const rowId = getRowId(row);
-              return (
-                <tr
-                  key={rowId}
-                  className="crm-record-table-row"
-                  data-testid={`${testIdPrefix}-row`}
-                  data-row-id={rowId}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
-                >
-                  {columns.map((column) => {
-                    const isEditing =
-                      editing?.rowId === rowId &&
-                      editing.columnId === column.id;
-                    const editable = column.edit !== undefined;
-                    return (
-                      <td
-                        key={column.id}
-                        className={`${
-                          column.align === "right"
-                            ? "text-right tabular-nums"
-                            : ""
-                        } ${editable ? "crm-cell-editable" : ""} ${
-                          column.cellClassName ?? ""
-                        }`}
-                        data-testid={`${testIdPrefix}-cell-${column.id}`}
-                        onClick={
-                          editable
-                            ? (e) => {
-                                // Editing a cell must not open the row's
-                                // peek panel.
-                                e.stopPropagation();
-                                setEditing({ rowId, columnId: column.id });
-                              }
-                            : undefined
-                        }
-                      >
-                        {isEditing && column.edit ? (
-                          <CrmCellEditor
-                            dataType={column.edit.dataType}
-                            options={column.edit.options}
-                            initialValue={column.edit.getEditValue(row)}
-                            testId={`${testIdPrefix}-edit-${column.id}`}
-                            onCommit={(raw) => column.edit?.commit(row, raw)}
-                            onClose={() => setEditing(null)}
-                          />
-                        ) : (
-                          column.render(row)
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-            {visibleRows.length === 0 && (
-              <tr className="crm-record-table-empty-row">
-                <td
-                  colSpan={columns.length}
-                  className="text-center text-[var(--theme-text-muted)] py-8"
-                  data-testid={`${testIdPrefix}-no-match`}
-                >
-                  No records match the current filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        {onReorder !== undefined ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={displayRows.map(getRowId)}
+              strategy={verticalListSortingStrategy}
+            >
+              {table}
+            </SortableContext>
+          </DndContext>
+        ) : (
+          table
+        )}
       </div>
 
       {/* Mobile card list — same projected rows, CSS-switched. */}
       <div className="crm-card-list" data-testid={`${testIdPrefix}-cards`}>
-        {visibleRows.map((row) => {
+        {displayRows.map((row) => {
           const rowId = getRowId(row);
           return (
             <CrmCard
@@ -299,7 +512,7 @@ export function CrmRecordTable<Row>({
             </CrmCard>
           );
         })}
-        {visibleRows.length === 0 && (
+        {displayRows.length === 0 && (
           <div
             className="crm-card-list-empty"
             data-testid={`${testIdPrefix}-cards-no-match`}
@@ -314,10 +527,55 @@ export function CrmRecordTable<Row>({
           className="crm-table-footer border-t border-[var(--theme-border-primary)]"
           data-testid={`${testIdPrefix}-footer`}
         >
-          {renderFooter(visibleRows)}
+          {renderFooter(displayRows)}
         </div>
       )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Sortable `<tr>` — dnd-kit transform/transition ride the row while a
+ * drag is active; the grip in the lead cell is the only activator, so
+ * cell clicks (peek, inline edit) stay untouched.
+ */
+function CrmSortableRow({
+  rowId,
+  disabled,
+  onClick,
+  testIdPrefix,
+  children,
+}: {
+  rowId: string;
+  disabled: boolean;
+  onClick?: () => void;
+  testIdPrefix: string;
+  children: (drag: SortableDragProps) => ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: rowId, disabled });
+  return (
+    <tr
+      ref={setNodeRef}
+      className="crm-record-table-row"
+      data-testid={`${testIdPrefix}-row`}
+      data-row-id={rowId}
+      data-dragging={isDragging ? "true" : undefined}
+      style={{
+        transform: DndCss.Transform.toString(transform),
+        transition,
+      }}
+      onClick={onClick}
+    >
+      {children({ setActivatorNodeRef, listeners, attributes })}
+    </tr>
   );
 }

@@ -1352,7 +1352,7 @@ body.is-dragging .project-board-card {
   top: 0;
   z-index: 1;
   background: var(--claude-content);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1375,7 +1375,9 @@ body.is-dragging .project-board-card {
 }
 
 .crm-table tbody tr:hover {
-  background: var(--theme-bg-secondary);
+  /* Jira-visible hover: bg-secondary was a ~3% delta on the content
+     bg — invisible. bg-hover is the theme's calibrated hover surface. */
+  background: var(--theme-bg-hover);
 }
 
 .crm-table-footer {
@@ -1383,6 +1385,131 @@ body.is-dragging .project-board-card {
   font-size: 12px;
   color: var(--theme-text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Jira-style list interactions (drag rank + inline create) ── */
+
+.crm-table-lead-th {
+  width: 26px;
+  padding: 7px 0;
+}
+
+.crm-table-lead-cell {
+  width: 26px;
+  padding: 0;
+  position: relative;
+}
+
+.crm-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 3px;
+  border-radius: 4px;
+  color: var(--theme-text-muted);
+  opacity: 0;
+  cursor: grab;
+  /* dnd-kit pointer sensor needs the browser's touch gestures off. */
+  touch-action: none;
+}
+
+.crm-record-table-row:hover .crm-drag-handle,
+.crm-record-table-row[data-dragging="true"] .crm-drag-handle {
+  opacity: 1;
+}
+
+.crm-drag-handle:hover {
+  background: var(--theme-bg-tertiary);
+  color: var(--theme-text-primary);
+}
+
+.crm-drag-handle:active {
+  cursor: grabbing;
+}
+
+.crm-record-table-row[data-dragging="true"] {
+  position: relative;
+  z-index: 6;
+  background: var(--theme-bg-hover);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+/* Hover "+" on the row's bottom boundary — insert a record below. */
+.crm-row-insert-btn {
+  position: absolute;
+  left: 4px;
+  bottom: -9px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--theme-bg-tertiary);
+  border: 1px solid var(--theme-border-hover);
+  color: var(--theme-text-primary);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.1s ease;
+}
+
+.crm-record-table-row:hover .crm-row-insert-btn {
+  opacity: 1;
+}
+
+.crm-row-insert-btn:hover {
+  background: var(--theme-bg-hover);
+}
+
+/* Bottom "+ Create" row (Jira list-footer create). */
+.crm-table-create-row td {
+  padding: 0;
+  border-bottom: none;
+}
+
+.crm-table-create-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  color: var(--theme-text-muted);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.crm-table-create-btn:hover {
+  color: var(--theme-text-primary);
+  background: var(--theme-bg-secondary);
+}
+
+/* Inline create form row. */
+.crm-inline-create-row td.crm-inline-create-cell {
+  padding: 6px 8px;
+  background: var(--theme-bg-secondary);
+  border-bottom: 1px solid var(--theme-border-primary);
+}
+
+.crm-inline-create-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crm-inline-create-form .crm-inline-create-title {
+  flex: 1 1 auto;
+  min-width: 160px;
+}
+
+.crm-inline-create-form .crm-inline-create-submit,
+.crm-inline-create-form .crm-inline-create-cancel {
+  padding: 5px 12px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 /* ── CRM table v2 (Attio slice) ── */

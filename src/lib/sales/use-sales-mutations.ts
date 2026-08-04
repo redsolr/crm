@@ -39,6 +39,8 @@ interface CreateOptions<TKey extends string> {
   workspace_id: string;
   parent_id?: string;
   state_key?: TKey;
+  /** Explicit manual rank (insert-between-rows create). Omitted ⇒ end. */
+  position?: number;
   attributes?: AttributeBag;
   /** Type definitions for the work_item kind we're creating —
    *  needed to map `attribute_bag[key]` → `definition.id` for the
@@ -56,6 +58,7 @@ async function createAndStampAttributes(
     workspace_id: options.workspace_id,
     parent_id: options.parent_id,
     state_key: options.state_key,
+    position: options.position,
     type_key,
   };
   const { workItem } = await workItemsApi.createWorkItem(request);
@@ -240,6 +243,104 @@ export function useTransitionWorkItem() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.sales.all,
       });
+    },
+  });
+}
+
+/** One position PATCH of a manual reorder (drag or insert-heal). */
+export interface PositionWrite {
+  id: string;
+  version: number;
+  position: number;
+}
+
+/**
+ * PATCH one row's rank, recovering from ONE optimistic-concurrency
+ * conflict (same rationale as `transitionWithConflictRetry` — the user
+ * committed a concrete target rank; a 412 just means the cached
+ * version lagged a peer write or realtime refetch). Exported for unit
+ * tests; a second 412 propagates.
+ */
+export async function reorderWithConflictRetry(
+  api: Pick<typeof workItemsApi, "updateWorkItem" | "getWorkItem">,
+  write: PositionWrite,
+): Promise<WorkItem> {
+  try {
+    const { workItem } = await api.updateWorkItem(
+      write.id,
+      { position: write.position },
+      write.version,
+    );
+    return workItem;
+  } catch (err) {
+    if (!(err instanceof ApiError) || err.status !== 412) throw err;
+    console.warn(
+      `[reorder] version conflict on ${write.id} — re-reading and retrying once`,
+    );
+    const { workItem: fresh } = await api.getWorkItem(write.id);
+    const { workItem } = await api.updateWorkItem(
+      write.id,
+      { position: write.position },
+      fresh.version,
+    );
+    return workItem;
+  }
+}
+
+/** The server's list order — position asc, created_at asc, id asc. */
+function byServerListOrder(a: WorkItem, b: WorkItem): number {
+  if (a.position !== b.position) return a.position - b.position;
+  if (a.created_at !== b.created_at) {
+    return a.created_at < b.created_at ? -1 : 1;
+  }
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+/**
+ * Persist a manual reorder of the pipeline table (drag-to-rearrange /
+ * insert-between heal): one PATCH per write, usually a single midpoint
+ * write from `planReorder`. Optimistic — the cached opportunity list
+ * re-sorts immediately so the dropped row doesn't snap back while the
+ * PATCH + refetch are in flight; a failed batch rolls the cache back.
+ */
+export function useReorderOpportunities(workspaceId: string | undefined) {
+  const queryClient = useQueryClient();
+  const listKey = queryKeys.workItems.list({
+    workspace_id: workspaceId,
+    type_key: SALES_TYPE_KEYS.opportunity,
+  });
+  return useMutation({
+    mutationFn: (writes: PositionWrite[]) =>
+      Promise.all(
+        writes.map((write) => reorderWithConflictRetry(workItemsApi, write)),
+      ),
+    onMutate: async (writes) => {
+      await queryClient.cancelQueries({ queryKey: listKey });
+      const previous = queryClient.getQueryData<{ data: WorkItem[] }>(listKey);
+      if (previous) {
+        const positionById = new Map(writes.map((w) => [w.id, w.position]));
+        const next = previous.data
+          .map((item) => {
+            const position = positionById.get(item.id);
+            return position === undefined ? item : { ...item, position };
+          })
+          .sort(byServerListOrder);
+        queryClient.setQueryData(listKey, { ...previous, data: next });
+      }
+      return { previous };
+    },
+    onError: (err, writes, context) => {
+      console.error(
+        `[useReorderOpportunities] persisting ${writes.length} position write(s) failed:`,
+        err,
+      );
+      if (context?.previous) {
+        queryClient.setQueryData(listKey, context.previous);
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.workItems.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.sales.all });
     },
   });
 }

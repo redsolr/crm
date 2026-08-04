@@ -69,6 +69,8 @@ export interface CreateWorkItemRequest {
   /** Work-item-type key. Defaults to 'task'. */
   type_key?: string;
   priority?: WorkItemPriority;
+  /** Explicit manual rank (insert-between-rows create). Omitted ⇒ end. */
+  position?: number;
   due_date?: string;
   estimate?: number;
   iteration_id?: string;

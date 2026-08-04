@@ -1,0 +1,146 @@
+"use client";
+
+/**
+ * Jira-style inline create row for the pipeline table — the create
+ * modal's three required fields (title / account / use case) in one
+ * compact strip; every other detail lands later via inline cells or
+ * the peek panel. Enter creates, Escape cancels. At the list end
+ * ("+ Create") the row stays open and clears for rapid entry (Jira
+ * behavior); between rows it closes once the record lands.
+ */
+
+import { useRef, useState } from "react";
+import type { WorkItem } from "@/lib/workItemsApi";
+import { OPPORTUNITY_USE_CASE_OPTIONS } from "@/lib/sales/constants";
+
+export interface InlineOpportunityInput {
+  title: string;
+  accountId: string;
+  useCase: string;
+}
+
+const INLINE_INPUT_CLASS =
+  "px-2.5 py-1.5 rounded-md bg-[var(--theme-bg-tertiary)] border border-[var(--theme-border-secondary)] text-[13px] text-[var(--claude-text)] placeholder:text-[var(--theme-text-muted)] focus:outline-none focus:border-[var(--theme-text-muted)]";
+
+interface Props {
+  accounts: WorkItem[];
+  /** True when the slot is the table end — the form then stays open
+   *  and clears after each create instead of closing. */
+  atEnd: boolean;
+  onSubmit: (input: InlineOpportunityInput) => Promise<void>;
+  onClose: () => void;
+}
+
+export function InlineOpportunityCreateRow({
+  accounts,
+  atEnd,
+  onSubmit,
+  onClose,
+}: Props) {
+  const [title, setTitle] = useState("");
+  const [accountId, setAccountId] = useState("");
+  const [useCase, setUseCase] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+
+  const canSubmit =
+    title.trim().length > 0 &&
+    accountId !== "" &&
+    useCase !== "" &&
+    !submitting;
+
+  async function handleSubmit() {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await onSubmit({ title: title.trim(), accountId, useCase });
+      if (atEnd) {
+        // Rapid entry: keep company/use case, clear the title, go again.
+        setTitle("");
+        titleRef.current?.focus();
+      } else {
+        onClose();
+      }
+    } catch (err) {
+      console.error("[InlineOpportunityCreateRow] create failed:", err);
+      setError("Could not create the opportunity. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form
+      className="crm-inline-create-form"
+      data-testid="sales-pipeline-inline-create-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void handleSubmit();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.stopPropagation();
+          onClose();
+        }
+      }}
+    >
+      <input
+        ref={titleRef}
+        type="text"
+        autoFocus
+        className={`crm-inline-create-title ${INLINE_INPUT_CLASS}`}
+        placeholder="What's the opportunity?"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        data-testid="sales-pipeline-inline-title"
+      />
+      <select
+        className={INLINE_INPUT_CLASS}
+        aria-label="Account"
+        value={accountId}
+        onChange={(e) => setAccountId(e.target.value)}
+        data-testid="sales-pipeline-inline-account"
+      >
+        <option value="">Company…</option>
+        {accounts.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.title}
+          </option>
+        ))}
+      </select>
+      <select
+        className={INLINE_INPUT_CLASS}
+        aria-label="Use case"
+        value={useCase}
+        onChange={(e) => setUseCase(e.target.value)}
+        data-testid="sales-pipeline-inline-use-case"
+      >
+        <option value="">Use case…</option>
+        {OPPORTUNITY_USE_CASE_OPTIONS.map((o) => (
+          <option key={o} value={o}>
+            {o.replace(/_/g, " ")}
+          </option>
+        ))}
+      </select>
+      {error && <span className="text-xs text-red-400">{error}</span>}
+      <button
+        type="submit"
+        className="crm-btn-primary crm-inline-create-submit"
+        disabled={!canSubmit}
+        data-testid="sales-pipeline-inline-submit"
+      >
+        {submitting ? "Creating…" : "Create"}
+      </button>
+      <button
+        type="button"
+        className="crm-btn-ghost crm-inline-create-cancel"
+        onClick={onClose}
+        data-testid="sales-pipeline-inline-cancel"
+      >
+        Cancel
+      </button>
+    </form>
+  );
+}

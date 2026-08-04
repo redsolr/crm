@@ -48,6 +48,9 @@ export const createWorkItemSchema = z.object({
   state_key: z.string().optional(),
   type_key: z.string().optional(),
   priority: prioritySchema.optional(),
+  /** Explicit manual rank (insert-between-rows create). Omitted ⇒ end
+   *  of the type+stage bucket (`nextPosition`). */
+  position: z.number().optional(),
   due_date: z.string().optional(),
   estimate: z.number().optional(),
   iteration_id: z.string().optional(),
@@ -313,7 +316,7 @@ export async function insertWorkItem(
   const { body, type, stage } = input;
   const id = mintId("wi");
   const identifier = await nextIdentifier();
-  const position = await nextPosition(type.id, stage.id);
+  const position = body.position ?? (await nextPosition(type.id, stage.id));
   const now = new Date();
 
   await db.insert(records).values({

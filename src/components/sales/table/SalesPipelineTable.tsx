@@ -28,14 +28,28 @@ import {
   SALES_TYPE_KEYS,
 } from "@/lib/sales/constants";
 import {
+  useCreateOpportunity,
+  useReorderOpportunities,
   useTransitionWorkItem,
   useUpsertAttributeValue,
+  type PositionWrite,
 } from "@/lib/sales/use-sales-mutations";
+import {
+  planReorder,
+  positionBetween,
+  renumberWrites,
+  type ReorderWrite,
+} from "@/lib/sales/reorder";
 import { parseAttributeValueForType } from "@/lib/sales/attribute-editing";
+import { fireActivation } from "@/lib/sales/activation";
 import { formatTHB } from "@/lib/format-currency";
 import { CompanyLogo } from "../CompanyLogo";
 import { TransitionToClosedModal } from "../TransitionToClosedModal";
 import { CrmRecordTable } from "./CrmRecordTable";
+import {
+  InlineOpportunityCreateRow,
+  type InlineOpportunityInput,
+} from "./InlineOpportunityCreateRow";
 import type {
   CrmColumn,
   CrmTableViewState,
@@ -71,6 +85,8 @@ export function SalesPipelineTable({
 }: Props) {
   const upsert = useUpsertAttributeValue();
   const transition = useTransitionWorkItem();
+  const reorder = useReorderOpportunities(bundle.workspace.id);
+  const createOpportunity = useCreateOpportunity();
 
   const [sort, setSort] = useState<TableSort | null>(null);
   const [filters, setFilters] = useState<TableFilters>({});
@@ -250,6 +266,91 @@ export function SalesPipelineTable({
     transition,
   ]);
 
+  const accountsList = useMemo(
+    () =>
+      Object.values(accountsById).sort((a, b) =>
+        a.title.localeCompare(b.title),
+      ),
+    [accountsById],
+  );
+
+  /** Attach `If-Match` versions to a reorder plan, dropping rows we
+   *  can't version (shouldn't happen — the plan comes from the same
+   *  rows). */
+  const withVersions = (
+    writes: ReorderWrite[],
+    rows: WorkItem[],
+  ): PositionWrite[] => {
+    const versionById = new Map(rows.map((o) => [o.id, o.version]));
+    return writes.flatMap((w) => {
+      const version = versionById.get(w.id);
+      if (version === undefined) {
+        console.warn(
+          `[SalesPipelineTable] no version for ${w.id} — position write dropped`,
+        );
+        return [];
+      }
+      return [{ ...w, version }];
+    });
+  };
+
+  /** Drag-to-rearrange drop: persist the moved row's new rank (one
+   *  midpoint write on a healthy list; degenerate imported ranks
+   *  renumber the whole visible order — see reorder.ts). */
+  const handleReorder = (moved: WorkItem, finalOrder: WorkItem[]) => {
+    const plan = planReorder(
+      finalOrder.map((o) => ({ id: o.id, position: o.position })),
+      moved.id,
+    );
+    if (plan.length === 0) return;
+    reorder.mutate(withVersions(plan, finalOrder));
+  };
+
+  /** Inline create (between rows or at the end). Between rows the new
+   *  record is created directly AT the midpoint rank; when the
+   *  neighbors carry degenerate ranks (imported rows all at 0) it is
+   *  created at the end and the list is renumbered into the intended
+   *  slot right after. The heal uses the chip-filtered list — with the
+   *  default "All" chip that is the full set. */
+  const submitInlineCreate = async (
+    slot: { before: WorkItem | null; after: WorkItem | null },
+    input: InlineOpportunityInput,
+  ) => {
+    const between = slot.after !== null;
+    const target = between
+      ? positionBetween(
+          slot.before?.position ?? null,
+          slot.after?.position ?? null,
+        )
+      : null;
+    const created = await createOpportunity.mutateAsync({
+      title: input.title,
+      workspace_id: bundle.workspace.id,
+      parent_id: input.accountId,
+      position: between && target !== null ? target : undefined,
+      definitions: opportunityDefs,
+      attributes: { use_case: input.useCase },
+    });
+    if (between && target === null && slot.after !== null) {
+      const afterId = slot.after.id;
+      const ordered = opportunities.filter((o) => o.id !== created.id);
+      const afterIndex = ordered.findIndex((o) => o.id === afterId);
+      ordered.splice(
+        afterIndex === -1 ? ordered.length : afterIndex,
+        0,
+        created,
+      );
+      const writes = renumberWrites(
+        ordered.map((o) => ({ id: o.id, position: o.position })),
+      );
+      if (writes.length > 0) reorder.mutate(withVersions(writes, ordered));
+    }
+    fireActivation("first_opportunity_created", {
+      opportunity_id: created.id,
+      use_case: input.useCase,
+    });
+  };
+
   // Note: the `sales-pipeline-table` testid lives on the inner <table>
   // (CrmRecordTable's `${testIdPrefix}-table`) — don't duplicate it on
   // this wrapper, Playwright strict mode rejects ambiguous testids.
@@ -264,6 +365,15 @@ export function SalesPipelineTable({
         filters={filters}
         onFiltersChange={setFilters}
         onRowClick={(opp) => onOpenOpportunity(opp.id)}
+        onReorder={handleReorder}
+        inlineCreate={({ before, after, close }) => (
+          <InlineOpportunityCreateRow
+            accounts={accountsList}
+            atEnd={after === null}
+            onSubmit={(input) => submitInlineCreate({ before, after }, input)}
+            onClose={close}
+          />
+        )}
         testIdPrefix="sales-pipeline"
         toolbar={
           <>
