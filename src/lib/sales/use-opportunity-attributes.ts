@@ -41,20 +41,31 @@ const EMPTY_SNAPSHOT: OpportunityAttributeSnapshot = {
   notNowUntil: null,
 };
 
+export interface OpportunityAttributes {
+  snapshots: Record<string, OpportunityAttributeSnapshot>;
+  /** Aggregate first-load flag from the fan-out — see
+   *  `AttributeValuesByItem.isLoading`. */
+  isLoading: boolean;
+}
+
 /**
- * Returns `{ [opportunityId]: snapshot }` for every opportunity
- * passed in. Underlying `GET /work_items/:id/attribute_values` calls
- * run in parallel via `useQueries` and are individually cached, so
- * navigating between Pipeline ↔ Detail re-uses the same hot rows.
+ * Returns `{ snapshots: { [opportunityId]: snapshot }, isLoading }`
+ * for every opportunity passed in. Underlying
+ * `GET /work_items/:id/attribute_values` calls run in parallel via
+ * `useQueries` and are individually cached, so navigating between
+ * Pipeline ↔ Detail re-uses the same hot rows.
  */
 export function useOpportunityAttributes(
   opportunities: WorkItem[],
   opportunityDefinitions: AttributeDefinition[],
   enabled = true,
-): Record<string, OpportunityAttributeSnapshot> {
-  const valuesByItem = useAttributeValuesByItem(opportunities, enabled);
+): OpportunityAttributes {
+  const { valuesById: valuesByItem, isLoading } = useAttributeValuesByItem(
+    opportunities,
+    enabled,
+  );
 
-  return useMemo(() => {
+  const snapshots = useMemo(() => {
     const index = defKeyIndex(opportunityDefinitions);
 
     const map: Record<string, OpportunityAttributeSnapshot> = {};
@@ -87,6 +98,8 @@ export function useOpportunityAttributes(
     }
     return map;
   }, [opportunities, opportunityDefinitions, valuesByItem]);
+
+  return { snapshots, isLoading };
 }
 
 /** Local-time `YYYY-MM-DD` for "today" — used by the filter

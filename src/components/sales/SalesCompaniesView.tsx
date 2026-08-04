@@ -21,6 +21,7 @@ import {
   useOpportunitiesQuery,
 } from "@/lib/sales/use-sales-queries";
 import { useAttributeValuesByItem } from "@/lib/sales/use-item-attribute-values";
+import { useFirstLoad } from "@/lib/sales/use-first-load";
 import { useUpsertAttributeValue } from "@/lib/sales/use-sales-mutations";
 import {
   SALES_TYPE_KEYS,
@@ -85,7 +86,8 @@ export function SalesCompaniesView() {
 
   // Fan-out attribute_values per account so the Source / Segment /
   // URL / Pain columns render + edit real data, not placeholders.
-  const valuesByAccountId = useAttributeValuesByItem(rows);
+  const { valuesById: valuesByAccountId, isLoading: attrsLoading } =
+    useAttributeValuesByItem(rows);
 
   // Count opportunities per account so the # column shows the real
   // sales-motion density per company.
@@ -281,7 +283,13 @@ export function SalesCompaniesView() {
 
   // First load only (no cached data): real chrome + shimmer rows.
   // Column labels are static, so the true headers render immediately.
-  if (bundleLoading || accounts.isLoading) {
+  // Includes the attribute fan-out so rows land fully hydrated instead
+  // of cells popping in one by one (founder 2026-08-04); the latch
+  // keeps a mid-session create from bouncing back to skeleton.
+  const showSkeleton = useFirstLoad(
+    bundleLoading || accounts.isLoading || attrsLoading,
+  );
+  if (showSkeleton) {
     return (
       <div className="sales-companies-view crm-mobile-page-scroll flex-1 min-w-0 flex flex-col min-h-0">
         <div className="crm-view-header">

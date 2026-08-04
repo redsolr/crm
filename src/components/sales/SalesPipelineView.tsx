@@ -55,6 +55,7 @@ import {
   useAccountsQuery,
   useOpportunitiesQuery,
 } from "@/lib/sales/use-sales-queries";
+import { useFirstLoad } from "@/lib/sales/use-first-load";
 import type { WorkItem } from "@/lib/workItemsApi";
 import { CreateAccountModal } from "./CreateAccountModal";
 import { CreateOpportunityModal } from "./CreateOpportunityModal";
@@ -276,10 +277,10 @@ export function SalesPipelineView() {
   const opportunityDefs = opportunityType
     ? bundle?.attributeDefinitionsByType[opportunityType.id] ?? []
     : [];
-  const attributesByOpportunityId = useOpportunityAttributes(
-    allOpportunities,
-    opportunityDefs,
-  );
+  const {
+    snapshots: attributesByOpportunityId,
+    isLoading: opportunityAttrsLoading,
+  } = useOpportunityAttributes(allOpportunities, opportunityDefs);
   const accountType = bundle?.workItemTypes.find(
     (t) => t.key === SALES_TYPE_KEYS.account,
   );
@@ -287,13 +288,24 @@ export function SalesPipelineView() {
     ? bundle?.attributeDefinitionsByType[accountType.id] ?? []
     : [];
   // Account snapshots feed the card's company-logo row (favicon domain).
-  const accountAttributesById = useAccountAttributes(allAccounts, accountDefs);
+  const { snapshots: accountAttributesById, isLoading: accountAttrsLoading } =
+    useAccountAttributes(allAccounts, accountDefs);
 
   // First load only (no cached data): table mode gets the real-chrome
   // skeleton (header labels mirror SalesPipelineTable's static
   // columns); board/summary modes keep the quiet centered line — a
   // kanban skeleton is a different shape and those modes are opt-in.
-  if (isLoading || opportunities.isLoading) {
+  // The gate includes the attribute fan-outs so rows land FULLY
+  // hydrated — without them the table appears and stage/value/date
+  // cells pop in one by one (founder 2026-08-04); the latch keeps a
+  // mid-session create from bouncing back to skeleton.
+  const showSkeleton = useFirstLoad(
+    isLoading ||
+      opportunities.isLoading ||
+      opportunityAttrsLoading ||
+      accountAttrsLoading,
+  );
+  if (showSkeleton) {
     return (
       <div className="sales-pipeline-view crm-mobile-page-scroll flex-1 min-w-0 min-h-0 flex flex-col">
         <div className="crm-view-header">

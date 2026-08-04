@@ -19,11 +19,23 @@ import type { AttributeValue } from "@/lib/generated/api/models";
 import { queryKeys } from "@/queries/query-keys";
 import type { WorkItem } from "@/lib/workItemsApi";
 
-/** `{ [workItemId]: AttributeValue[] }` for every item passed in. */
+export interface AttributeValuesByItem {
+  /** `{ [workItemId]: AttributeValue[] }` for every item passed in. */
+  valuesById: Record<string, AttributeValue[]>;
+  /**
+   * True while ANY per-item fetch is on its uncached first load
+   * (`isLoading`, never plain `isFetching`). The table views fold this
+   * into their skeleton gate so rows land fully hydrated instead of
+   * cells popping in one by one; background refreshes never re-trip
+   * it because cached queries skip the isLoading phase.
+   */
+  isLoading: boolean;
+}
+
 export function useAttributeValuesByItem(
   items: WorkItem[],
   enabled = true,
-): Record<string, AttributeValue[]> {
+): AttributeValuesByItem {
   const queries = useQueries({
     queries: items.map((item) => ({
       queryKey: queryKeys.sales.attributeValues(item.id),
@@ -33,11 +45,13 @@ export function useAttributeValuesByItem(
     })),
   });
 
+  const isLoading = queries.some((q) => q.isLoading);
+
   return useMemo(() => {
     const map: Record<string, AttributeValue[]> = {};
     items.forEach((item, i) => {
       map[item.id] = queries[i]?.data?.data ?? [];
     });
-    return map;
-  }, [items, queries]);
+    return { valuesById: map, isLoading };
+  }, [items, queries, isLoading]);
 }

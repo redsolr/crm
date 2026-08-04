@@ -31,15 +31,26 @@ const EMPTY_SNAPSHOT: ContactAttributeSnapshot = {
   decisionRole: null,
 };
 
-/** Returns `{ [contactId]: snapshot }` for every contact passed in. */
+export interface ContactAttributes {
+  snapshots: Record<string, ContactAttributeSnapshot>;
+  /** Aggregate first-load flag from the fan-out — see
+   *  `AttributeValuesByItem.isLoading`. */
+  isLoading: boolean;
+}
+
+/** Returns `{ snapshots: { [contactId]: snapshot }, isLoading }` for
+ *  every contact passed in. */
 export function useContactAttributes(
   contacts: WorkItem[],
   contactDefinitions: AttributeDefinition[],
   enabled = true,
-): Record<string, ContactAttributeSnapshot> {
-  const valuesByItem = useAttributeValuesByItem(contacts, enabled);
+): ContactAttributes {
+  const { valuesById: valuesByItem, isLoading } = useAttributeValuesByItem(
+    contacts,
+    enabled,
+  );
 
-  return useMemo(() => {
+  const snapshots = useMemo(() => {
     const index = defKeyIndex(contactDefinitions);
 
     const map: Record<string, ContactAttributeSnapshot> = {};
@@ -57,4 +68,6 @@ export function useContactAttributes(
     }
     return map;
   }, [contacts, contactDefinitions, valuesByItem]);
+
+  return { snapshots, isLoading };
 }

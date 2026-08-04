@@ -102,7 +102,7 @@ export function SalesReportsView() {
   const opportunityDefs = opportunityType
     ? bundle?.attributeDefinitionsByType[opportunityType.id] ?? []
     : [];
-  const oppAttributes = useOpportunityAttributes(
+  const { snapshots: oppAttributes } = useOpportunityAttributes(
     opportunities,
     opportunityDefs,
   );
@@ -117,7 +117,7 @@ export function SalesReportsView() {
       ? bundle?.attributeDefinitionsByType[accountType.id] ?? []
       : [];
   }, [bundle]);
-  const valuesByAccountId = useAttributeValuesByItem(accounts);
+  const { valuesById: valuesByAccountId } = useAttributeValuesByItem(accounts);
   const sourceByAccountId = useMemo(() => {
     const sourceDef = accountDefs.find((d) => d.key === "source");
     const map: Record<string, string> = {};
@@ -209,7 +209,7 @@ export function SalesReportsView() {
         : [],
     [bundle, callNoteType],
   );
-  const callNoteValues = useAttributeValuesByItem(callNotes);
+  const { valuesById: callNoteValues } = useAttributeValuesByItem(callNotes);
   const callDateById = useMemo(() => {
     const index = defKeyIndex(callNoteDefs);
     const out: Record<string, string | undefined> = {};
@@ -248,7 +248,10 @@ export function SalesReportsView() {
     () => Object.fromEntries(accounts.map((a) => [a.id, a])),
     [accounts],
   );
-  const accountAttrsById = useAccountAttributes(accounts, accountDefs);
+  const { snapshots: accountAttrsById } = useAccountAttributes(
+    accounts,
+    accountDefs,
+  );
   const rosterByStage = useMemo(
     () =>
       ACTIVE_STAGES.map((stage) => ({

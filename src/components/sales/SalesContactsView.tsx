@@ -19,6 +19,7 @@ import {
 } from "@/lib/sales/use-sales-queries";
 import { useContactAttributes } from "@/lib/sales/use-contact-attributes";
 import { useAccountAttributes } from "@/lib/sales/use-account-attributes";
+import { useFirstLoad } from "@/lib/sales/use-first-load";
 import { SALES_TYPE_KEYS } from "@/lib/sales/constants";
 import { CompanyLogo } from "./CompanyLogo";
 import { PersonAvatar } from "./PersonAvatar";
@@ -74,8 +75,10 @@ export function SalesContactsView() {
     [allAccounts],
   );
 
-  const attrsByContactId = useContactAttributes(rows, contactDefs);
-  const accountAttrsById = useAccountAttributes(allAccounts, accountDefs);
+  const { snapshots: attrsByContactId, isLoading: contactAttrsLoading } =
+    useContactAttributes(rows, contactDefs);
+  const { snapshots: accountAttrsById, isLoading: accountAttrsLoading } =
+    useAccountAttributes(allAccounts, accountDefs);
 
   const sortedRows = useMemo(
     () =>
@@ -86,7 +89,16 @@ export function SalesContactsView() {
   );
 
   // First load only (no cached data): real chrome + shimmer rows.
-  if (bundleLoading || contacts.isLoading) {
+  // Includes the attribute fan-outs so rows land fully hydrated
+  // instead of cells popping in one by one (founder 2026-08-04); the
+  // latch keeps a mid-session create from bouncing back to skeleton.
+  const showSkeleton = useFirstLoad(
+    bundleLoading ||
+      contacts.isLoading ||
+      contactAttrsLoading ||
+      accountAttrsLoading,
+  );
+  if (showSkeleton) {
     return (
       <div className="sales-contacts-view crm-mobile-page-scroll flex-1 min-w-0 flex flex-col min-h-0">
         <div className="crm-view-header">

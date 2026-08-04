@@ -40,15 +40,26 @@ const EMPTY_SNAPSHOT: AccountAttributeSnapshot = {
   icpFit: null,
 };
 
-/** Returns `{ [accountId]: snapshot }` for every account passed in. */
+export interface AccountAttributes {
+  snapshots: Record<string, AccountAttributeSnapshot>;
+  /** Aggregate first-load flag from the fan-out — see
+   *  `AttributeValuesByItem.isLoading`. */
+  isLoading: boolean;
+}
+
+/** Returns `{ snapshots: { [accountId]: snapshot }, isLoading }` for
+ *  every account passed in. */
 export function useAccountAttributes(
   accounts: WorkItem[],
   accountDefinitions: AttributeDefinition[],
   enabled = true,
-): Record<string, AccountAttributeSnapshot> {
-  const valuesByItem = useAttributeValuesByItem(accounts, enabled);
+): AccountAttributes {
+  const { valuesById: valuesByItem, isLoading } = useAttributeValuesByItem(
+    accounts,
+    enabled,
+  );
 
-  return useMemo(() => {
+  const snapshots = useMemo(() => {
     const index = defKeyIndex(accountDefinitions);
 
     const map: Record<string, AccountAttributeSnapshot> = {};
@@ -69,4 +80,6 @@ export function useAccountAttributes(
     }
     return map;
   }, [accounts, accountDefinitions, valuesByItem]);
+
+  return { snapshots, isLoading };
 }

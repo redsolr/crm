@@ -92,7 +92,8 @@ export function useRecordTimeline(
     () => [...callNotes, ...commitments],
     [callNotes, commitments],
   );
-  const childAttrValues = useAttributeValuesByItem(timelineChildren);
+  const { valuesById: childAttrValues } =
+    useAttributeValuesByItem(timelineChildren);
 
   return useMemo(
     () =>

@@ -60,7 +60,7 @@ export function useFollowupSuggestions(
   accountsById: Record<string, WorkItem>,
   limit = 8,
 ): FollowupSuggestion[] {
-  const attrsById = useOpportunityAttributes(
+  const { snapshots: attrsById } = useOpportunityAttributes(
     opportunities,
     opportunityDefinitions,
   );

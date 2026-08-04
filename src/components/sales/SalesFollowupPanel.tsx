@@ -71,7 +71,10 @@ export function SalesFollowupPanel({
     opportunityDefs,
     accountsById,
   );
-  const accountAttrsById = useAccountAttributes(allAccounts, accountDefs);
+  const { snapshots: accountAttrsById } = useAccountAttributes(
+    allAccounts,
+    accountDefs,
+  );
 
   if (suggestions.length === 0) return null;
 

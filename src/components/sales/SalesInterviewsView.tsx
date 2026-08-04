@@ -95,7 +95,8 @@ export function SalesInterviewsView() {
     [callNotes.data?.data],
   );
 
-  const noteAttrValues = useAttributeValuesByItem(interviewNotes);
+  const { valuesById: noteAttrValues } =
+    useAttributeValuesByItem(interviewNotes);
   const noteDefIndex = useMemo(() => {
     const callNoteType = bundle?.workItemTypes.find(
       (t) => t.key === SALES_TYPE_KEYS.call_note,
