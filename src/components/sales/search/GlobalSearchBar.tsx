@@ -172,11 +172,18 @@ export function GlobalSearchBar() {
           keycap read a step brighter — the box must be findable on the
           dark topbar without hovering. */}
       <div
-        className={`crm-topbar-search-field flex items-center gap-2 w-full px-3 py-1.5 rounded-lg border bg-[var(--theme-bg-tertiary)] text-sm transition-colors ${
+        className={`crm-topbar-search-field flex items-center gap-2 w-full px-3 py-1.5 rounded-lg border bg-[var(--theme-bg-tertiary)] text-sm transition-colors cursor-text ${
           isOpen
             ? "border-[var(--theme-text-muted)]"
             : "border-[var(--theme-border-hover)] hover:border-[var(--theme-text-muted)]"
         }`}
+        // The WHOLE box focuses the input (Stripe/Jira behavior) — the
+        // icon/padding/keycap zones were dead clicks (founder
+        // 2026-08-04, probe-verified).
+        onClick={() => {
+          inputRef.current?.focus();
+          setIsOpen(true);
+        }}
       >
         <span className="crm-topbar-search-icon flex-shrink-0 text-[var(--theme-text-secondary)]">
           <MagnifierIcon size={14} />

@@ -77,6 +77,23 @@ test.describe("Global search", () => {
     await authedPage.keyboard.press("Escape");
     await expect(authedPage.getByTestId("crm-command-palette")).toHaveCount(0);
 
+    // ── Clicking ANYWHERE on the field opens the suggestions — the
+    //    icon/padding zones must not be dead clicks (2026-08-04). ────
+    const fieldBox = await authedPage
+      .locator(".crm-topbar-search-field")
+      .boundingBox();
+    if (!fieldBox) throw new Error("no search field box");
+    await authedPage.mouse.click(
+      fieldBox.x + 10,
+      fieldBox.y + fieldBox.height / 2,
+    );
+    await expect(authedPage.getByTestId("crm-search-input")).toBeFocused();
+    await expect(authedPage.getByTestId("crm-search-dropdown")).toBeVisible({
+      timeout: STEP_TIMEOUT,
+    });
+    await authedPage.keyboard.press("Escape");
+    await expect(authedPage.getByTestId("crm-search-dropdown")).toHaveCount(0);
+
     // ── `/` focuses the topbar input, dropdown anchors under it ───
     await authedPage.keyboard.press("/");
     await expect(authedPage.getByTestId("crm-search-input")).toBeFocused();
