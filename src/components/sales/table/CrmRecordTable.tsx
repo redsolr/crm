@@ -269,7 +269,7 @@ export function CrmRecordTable<Row>({
             }}
           >
             <span className="crm-row-insert-icon" aria-hidden="true">
-              <Plus size={12} />
+              <Plus size={14} />
             </span>
           </button>
         )}

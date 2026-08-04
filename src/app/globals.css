@@ -1478,20 +1478,24 @@ body.is-dragging .project-board-card {
   pointer-events: none;
 }
 
+/* Raised, solid button sitting exactly ON the boundary line at the
+   row's left edge (Jira look) — above the 2px insert line. */
 .crm-row-insert-icon {
   position: absolute;
-  left: 1px;
+  left: 0;
   top: 50%;
   transform: translateY(-50%);
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   background: var(--theme-bg-hover);
   border: 1px solid var(--theme-border-hover);
   color: var(--theme-text-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 /* Bottom "+ Create" row (Jira list-footer create). */
