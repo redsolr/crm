@@ -1573,6 +1573,16 @@ body.is-dragging .project-board-card {
     overflow-y: auto;
   }
 
+  /* Inside a page scroller every row keeps its natural height. With
+     the card list unshrinkable (flex:none below), leaving the chrome
+     rows shrinkable squeezes THEM instead: the tab strip (a scroll
+     container, min-content 0) collapses to nothing and the wrapped
+     view header compresses to its 52px min-height, painting its
+     second line over the chips. */
+  .crm-mobile-page-scroll > * {
+    flex-shrink: 0;
+  }
+
   .crm-mobile-page-scroll .sales-pipeline-table-view,
   .crm-mobile-page-scroll .crm-record-table {
     flex: none;
