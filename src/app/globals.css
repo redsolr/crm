@@ -1476,12 +1476,14 @@ body.is-dragging .project-board-card {
   cursor: pointer;
 }
 
+/* The strip centers on the CENTER of the 1px boundary line (which
+   sits just outside the padding box) — hence the half-pixel. */
 .crm-row-insert-zone[data-edge="top"] {
-  top: -6px;
+  top: -6.5px;
 }
 
 .crm-row-insert-zone[data-edge="bottom"] {
-  bottom: -6px;
+  bottom: -6.5px;
 }
 
 /* The insert line across the row — starts at the frame's vertical
@@ -1503,7 +1505,9 @@ body.is-dragging .project-board-card {
    above the 2px insert line. */
 .crm-row-insert-icon {
   position: absolute;
-  left: 9px;
+  /* Center x = 19px — the identical center the grip resolves to
+     (grip: 16px wide at right:-8px of the 19px padding box). */
+  left: 8px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
