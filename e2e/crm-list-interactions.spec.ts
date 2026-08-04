@@ -174,6 +174,26 @@ test.describe("Pipeline list interactions", () => {
     expect(await titleOrder(page)).toEqual(["Deal B", "Deal C", "Deal A"]);
   });
 
+  test("clicking outside dismisses the inline draft row", async ({
+    authedPage: page,
+  }) => {
+    await seedPipeline(page);
+
+    const first = page.getByTestId("sales-pipeline-row").first();
+    const box = await first.boundingBox();
+    if (!box) throw new Error("no row box");
+    await page.mouse.move(box.x + 150, box.y + box.height - 3);
+    await page.getByTestId("sales-pipeline-insert-after").click();
+    const form = page.getByTestId("sales-pipeline-inline-create-form");
+    await expect(form).toBeVisible();
+
+    // Click anywhere outside the draft row (the view title) — the
+    // draft dismisses without needing Escape/Cancel.
+    await page.locator(".crm-view-title").click();
+    await expect(form).toHaveCount(0);
+    await expect(page.getByTestId("sales-pipeline-row")).toHaveCount(3);
+  });
+
   test("a column sort hides the reorder + insert affordances", async ({
     authedPage: page,
   }) => {

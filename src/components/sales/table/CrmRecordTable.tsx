@@ -36,8 +36,9 @@
  * hydration never guesses the viewport.
  */
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useClickOutside } from "@/hooks/use-click-outside";
 import {
   DndContext,
   PointerSensor,
@@ -146,6 +147,15 @@ export function CrmRecordTable<Row>({
   // Inline-create slot: index into the visible rows the form renders
   // AT (form sits before that row); "end" pins to the table bottom.
   const [createSlot, setCreateSlot] = useState<number | "end" | null>(null);
+  // Clicking anywhere outside the draft row dismisses it (Jira
+  // behavior, founder 2026-08-04) — the opening click predates the
+  // hook's listener registration, so it never self-dismisses.
+  const createRowRef = useRef<HTMLTableRowElement | null>(null);
+  useClickOutside(
+    createRowRef,
+    () => setCreateSlot(null),
+    createSlot !== null,
+  );
   // The root element anchors the overlay (state, not ref — the portal
   // and rect math need it during render without touching refs).
   const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null);
@@ -306,6 +316,7 @@ export function CrmRecordTable<Row>({
       // the list, and an index key would remount the form mid-rapid-entry
       // (wiping the kept company/use-case).
       key={`inline-create-${createSlot === "end" ? "end" : index}`}
+      ref={createRowRef}
       className="crm-inline-create-row"
       data-testid={`${testIdPrefix}-inline-create-row`}
     >
