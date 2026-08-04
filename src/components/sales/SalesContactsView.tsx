@@ -111,7 +111,7 @@ export function SalesContactsView() {
           firm — champion, decision-maker, blockers.
         </div>
       ) : (
-        <div className="crm-record-table-scroll flex-1 min-h-0 overflow-y-auto">
+        <div className="crm-record-table-scroll crm-table-contained flex-1 min-h-0 overflow-y-auto">
           <table
             className="sales-contacts-table crm-table"
             data-testid="sales-contacts-table"

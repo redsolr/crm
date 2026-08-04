@@ -137,7 +137,11 @@ export function SalesInterviewsView() {
         </button>
       </div>
 
-      <div className="sales-interviews-body flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-6">
+      <div className="sales-interviews-body flex-1 min-h-0 overflow-y-auto px-5 py-4">
+        {/* Reading column, centered on the SCREEN at wide widths (the
+            .crm-screen-center rail compensation) — a left-flushed list
+            in a 1600px window reads off-axis. */}
+        <div className="sales-interviews-column crm-screen-center w-full max-w-[860px] mx-auto space-y-6">
         {/* ── Resume drafts ── */}
         {draftRows.length > 0 && (
           <section className="interview-drafts" data-testid="interview-drafts">
@@ -234,6 +238,7 @@ export function SalesInterviewsView() {
             </div>
           )}
         </section>
+        </div>
       </div>
 
       {showNewModal && (

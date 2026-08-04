@@ -65,7 +65,7 @@ export default function AccountPage() {
         <h1 className="crm-view-title">Account</h1>
       </div>
 
-      <div className="crm-account-body mx-auto px-5 py-5 max-w-3xl space-y-4">
+      <div className="crm-account-body crm-screen-center mx-auto px-5 py-5 max-w-3xl space-y-4">
         {/* ── Identity ── */}
         <section className="crm-panel space-y-4" data-testid="account-profile">
           <div className="flex items-center gap-3">

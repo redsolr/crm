@@ -601,12 +601,49 @@ body.is-dragging .project-board-card {
 .crm-sidebar {
   /* OpenAI-platform-class rail: 260px column, ~36px rows. The previous
      232px/28px was visibly cramped next to the reference products. */
+  position: relative;
   width: var(--crm-sidebar-width);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: var(--claude-sidebar);
   border-right: 1px solid var(--theme-border-primary);
+}
+
+/* Drag handle on the rail's right edge (Jira/VS Code affordance):
+   invisible 7px hit area; a 2px accent line lights up on hover/drag.
+   Desktop-only — on phones the rail is an overlay drawer. */
+.crm-sidebar-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -4px;
+  width: 7px;
+  cursor: col-resize;
+  z-index: 5;
+  touch-action: none;
+}
+
+.crm-sidebar-resize::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  background: transparent;
+  transition: background 0.12s ease;
+}
+
+.crm-sidebar-resize:hover::after,
+.crm-sidebar-resize[data-dragging="true"]::after {
+  background: var(--theme-accent);
+}
+
+@media (max-width: 767px) {
+  .crm-sidebar-resize {
+    display: none;
+  }
 }
 
 /* ── Mobile (<768px): the rail becomes an overlay drawer ──
@@ -1414,6 +1451,62 @@ body.is-dragging .project-board-card {
 .crm-table-filter-input:focus {
   outline: none;
   border-color: var(--theme-text-muted);
+}
+
+/* ── Self-contained table shell (desktop ≥768px) ──
+   Jira/Attio-style: the table + its count footer live in one
+   bordered, rounded container distinct from the page background —
+   the list must read as an object, not bleed into the page. On
+   phones the shell dissolves (display:contents) and the card list
+   owns the layout. */
+
+.crm-table-shell {
+  display: contents;
+}
+
+@media (min-width: 768px) {
+  .crm-table-shell {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    margin: 12px 20px 16px;
+    border: 1px solid var(--theme-border-primary);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--theme-bg-primary);
+  }
+
+  /* The container's own border replaces the last row's rule. */
+  .crm-table-shell .crm-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* Same containment for bespoke tables (Contacts). */
+  .crm-table-contained {
+    margin: 12px 20px 16px;
+    border: 1px solid var(--theme-border-primary);
+    border-radius: 10px;
+    background: var(--theme-bg-primary);
+  }
+
+  .crm-table-contained .crm-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+/* ── Screen-centered content columns (≥1440px) ──
+   Same principle as .crm-topbar-center: a centered column should
+   center on the SCREEN, not on the content area (which starts after
+   the rail and reads visibly off-axis). A content-centered column's
+   midpoint sits at 50vw + rail/2 — shift it back by rail/2. Driven by
+   the same --crm-sidebar-width variable, so the sidebar resize keeps
+   the math honest. Below 1440px there may not be enough slack, so
+   columns stay content-centered (same cutoff as the topbar). */
+@media (min-width: 1440px) {
+  .crm-screen-center {
+    transform: translateX(calc(var(--crm-sidebar-width) / -2));
+  }
 }
 
 /* ── Mobile record cards (<768px) ──

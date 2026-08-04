@@ -162,6 +162,11 @@ export function CrmRecordTable<Row>({
       )}
       </div>
 
+      {/* Desktop: table + count footer live in one bordered, rounded
+          shell (Jira/Attio-style self-contained list — the table must
+          not bleed into the page). Mobile: display:contents, the card
+          list owns the layout. */}
+      <div className="crm-table-shell">
       <div className="crm-record-table-scroll flex-1 min-h-0 overflow-auto">
         <table className="crm-table" data-testid={`${testIdPrefix}-table`}>
           <thead>
@@ -312,6 +317,7 @@ export function CrmRecordTable<Row>({
           {renderFooter(visibleRows)}
         </div>
       )}
+      </div>
     </div>
   );
 }

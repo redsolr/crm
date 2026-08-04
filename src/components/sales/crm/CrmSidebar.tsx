@@ -9,7 +9,7 @@
  * SOLID pass.
  */
 
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/stores/use-auth";
 import { useAppContext } from "@/stores/use-app-context";
@@ -38,6 +38,83 @@ interface NavItem {
   count?: number;
   disabled?: boolean;
   icon: ReactNode;
+}
+
+// ── Sidebar resize (desktop-only; CSS hides the handle <768px) ─────
+//
+// The rail width is the `--crm-sidebar-width` CSS variable — the
+// topbar's and content columns' screen-centering math offset by it,
+// so dragging the handle keeps EVERY centering calculation honest.
+// Persisted per browser; double-click resets to the stylesheet
+// default. Pointer capture keeps the drag on the handle element — no
+// window listeners to clean up.
+
+const SIDEBAR_WIDTH_STORAGE_KEY = "crm-sidebar-width";
+const SIDEBAR_MIN_WIDTH = 208;
+const SIDEBAR_MAX_WIDTH = 400;
+
+function clampSidebarWidth(px: number): number {
+  return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, px));
+}
+
+function applySidebarWidth(px: number) {
+  document.documentElement.style.setProperty(
+    "--crm-sidebar-width",
+    `${clampSidebarWidth(px)}px`,
+  );
+}
+
+function SidebarResizeHandle() {
+  // Restore the persisted width once per mount (touches the DOM, not
+  // React state — no re-render, no hydration mismatch).
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
+      if (stored !== null) applySidebarWidth(Number.parseInt(stored, 10));
+    } catch (err) {
+      console.warn("[CrmSidebar] could not restore sidebar width:", err);
+    }
+  }, []);
+
+  return (
+    <div
+      className="crm-sidebar-resize"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize sidebar (double-click to reset)"
+      data-testid="crm-sidebar-resize"
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        e.currentTarget.dataset.dragging = "true";
+      }}
+      onPointerMove={(e) => {
+        if (e.currentTarget.dataset.dragging !== "true") return;
+        applySidebarWidth(e.clientX);
+      }}
+      onPointerUp={(e) => {
+        if (e.currentTarget.dataset.dragging !== "true") return;
+        delete e.currentTarget.dataset.dragging;
+        e.currentTarget.releasePointerCapture(e.pointerId);
+        try {
+          window.localStorage.setItem(
+            SIDEBAR_WIDTH_STORAGE_KEY,
+            String(clampSidebarWidth(e.clientX)),
+          );
+        } catch (err) {
+          console.warn("[CrmSidebar] could not persist sidebar width:", err);
+        }
+      }}
+      onDoubleClick={() => {
+        document.documentElement.style.removeProperty("--crm-sidebar-width");
+        try {
+          window.localStorage.removeItem(SIDEBAR_WIDTH_STORAGE_KEY);
+        } catch (err) {
+          console.warn("[CrmSidebar] could not clear sidebar width:", err);
+        }
+      }}
+    />
+  );
 }
 
 export function CrmSidebar() {
@@ -179,6 +256,7 @@ export function CrmSidebar() {
       data-mobile-open={isMobileSidebarOpen ? "true" : undefined}
       aria-label="CRM navigation"
     >
+      <SidebarResizeHandle />
       {/* Product context selector (ADR-001: one CRM workspace per
           product's GTM motion) — OpenAI-project-picker shaped: it sits
           at the top of the rail, not among nav destinations, and lists
