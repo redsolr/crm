@@ -1493,6 +1493,15 @@ body.is-dragging .project-board-card {
   border-bottom: none;
 }
 
+/* Non-record rows are not clickable — only the chip inside the create
+   band is a button; the record-row pointer cursor must not leak here
+   (founder 2026-08-04). */
+.crm-table tbody tr.crm-table-create-row,
+.crm-table tbody tr.crm-inline-create-row,
+.crm-table tbody tr.crm-record-table-empty-row {
+  cursor: default;
+}
+
 /* Jira-visible chip: a raised rounded button in the footer band, not
    a muted full-width text line (founder 2026-08-04). */
 .crm-table-create-btn {

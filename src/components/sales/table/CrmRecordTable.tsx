@@ -36,7 +36,7 @@
  * hydration never guesses the viewport.
  */
 
-import { useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   DndContext,
@@ -64,6 +64,10 @@ import {
 } from "./table-model";
 import { CrmCellEditor } from "./CrmCellEditor";
 import { CrmCard, CrmCardField } from "./CrmCard";
+import {
+  useGutterAffordances,
+  type RowPointerHandlers,
+} from "./use-gutter-affordances";
 
 /** Insertion slot for `inlineCreate` — the visible neighbors of the
  *  form row (null = list edge). */
@@ -136,43 +140,9 @@ export function CrmRecordTable<Row>({
   // Inline-create slot: index into the visible rows the form renders
   // AT (form sits before that row); "end" pins to the table bottom.
   const [createSlot, setCreateSlot] = useState<number | "end" | null>(null);
-  // Which gutter affordance the pointer offers (Jira mechanic,
-  // founder 2026-08-04): a row's vertical PADDING bands (top/bottom
-  // ~28%) offer the insert "+" at the nearer BOUNDARY SLOT; the inner
-  // text band offers the reorder grip. Tracked per pointer position —
-  // pure CSS hover can't split a row into bands. Normalized to the
-  // slot index (not per-row zones): the band below boundary k and the
-  // band above it both resolve to slot k, so crossing the line keeps
-  // ONE stable button instead of remounting a twin from the other row.
-  // `y` is the anchor line and `x` the shell's MEASURED left edge, both
-  // in ROOT coordinates — the affordances live on an overlay OUTSIDE
-  // the scroll container (in the margin strip left of the shell), so
-  // the row cells never reserve space for them and the icons center on
-  // the real edge regardless of the shell's own margins.
-  const [gutterHover, setGutterHover] = useState<
-    | { kind: "slot"; slot: number; y: number; x: number }
-    | { kind: "grip"; rowId: string; y: number; x: number }
-    | null
-  >(null);
   // The root element anchors the overlay (state, not ref — the portal
   // and rect math need it during render without touching refs).
   const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null);
-  // Hover-intent timer: leaving a row toward the overlay must not
-  // dismiss the overlay before it can be hovered/clicked.
-  const clearTimer = useRef<number | null>(null);
-  const cancelClear = () => {
-    if (clearTimer.current !== null) {
-      window.clearTimeout(clearTimer.current);
-      clearTimer.current = null;
-    }
-  };
-  const scheduleClear = () => {
-    cancelClear();
-    clearTimer.current = window.setTimeout(() => {
-      clearTimer.current = null;
-      setGutterHover(null);
-    }, 150);
-  };
 
   // Post-drop order override so the dropped row doesn't snap back
   // during the gap before the owner's optimistic cache patch lands.
@@ -196,6 +166,20 @@ export function CrmRecordTable<Row>({
   // Manual rank is only truthful while no column sort is applied
   // (Jira's rule) — sorting hides the grips and the between-row "+".
   const manualOrderActive = sort === null;
+
+  // Gutter overlay mechanics (band tracking, hover-intent timers) —
+  // see use-gutter-affordances.ts.
+  const {
+    gutterHover,
+    rowPointerHandlers,
+    cancelClear,
+    scheduleClear,
+    clearNow,
+  } = useGutterAffordances(
+    manualOrderActive &&
+      (onReorder !== undefined || inlineCreate !== undefined),
+    rootEl,
+  );
 
   const filterableColumns = columns.filter((c) => c.filter !== undefined);
   const activeFilterCount = filterableColumns.filter(
@@ -232,60 +216,6 @@ export function CrmRecordTable<Row>({
     setOrderOverride({ forRows: rows, ids: finalOrder.map(getRowId) });
     onReorder(displayRows[oldIndex], finalOrder);
   }
-
-  // Pointer→band tracking on the hovered row. Only rerenders when the
-  // resolved affordance actually changes.
-  const rowPointerHandlers = (rowId: string, rowIndex: number) =>
-    manualOrderActive && (onReorder !== undefined || inlineCreate !== undefined)
-      ? {
-          onPointerMove: (e: React.PointerEvent<HTMLTableRowElement>) => {
-            if (rootEl === null) return;
-            cancelClear();
-            const rect = e.currentTarget.getBoundingClientRect();
-            const rootRect = rootEl.getBoundingClientRect();
-            const rootTop = rootRect.top;
-            // The shell's real left edge, measured — never a constant.
-            const shellRect = e.currentTarget
-              .closest(".crm-table-shell")
-              ?.getBoundingClientRect();
-            const x = (shellRect?.left ?? rootRect.left) - rootRect.left;
-            const rel = (e.clientY - rect.top) / rect.height;
-            const next:
-              | { kind: "slot"; slot: number; y: number; x: number }
-              | { kind: "grip"; rowId: string; y: number; x: number } =
-              rel < 0.28
-                ? { kind: "slot", slot: rowIndex, y: rect.top - rootTop, x }
-                : rel > 0.72
-                  ? {
-                      kind: "slot",
-                      slot: rowIndex + 1,
-                      y: rect.bottom - rootTop,
-                      x,
-                    }
-                  : {
-                      kind: "grip",
-                      rowId,
-                      y: rect.top + rect.height / 2 - rootTop,
-                      x,
-                    };
-            setGutterHover((prev) => {
-              if (
-                prev !== null &&
-                prev.kind === next.kind &&
-                prev.y === next.y &&
-                prev.x === next.x &&
-                (prev.kind === "slot"
-                  ? prev.slot === (next as { slot: number }).slot
-                  : prev.rowId === (next as { rowId: string }).rowId)
-              ) {
-                return prev;
-              }
-              return next;
-            });
-          },
-          onPointerLeave: () => scheduleClear(),
-        }
-      : {};
 
   // The overlay grip for the hovered row — PORTALED to the root so it
   // floats in the margin strip OUTSIDE the scroll container (no
@@ -366,7 +296,10 @@ export function CrmRecordTable<Row>({
 
   const renderCreateRow = (index: number) => (
     <tr
-      key={`inline-create-${index}`}
+      // The END slot keys by name, not index: a successful create grows
+      // the list, and an index key would remount the form mid-rapid-entry
+      // (wiping the kept company/use-case).
+      key={`inline-create-${createSlot === "end" ? "end" : index}`}
       className="crm-inline-create-row"
       data-testid={`${testIdPrefix}-inline-create-row`}
     >
@@ -577,7 +510,7 @@ export function CrmRecordTable<Row>({
       >
       <div
         className="crm-record-table-scroll flex-1 min-h-0 overflow-auto"
-        onScroll={() => setGutterHover(null)}
+        onScroll={clearNow}
       >
         {onReorder !== undefined ? (
           <DndContext
@@ -662,9 +595,8 @@ export function CrmRecordTable<Row>({
             onPointerLeave={scheduleClear}
             onClick={(e) => {
               e.stopPropagation();
-              cancelClear();
               const slot = gutterHover.slot;
-              setGutterHover(null);
+              clearNow();
               setCreateSlot(slot);
             }}
           >
@@ -694,10 +626,7 @@ function CrmSortableRow({
   disabled: boolean;
   onClick?: () => void;
   testIdPrefix: string;
-  rowHandlers: {
-    onPointerMove?: (e: React.PointerEvent<HTMLTableRowElement>) => void;
-    onPointerLeave?: () => void;
-  };
+  rowHandlers: RowPointerHandlers;
   children: (drag: SortableDragProps) => ReactNode;
 }) {
   const {

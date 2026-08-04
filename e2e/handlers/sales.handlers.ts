@@ -616,15 +616,29 @@ export async function setupSalesHandlers(page: Page) {
     const u = new URL(request.url());
 
     if (request.method() === "GET" && u.pathname === "/api/work_items") {
-      const filtered = workItems.filter((w) => {
-        const workspaceId = u.searchParams.get("workspace_id");
-        if (workspaceId && w.workspace_id !== workspaceId) return false;
-        const typeKey = u.searchParams.get("type_key");
-        if (typeKey && w.type.key !== typeKey) return false;
-        const parentId = u.searchParams.get("parent_id");
-        if (parentId && w.parent_id !== parentId) return false;
-        return true;
-      });
+      const filtered = workItems
+        .filter((w) => {
+          const workspaceId = u.searchParams.get("workspace_id");
+          if (workspaceId && w.workspace_id !== workspaceId) return false;
+          const typeKey = u.searchParams.get("type_key");
+          if (typeKey && w.type.key !== typeKey) return false;
+          const parentId = u.searchParams.get("parent_id");
+          if (parentId && w.parent_id !== parentId) return false;
+          return true;
+        })
+        // Server list order (position asc, created_at asc, id asc) —
+        // the manual-rank reorder tests depend on the mock honoring it.
+        .sort((a, b) =>
+          a.position !== b.position
+            ? a.position - b.position
+            : a.created_at !== b.created_at
+              ? a.created_at < b.created_at
+                ? -1
+                : 1
+              : a.id < b.id
+                ? -1
+                : 1,
+        );
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -648,6 +662,11 @@ export async function setupSalesHandlers(page: Page) {
         parentId: (body.parent_id as string | null) ?? null,
         workspaceId: body.workspace_id as string | undefined,
       });
+      // Explicit manual rank (insert-between create) — mirrors the
+      // server's `body.position ?? nextPosition(...)`.
+      if (typeof body.position === "number") {
+        newItem.position = body.position;
+      }
       await route.fulfill({
         status: 201,
         contentType: "application/json",
@@ -703,6 +722,8 @@ export async function setupSalesHandlers(page: Page) {
         const updated: WireWorkItem = {
           ...item,
           state: nextState,
+          position:
+            typeof body.position === "number" ? body.position : item.position,
           version: item.version + 1,
           updated_at: NOW(),
         };

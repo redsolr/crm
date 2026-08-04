@@ -237,6 +237,9 @@ export function SalesPipelineTable({
         label: "Next action date",
         getValue: (opp) => snapshot(opp)?.nextActionDate ?? null,
         sortable: true,
+        // Dates line-break after their hyphens in squeezed columns,
+        // inflating the row (41 → 59px) — never wrap them.
+        cellClassName: "whitespace-nowrap",
         render: (opp) => snapshot(opp)?.nextActionDate ?? "—",
         edit: {
           dataType: "date",
@@ -249,6 +252,7 @@ export function SalesPipelineTable({
         label: "Expected close",
         getValue: (opp) => snapshot(opp)?.expectedCloseDate ?? null,
         sortable: true,
+        cellClassName: "whitespace-nowrap",
         render: (opp) => snapshot(opp)?.expectedCloseDate ?? "—",
         edit: {
           dataType: "date",
