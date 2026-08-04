@@ -9,9 +9,10 @@
  * scope (`.crm-app` in globals.css), zero customer-app chrome. This
  * file owns ONLY the module gate, the workspace re-point, the layout
  * skeleton, and the always-mounted overlays (palette / Ask) — global
- * search is inline chrome now (topbar `GlobalSearchBar` dropdown +
- * sidebar `SidebarSearch` filter), not an overlay. Sidebar and topbar
- * were split out in the 2026-07-18 round-2 SOLID pass.
+ * search is inline chrome now (the topbar `GlobalSearchBar` dropdown —
+ * the sidebar's own filter box was removed 2026-08-04), not an
+ * overlay. Sidebar and topbar were split out in the 2026-07-18 round-2
+ * SOLID pass.
  *
  * Module gate: an org whose workspaces don't carry the `sales` module
  * key can never render this surface — direct URLs bounce to

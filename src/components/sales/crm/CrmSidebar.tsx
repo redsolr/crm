@@ -1,15 +1,19 @@
 "use client";
 
 /**
- * CRM sidebar — workspace/product selector, quick-actions row, an
- * inline Slack-style filter (see `SidebarSearch` — it narrows the rail
- * IN PLACE: matching views + records replace the nav while a query is
- * typed), the workflow/records/insights nav with live counts, and the
- * account footer. Split out of CrmShell in the 2026-07-18 round-2
- * SOLID pass.
+ * CRM sidebar — workspace/product selector, the workflow/records/
+ * insights nav with live counts, and the account footer. Split out of
+ * CrmShell in the 2026-07-18 round-2 SOLID pass.
+ *
+ * The inline sidebar find box was REMOVED 2026-08-04 (founder): with
+ * ~8 nav items a rail filter is pointless (Slack needs one because its
+ * rail holds hundreds of conversations), and record search + command
+ * mode already live in the topbar search (`GlobalSearchBar` — whose
+ * empty-query suggestions now carry the nav destinations) and the ⌘K
+ * palette.
  */
 
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/stores/use-auth";
 import { useAppContext } from "@/stores/use-app-context";
@@ -25,10 +29,6 @@ import { useCommitmentsInbox } from "@/lib/sales/use-commitments-inbox";
 import { SALES_TYPE_KEYS } from "@/lib/sales/constants";
 import { useLayoutUI } from "@/stores/use-layout-ui";
 import AccountMenu from "@/components/layout/AccountMenu";
-import {
-  SidebarSearch,
-  type SidebarViewItem,
-} from "@/components/sales/search/SidebarSearch";
 
 interface NavItem {
   id: string;
@@ -226,29 +226,6 @@ export function CrmSidebar() {
     []
   );
 
-  // Inline filter (Slack-style): while a query is typed the nav below
-  // is swapped for SidebarSearch's in-place matches. Every nav
-  // destination doubles as a filterable "view" row.
-  const [searchQuery, setSearchQuery] = useState("");
-  const searching = searchQuery.trim() !== "";
-  const searchViews = useMemo<SidebarViewItem[]>(
-    () => [
-      ...[...workflowItems, ...recordItems, ...insightItems].map((item) => ({
-        id: item.id,
-        label: item.label,
-        href: item.href,
-        icon: item.icon,
-      })),
-      {
-        id: "settings",
-        label: "Settings",
-        href: "/account",
-        icon: <SettingsIcon />,
-      },
-    ],
-    [workflowItems, recordItems, insightItems]
-  );
-
   return (
     <aside
       className="crm-sidebar"
@@ -272,17 +249,7 @@ export function CrmSidebar() {
         }}
       />
 
-      {/* ONE find box (user decision 2026-07-19): normal typing filters
-          the rail in place; a leading `/` engages command mode — the
-          ⌘K quick-actions palette. */}
-      <SidebarSearch
-        query={searchQuery}
-        onQueryChange={setSearchQuery}
-        views={searchViews}
-      />
-
-      {!searching && (
-        <nav className="crm-nav">
+      <nav className="crm-nav">
           <div className="crm-nav-section">Workflow</div>
           {workflowItems.map((item) => (
             <CrmNavButton key={item.id} item={item} pathname={pathname} />
@@ -310,9 +277,8 @@ export function CrmSidebar() {
               <SettingsIcon />
             </span>
             <span className="flex-1 truncate">Settings</span>
-          </button>
-        </nav>
-      )}
+        </button>
+      </nav>
 
       {/* Footer doubles as the account-menu trigger (web-app parity:
           the sidebar's user slot opens the AccountMenu popover). The

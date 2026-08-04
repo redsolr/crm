@@ -37,7 +37,11 @@ import {
   useCrmSearch,
 } from "./useCrmSearch";
 import { MagnifierIcon, SearchResultsList } from "./SearchResultsList";
-import { SearchSuggestions } from "./SearchSuggestions";
+import {
+  SearchSuggestions,
+  SUGGESTED_NAV,
+  type SuggestedNavItem,
+} from "./SearchSuggestions";
 
 export function GlobalSearchBar() {
   const router = useRouter();
@@ -54,7 +58,11 @@ export function GlobalSearchBar() {
   // Mode follows the LIVE input (not the debounced query) so the
   // suggestions never flash while the debounce catches up.
   const suggestMode = query.trim().length < MIN_QUERY_LENGTH;
-  const navLength = suggestMode ? recents.length : flatHits.length;
+  // Suggest mode's flat keyboard space: recents first, then the
+  // Suggested nav rows (Slack shape — see SearchSuggestions).
+  const navLength = suggestMode
+    ? recents.length + SUGGESTED_NAV.length
+    : flatHits.length;
 
   // Derived clamp (no state-sync effect) — same pattern as the palette.
   const activeIndex = Math.min(selected, Math.max(0, navLength - 1));
@@ -106,6 +114,14 @@ export function GlobalSearchBar() {
     inputRef.current?.focus();
   }
 
+  function openNav(item: SuggestedNavItem) {
+    router.push(item.href);
+    setQuery("");
+    setSelected(0);
+    setIsOpen(false);
+    inputRef.current?.blur();
+  }
+
   function clearRecents() {
     clearRecentSearches();
     setRecents([]);
@@ -122,8 +138,13 @@ export function GlobalSearchBar() {
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (suggestMode) {
-        const term = recents[activeIndex];
-        if (term !== undefined) applyRecent(term);
+        if (activeIndex < recents.length) {
+          const term = recents[activeIndex];
+          if (term !== undefined) applyRecent(term);
+        } else {
+          const item = SUGGESTED_NAV[activeIndex - recents.length];
+          if (item !== undefined) openNav(item);
+        }
         return;
       }
       const hit = flatHits[activeIndex];
@@ -187,6 +208,7 @@ export function GlobalSearchBar() {
               activeIndex={activeIndex}
               onHover={setSelected}
               onApply={applyRecent}
+              onOpenNav={openNav}
               onClearRecents={clearRecents}
             />
           ) : waitingForDebounce ? (

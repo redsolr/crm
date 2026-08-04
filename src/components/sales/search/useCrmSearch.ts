@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Shared debounced keyword-search state for the CRM's two inline
- * search surfaces — the topbar dropdown (`GlobalSearchBar`) and the
- * sidebar filter (`SidebarSearch`).
+ * Debounced keyword-search state for the CRM's inline search surface —
+ * the topbar dropdown (`GlobalSearchBar`; the sidebar filter was
+ * removed 2026-08-04).
  *
  * Attio/Linear-class record finding over the platform's keyword (FTS)
  * search lane: 200ms-debounced `GET /api/search` on every keystroke,

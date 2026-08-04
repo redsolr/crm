@@ -7,11 +7,10 @@
  *   render in a dropdown ANCHORED under the input, grouped with
  *   identifiers, and full keyboard nav (↓ + Enter) opens the selected
  *   record and closes the dropdown.
- * - The sidebar ("explorer") carries ONE find box that narrows IN
- *   PLACE: matching nav views + records replace the nav while typing;
- *   Esc/clear restores the nav; opening a match routes and resets.
- *   A leading `/` engages command mode: the box clears and the ⌘K
- *   quick-actions palette opens.
+ * - Before typing, the dropdown SUGGESTS (Slack shape, 2026-08-04):
+ *   recent searches + actionable "Suggested" nav rows + a keycap
+ *   footer. The sidebar carries NO find box anymore — nav-jump lives
+ *   here and in the ⌘K palette.
  *
  * The account result is seeded through the real UI first so the
  * search mock can return an id the sales.handlers store actually
@@ -24,7 +23,7 @@ import { setupGlobalSearchHandlers } from "./handlers/search.handlers";
 import { STEP_TIMEOUT, createAccountViaUi } from "./helpers/sales-ui";
 
 test.describe("Global search", () => {
-  test("topbar `/` dropdown + sidebar inline filter route to records in place", async ({
+  test("topbar `/` dropdown: suggestions, grouped results, keyboard nav", async ({
     authedPage,
   }) => {
     await setupSalesHandlers(authedPage);
@@ -86,13 +85,32 @@ test.describe("Global search", () => {
     });
     // No modal backdrop — the page underneath stays visible.
     await expect(authedPage.getByTestId("sales-pipeline")).toBeVisible();
-    // Pre-typing the dropdown suggests instead of nagging: the legend
-    // of searchable kinds renders; no recents yet (nothing searched).
-    await expect(authedPage.getByTestId("crm-search-kinds")).toBeVisible();
-    await expect(authedPage.getByTestId("crm-search-kinds")).toContainText(
-      "Companies"
-    );
+    // Pre-typing the dropdown SUGGESTS (Slack shape, 2026-08-04):
+    // actionable nav rows + the keycap footer; no recents yet
+    // (nothing searched).
+    await expect(authedPage.getByTestId("crm-search-nav")).toBeVisible();
+    await expect(
+      authedPage.getByTestId("crm-search-nav-companies")
+    ).toContainText("Companies");
+    await expect(
+      authedPage.getByTestId("crm-search-suggest-footer")
+    ).toContainText("Select");
     await expect(authedPage.getByTestId("crm-search-recent")).toHaveCount(0);
+    // A Suggested nav row ROUTES (this carries the nav-jump job of the
+    // removed sidebar find box).
+    await authedPage.getByTestId("crm-search-nav-contacts").click();
+    await expect(authedPage).toHaveURL(/\/sales\/contacts$/, {
+      timeout: STEP_TIMEOUT,
+    });
+    await expect(authedPage.getByTestId("crm-search-dropdown")).toHaveCount(0);
+    await authedPage.getByTestId("sales-nav-pipeline").click();
+    await expect(authedPage.getByTestId("sales-pipeline")).toBeVisible({
+      timeout: STEP_TIMEOUT,
+    });
+    await authedPage.keyboard.press("/");
+    await expect(authedPage.getByTestId("crm-search-dropdown")).toBeVisible({
+      timeout: STEP_TIMEOUT,
+    });
 
     // ── Debounced FTS call → grouped results with identifiers ─────
     await authedPage.getByTestId("crm-search-input").fill("acme");
@@ -149,56 +167,11 @@ test.describe("Global search", () => {
     await authedPage.keyboard.press("Escape");
     await expect(authedPage.getByTestId("crm-search-dropdown")).toHaveCount(0);
 
-    // ── Sidebar filter: view matches replace the nav in place ─────
-    const sidebarInput = authedPage.getByTestId("crm-sidebar-search-input");
-    await sidebarInput.fill("conta");
-    await expect(authedPage.getByTestId("sales-nav-pipeline")).toHaveCount(0);
-    await authedPage.getByTestId("crm-sidebar-search-view-contacts").click();
-    await expect(authedPage).toHaveURL(/\/sales\/contacts$/, {
-      timeout: STEP_TIMEOUT,
-    });
-    // Opening a match resets the filter and restores the nav.
-    await expect(sidebarInput).toHaveValue("");
-    await expect(authedPage.getByTestId("sales-nav-pipeline")).toBeVisible();
-
-    // ── Sidebar filter: record hits render grouped, Esc restores ──
-    await sidebarInput.fill("acme");
+    // ── The sidebar carries NO find box (removed 2026-08-04) — the
+    //    topbar suggestions + ⌘K own search and nav-jump. ───────────
     await expect(
-      authedPage.getByTestId("crm-sidebar-search-group-account")
-    ).toBeVisible({ timeout: STEP_TIMEOUT });
-    await expect(
-      authedPage.getByTestId("crm-sidebar-search-result")
-    ).toHaveCount(4);
-    await expect(authedPage.getByTestId("sales-nav-pipeline")).toHaveCount(0);
-    await sidebarInput.press("Escape");
-    await expect(sidebarInput).toHaveValue("");
-    await expect(authedPage.getByTestId("sales-nav-pipeline")).toBeVisible();
-
-    // ── Sidebar filter: opening a record routes to its page ───────
-    await sidebarInput.fill("acme");
-    await authedPage
-      .locator(
-        `[data-testid='crm-sidebar-search-result'][data-result-id='${accountId}']`
-      )
-      .click();
-    await expect(authedPage).toHaveURL(
-      new RegExp(`/sales/account/${accountId}$`),
-      { timeout: STEP_TIMEOUT }
-    );
-    await expect(authedPage.getByTestId("sales-account-title")).toContainText(
-      "Acme Legal"
-    );
-    await expect(sidebarInput).toHaveValue("");
-    await expect(authedPage.getByTestId("sales-nav-pipeline")).toBeVisible();
-
-    // ── Sidebar box: leading `/` engages the ⌘K command palette ───
-    await sidebarInput.fill("/");
-    await expect(authedPage.getByTestId("crm-command-palette")).toBeVisible({
-      timeout: STEP_TIMEOUT,
-    });
-    await expect(sidebarInput).toHaveValue("");
-    await authedPage.keyboard.press("Escape");
-    await expect(authedPage.getByTestId("crm-command-palette")).toHaveCount(0);
+      authedPage.getByTestId("crm-sidebar-search-input")
+    ).toHaveCount(0);
     await expect(authedPage.getByTestId("sales-nav-pipeline")).toBeVisible();
   });
 });

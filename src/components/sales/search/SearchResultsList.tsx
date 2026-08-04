@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * Grouped search-result rows shared by the topbar dropdown
- * (`GlobalSearchBar`) and the sidebar filter (`SidebarSearch`).
+ * Grouped search-result rows for the topbar dropdown
+ * (`GlobalSearchBar` — the CRM's single search surface since the
+ * sidebar filter's 2026-08-04 removal).
  *
  * Pure presentation over a `CrmSearchState`: loading shimmer, empty
  * row, then groups in fixed kind order. Keyboard selection is owned by

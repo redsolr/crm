@@ -1,36 +1,68 @@
 "use client";
 
 /**
- * Empty-query content for the topbar search dropdown — what Slack
- * shows before you type: your recent searches (interactive, keyboard-
- * navigable via the parent's flat index space) plus a legend of what
- * the search reaches, so the surface teaches itself.
+ * Empty-query content for the topbar search dropdown — Slack-shaped
+ * (founder 2026-08-04, modeled on Slack's search popover + the OpenAI
+ * console palette): ACTIONABLE rows, not a passive legend.
+ *
+ *   1. Recent searches (interactive — Enter/click re-applies the term)
+ *   2. "Suggested" navigation rows (Enter/click routes) — this also
+ *      carries the nav-jump job of the removed sidebar find box
+ *   3. A keycap footer (↑↓ select · Enter open · Esc close)
+ *
+ * Keyboard selection is owned by the parent over ONE flat index space:
+ * recents first, then the nav rows — `SUGGESTED_NAV.length` and the
+ * parent's `recents.length` define it together.
  */
 
+import type { ReactNode } from "react";
 import {
-  SEARCH_GROUP_ORDER,
-  type SearchResultKind,
-} from "@/lib/sales/search-results";
-import { KindIcon } from "./SearchResultsList";
+  BarChart3,
+  Building2,
+  Inbox,
+  LineChart,
+  MessageSquare,
+  Mic,
+  Settings,
+  Users,
+} from "lucide-react";
+
+export interface SuggestedNavItem {
+  id: string;
+  label: string;
+  href: string;
+  icon: ReactNode;
+}
+
+/** Navigation destinations offered before a query exists — mirrors the
+ *  sidebar nav (Workflow / Records / Insights / Account). */
+export const SUGGESTED_NAV: readonly SuggestedNavItem[] = [
+  { id: "pipeline", label: "Pipeline", href: "/sales", icon: <BarChart3 size={14} /> },
+  { id: "inbox", label: "Inbox", href: "/sales/inbox", icon: <Inbox size={14} /> },
+  { id: "chat", label: "Chat", href: "/sales/ask", icon: <MessageSquare size={14} /> },
+  { id: "interviews", label: "Interviews", href: "/sales/interviews", icon: <Mic size={14} /> },
+  { id: "companies", label: "Companies", href: "/sales/companies", icon: <Building2 size={14} /> },
+  { id: "contacts", label: "Contacts", href: "/sales/contacts", icon: <Users size={14} /> },
+  { id: "reports", label: "Reports", href: "/sales/reports", icon: <LineChart size={14} /> },
+  { id: "settings", label: "Settings", href: "/account", icon: <Settings size={14} /> },
+];
 
 interface SearchSuggestionsProps {
   recents: string[];
-  /** Parent's active row index over `recents`. */
+  /** Parent's active row index over recents ++ SUGGESTED_NAV. */
   activeIndex: number;
   onHover: (index: number) => void;
   onApply: (term: string) => void;
+  onOpenNav: (item: SuggestedNavItem) => void;
   onClearRecents: () => void;
 }
-
-/** Legend chips — the "Other" junk drawer isn't worth advertising. */
-const LEGEND_KINDS: ReadonlyArray<{ kind: SearchResultKind; label: string }> =
-  SEARCH_GROUP_ORDER.filter((g) => g.kind !== "other");
 
 export function SearchSuggestions({
   recents,
   activeIndex,
   onHover,
   onApply,
+  onOpenNav,
   onClearRecents,
 }: SearchSuggestionsProps) {
   return (
@@ -77,27 +109,68 @@ export function SearchSuggestions({
         </div>
       )}
 
-      <div className="crm-search-kinds px-4 pt-2 pb-3" data-testid="crm-search-kinds">
-        <div className="crm-search-kinds-label pb-1.5 text-[11px] font-medium uppercase tracking-wider text-[var(--theme-text-muted)]">
-          Search across
+      <div className="crm-search-nav" data-testid="crm-search-nav">
+        <div className="crm-search-nav-label px-4 pt-2 pb-1 text-[11px] font-medium uppercase tracking-wider text-[var(--theme-text-muted)]">
+          Suggested
         </div>
-        <div className="crm-search-kinds-chips flex flex-wrap gap-1.5">
-          {LEGEND_KINDS.map(({ kind, label }) => (
-            <span
-              key={kind}
-              className="crm-search-kinds-chip inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-[var(--theme-border-primary)] bg-[var(--theme-bg-tertiary)] text-xs text-[var(--theme-text-secondary)]"
-            >
-              <KindIcon kind={kind} />
-              {label}
-            </span>
-          ))}
-        </div>
-        <p className="crm-search-kinds-hint pt-2 text-xs text-[var(--theme-text-muted)]">
-          Try a firm name, a deal title, a person, or words from a call
-          note.
-        </p>
+        <ul className="crm-search-nav-list">
+          {SUGGESTED_NAV.map((item, i) => {
+            const index = recents.length + i;
+            return (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  data-testid={`crm-search-nav-${item.id}`}
+                  className={`crm-search-nav-item w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm transition-colors ${
+                    index === activeIndex
+                      ? "bg-[var(--theme-bg-active)] text-[var(--theme-text-primary)]"
+                      : "text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-hover)]"
+                  }`}
+                  onMouseEnter={() => onHover(index)}
+                  onClick={() => onOpenNav(item)}
+                >
+                  <span className="crm-search-nav-icon flex-shrink-0 text-[var(--theme-text-muted)]">
+                    {item.icon}
+                  </span>
+                  <span className="crm-search-nav-term flex-1 truncate">
+                    {item.label}
+                  </span>
+                  {index === activeIndex && <FooterKey label="Enter" />}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {/* Slack's footer bar — the keyboard legend. */}
+      <div
+        className="crm-search-suggest-footer flex items-center gap-3 px-4 pt-2 pb-1 mt-1 border-t border-[var(--theme-border-primary)] text-[11px] text-[var(--theme-text-muted)]"
+        data-testid="crm-search-suggest-footer"
+      >
+        <span className="flex items-center gap-1">
+          <FooterKey label="↑" />
+          <FooterKey label="↓" />
+          Select
+        </span>
+        <span className="flex items-center gap-1">
+          <FooterKey label="Enter" />
+          Open
+        </span>
+        <span className="flex items-center gap-1">
+          <FooterKey label="Esc" />
+          Close
+        </span>
       </div>
     </div>
+  );
+}
+
+function FooterKey({ label }: { label: string }) {
+  return (
+    <kbd className="px-1 py-0.5 rounded border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-tertiary)] font-mono text-[10px] leading-none">
+      {label}
+    </kbd>
   );
 }
 
