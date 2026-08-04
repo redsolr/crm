@@ -19,34 +19,11 @@
 import { test, expect } from "./fixtures/auth.fixture";
 import type { Page } from "@playwright/test";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
-
-const STEP_TIMEOUT = 15_000;
-
-async function addCompany(page: Page, name: string) {
-  await page.getByTestId("sales-add-account-button").click();
-  await page.getByTestId("sales-account-name-input").fill(name);
-  await page.getByTestId("sales-account-source-select").selectOption("intro");
-  await page.getByRole("button", { name: /Add company/i }).click();
-  await expect(page.getByTestId("sales-account-name-input")).toHaveCount(0, {
-    timeout: STEP_TIMEOUT,
-  });
-}
-
-async function addOpportunity(page: Page, title: string, accountLabel: string) {
-  await page.getByTestId("sales-add-opportunity-button").click();
-  await page.getByTestId("sales-opportunity-title-input").fill(title);
-  await page
-    .getByTestId("sales-opportunity-account-select")
-    .selectOption({ label: accountLabel });
-  await page
-    .getByTestId("sales-opportunity-use-case-select")
-    .selectOption("matter_chaos");
-  await page.getByRole("button", { name: /Create opportunity/i }).click();
-  await expect(page.getByTestId("sales-opportunity-title-input")).toHaveCount(
-    0,
-    { timeout: STEP_TIMEOUT },
-  );
-}
+import {
+  STEP_TIMEOUT,
+  createAccountViaUi,
+  createOpportunityViaUi,
+} from "./helpers/sales-ui";
 
 /** Seed a company + three opportunities and land on the table. */
 async function seedPipeline(page: Page) {
@@ -55,10 +32,16 @@ async function seedPipeline(page: Page) {
   await expect(page.getByTestId("sales-pipeline")).toBeVisible({
     timeout: STEP_TIMEOUT,
   });
-  await addCompany(page, "Probe Co");
-  await addOpportunity(page, "Deal A", "Probe Co");
-  await addOpportunity(page, "Deal B", "Probe Co");
-  await addOpportunity(page, "Deal C", "Probe Co");
+  await createAccountViaUi(page, "Probe Co");
+  await expect(page.getByTestId("sales-account-name-input")).toHaveCount(0, {
+    timeout: STEP_TIMEOUT,
+  });
+  for (const title of ["Deal A", "Deal B", "Deal C"]) {
+    await createOpportunityViaUi(page, title);
+    await expect(
+      page.getByTestId("sales-opportunity-title-input"),
+    ).toHaveCount(0, { timeout: STEP_TIMEOUT });
+  }
   await expect(page.getByTestId("sales-pipeline-row")).toHaveCount(3, {
     timeout: STEP_TIMEOUT,
   });
