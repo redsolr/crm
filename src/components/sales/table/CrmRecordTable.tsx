@@ -144,12 +144,14 @@ export function CrmRecordTable<Row>({
   // slot index (not per-row zones): the band below boundary k and the
   // band above it both resolve to slot k, so crossing the line keeps
   // ONE stable button instead of remounting a twin from the other row.
-  // `y` is the anchor line in ROOT coordinates — the affordances live
-  // on an overlay OUTSIDE the scroll container (in the margin strip
-  // left of the shell), so the row cells never reserve space for them.
+  // `y` is the anchor line and `x` the shell's MEASURED left edge, both
+  // in ROOT coordinates — the affordances live on an overlay OUTSIDE
+  // the scroll container (in the margin strip left of the shell), so
+  // the row cells never reserve space for them and the icons center on
+  // the real edge regardless of the shell's own margins.
   const [gutterHover, setGutterHover] = useState<
-    | { kind: "slot"; slot: number; y: number }
-    | { kind: "grip"; rowId: string; y: number }
+    | { kind: "slot"; slot: number; y: number; x: number }
+    | { kind: "grip"; rowId: string; y: number; x: number }
     | null
   >(null);
   // The root element anchors the overlay (state, not ref — the portal
@@ -240,29 +242,38 @@ export function CrmRecordTable<Row>({
             if (rootEl === null) return;
             cancelClear();
             const rect = e.currentTarget.getBoundingClientRect();
-            const rootTop = rootEl.getBoundingClientRect().top;
+            const rootRect = rootEl.getBoundingClientRect();
+            const rootTop = rootRect.top;
+            // The shell's real left edge, measured — never a constant.
+            const shellRect = e.currentTarget
+              .closest(".crm-table-shell")
+              ?.getBoundingClientRect();
+            const x = (shellRect?.left ?? rootRect.left) - rootRect.left;
             const rel = (e.clientY - rect.top) / rect.height;
             const next:
-              | { kind: "slot"; slot: number; y: number }
-              | { kind: "grip"; rowId: string; y: number } =
+              | { kind: "slot"; slot: number; y: number; x: number }
+              | { kind: "grip"; rowId: string; y: number; x: number } =
               rel < 0.28
-                ? { kind: "slot", slot: rowIndex, y: rect.top - rootTop }
+                ? { kind: "slot", slot: rowIndex, y: rect.top - rootTop, x }
                 : rel > 0.72
                   ? {
                       kind: "slot",
                       slot: rowIndex + 1,
                       y: rect.bottom - rootTop,
+                      x,
                     }
                   : {
                       kind: "grip",
                       rowId,
                       y: rect.top + rect.height / 2 - rootTop,
+                      x,
                     };
             setGutterHover((prev) => {
               if (
                 prev !== null &&
                 prev.kind === next.kind &&
                 prev.y === next.y &&
+                prev.x === next.x &&
                 (prev.kind === "slot"
                   ? prev.slot === (next as { slot: number }).slot
                   : prev.rowId === (next as { rowId: string }).rowId)
@@ -292,7 +303,12 @@ export function CrmRecordTable<Row>({
       <button
         type="button"
         className="crm-drag-handle"
-        style={{ top: gutterHover.y }}
+        style={
+          {
+            top: gutterHover.y,
+            "--gutter-edge": `${gutterHover.x}px`,
+          } as React.CSSProperties
+        }
         aria-label="Drag to reorder"
         data-testid={`${testIdPrefix}-drag-handle`}
         ref={drag.setActivatorNodeRef}
@@ -634,7 +650,12 @@ export function CrmRecordTable<Row>({
           <button
             type="button"
             className="crm-row-insert-zone"
-            style={{ top: gutterHover.y }}
+            style={
+              {
+                top: gutterHover.y,
+                "--gutter-edge": `${gutterHover.x}px`,
+              } as React.CSSProperties
+            }
             aria-label="Insert a row here"
             data-testid={`${testIdPrefix}-insert-after`}
             onPointerEnter={cancelClear}

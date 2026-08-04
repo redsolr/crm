@@ -1401,8 +1401,9 @@ body.is-dragging .project-board-card {
    hovered row via inline `top`, drag listeners are the row's own. */
 .crm-drag-handle {
   position: absolute;
-  /* Centered ON the shell's left edge (x=26): 26 - 20/2. */
-  left: 16px;
+  /* Centered ON the shell's MEASURED left edge (--gutter-edge is set
+     inline from a live rect — see CrmRecordTable): edge - width/2. */
+  left: calc(var(--gutter-edge, 26px) - 10px);
   transform: translateY(-50%);
   z-index: 30;
   display: inline-flex;
@@ -1454,7 +1455,7 @@ body.is-dragging .project-board-card {
 .crm-row-insert-zone::after {
   content: "";
   position: absolute;
-  left: 26px;
+  left: var(--gutter-edge, 26px);
   right: 0;
   top: 50%;
   height: 2px;
@@ -1463,11 +1464,11 @@ body.is-dragging .project-board-card {
   pointer-events: none;
 }
 
-/* Raised, solid button straddling the shell's left edge (x=26):
-   26 - 22/2 — same center line as the grip. */
+/* Raised, solid button straddling the shell's MEASURED left edge —
+   same center line as the grip. */
 .crm-row-insert-icon {
   position: absolute;
-  left: 15px;
+  left: calc(var(--gutter-edge, 26px) - 11px);
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
