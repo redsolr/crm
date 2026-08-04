@@ -17,7 +17,7 @@
 #      E2E_WORKOS_TEAMMATE_EMAIL, E2E_WORKOS_TEAMMATE_PASSWORD,
 #      CRM_MCP_TOKEN
 #   2. Set repo variable RUN_REAL_AUTH_E2E=true
-name: ci
+name: ci/cd
 on:
   push:
     branches: [main, develop]
