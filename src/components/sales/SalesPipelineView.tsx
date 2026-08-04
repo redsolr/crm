@@ -47,8 +47,21 @@ import {
 import { useAccountAttributes } from "@/lib/sales/use-account-attributes";
 import { formatTHB } from "@/lib/format-currency";
 import { SalesPipelineTable } from "./table/SalesPipelineTable";
+import { CrmTableSkeleton } from "./table/CrmTableSkeleton";
 import { usePeekRoute } from "@/lib/sales/use-peek-route";
 import { SalesPipelineSummary } from "./SalesPipelineSummary";
+
+/** Static header set — mirrors SalesPipelineTable's column labels so
+ *  the first-load skeleton renders the real headers. */
+const PIPELINE_SKELETON_COLUMNS = [
+  { id: "title", label: "Opportunity" },
+  { id: "account", label: "Company" },
+  { id: "stage", label: "Stage" },
+  { id: "value_estimate", label: "Value", align: "right" },
+  { id: "next_action", label: "Next action" },
+  { id: "next_action_date", label: "Next action date" },
+  { id: "expected_close_date", label: "Expected close" },
+] as const;
 
 /** localStorage key persisting the kanban ⇄ table mode choice. */
 const PIPELINE_VIEW_MODE_STORAGE_KEY = "crm-pipeline-view-mode";
@@ -150,12 +163,28 @@ export function SalesPipelineView() {
   // Account snapshots feed the card's company-logo row (favicon domain).
   const accountAttributesById = useAccountAttributes(allAccounts, accountDefs);
 
-  if (isLoading) {
+  // First load only (no cached data): table mode gets the real-chrome
+  // skeleton (header labels mirror SalesPipelineTable's static
+  // columns); board/summary modes keep the quiet centered line — a
+  // kanban skeleton is a different shape and those modes are opt-in.
+  if (isLoading || opportunities.isLoading) {
     return (
-      <div className="sales-pipeline-view flex-1 min-w-0 flex items-center justify-center">
-        <span className="text-sm text-[var(--theme-text-muted)]">
-          Loading Sales pipeline…
-        </span>
+      <div className="sales-pipeline-view crm-mobile-page-scroll flex-1 min-w-0 min-h-0 flex flex-col">
+        <div className="crm-view-header">
+          <h1 className="crm-view-title">Pipeline</h1>
+        </div>
+        {viewMode === "table" ? (
+          <CrmTableSkeleton
+            columns={PIPELINE_SKELETON_COLUMNS}
+            testIdPrefix="sales-pipeline"
+          />
+        ) : (
+          <div className="flex-1 min-h-0 flex items-center justify-center">
+            <span className="text-sm text-[var(--theme-text-muted)]">
+              Loading Sales pipeline…
+            </span>
+          </div>
+        )}
       </div>
     );
   }
@@ -345,6 +374,7 @@ export function SalesPipelineView() {
         <SalesPipelineTable
           bundle={bundle}
           opportunities={filteredOpportunities}
+          refreshing={opportunities.isFetching && !opportunities.isLoading}
           accountsById={Object.fromEntries(allAccounts.map((a) => [a.id, a]))}
           attributesById={attributesByOpportunityId}
           accountAttributesById={accountAttributesById}

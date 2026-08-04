@@ -26,6 +26,19 @@ import { CreateContactModal } from "./CreateContactModal";
 import { SalesPeekPanel } from "./peek/SalesPeekPanel";
 import { usePeekRoute } from "@/lib/sales/use-peek-route";
 import { CrmCard, CrmCardField } from "./table/CrmCard";
+import { CrmTableSkeleton } from "./table/CrmTableSkeleton";
+import { CrmRefreshIndicator } from "./table/CrmRefreshIndicator";
+
+/** Static header set — mirrors the bespoke <thead> below so the
+ *  first-load skeleton renders the real column labels. */
+const CONTACT_SKELETON_COLUMNS = [
+  { id: "name", label: "Name" },
+  { id: "company", label: "Company" },
+  { id: "role", label: "Role" },
+  { id: "email", label: "Email" },
+  { id: "decision_role", label: "Decision role" },
+  { id: "linkedin", label: "LinkedIn" },
+] as const;
 
 export function SalesContactsView() {
   const { bundle, isLoading: bundleLoading } = useSalesWorkspaceBundle();
@@ -72,12 +85,17 @@ export function SalesContactsView() {
     [rows],
   );
 
+  // First load only (no cached data): real chrome + shimmer rows.
   if (bundleLoading || contacts.isLoading) {
     return (
-      <div className="sales-contacts-view flex-1 min-w-0 flex items-center justify-center">
-        <span className="text-sm text-[var(--theme-text-muted)]">
-          Loading contacts…
-        </span>
+      <div className="sales-contacts-view crm-mobile-page-scroll flex-1 min-w-0 flex flex-col min-h-0">
+        <div className="crm-view-header">
+          <h1 className="crm-view-title">Contacts</h1>
+        </div>
+        <CrmTableSkeleton
+          columns={CONTACT_SKELETON_COLUMNS}
+          testIdPrefix="sales-contacts"
+        />
       </div>
     );
   }
@@ -92,6 +110,10 @@ export function SalesContactsView() {
         <span className="crm-view-meta">
           {rows.length} contact{rows.length === 1 ? "" : "s"}
         </span>
+        <CrmRefreshIndicator
+          active={contacts.isFetching && !contacts.isLoading}
+          testId="sales-contacts-refreshing"
+        />
         <div className="flex-1" />
         <button
           data-testid="sales-add-contact-button"

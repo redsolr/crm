@@ -5,9 +5,17 @@
  * work-item fetch, child-item lists (for an opportunity's call_notes
  * + commitments + the account's opportunities), and attribute-value
  * fetch keyed by work_item_id.
+ *
+ * The four WORKSPACE-level list queries keep the previous result
+ * visible while a new key resolves (`placeholderData:
+ * keepPreviousData`) — a key change there only means a workspace
+ * switch, so stale-list-then-refresh beats table-skeleton flash. The
+ * RECORD-scoped queries (single item, children, attribute values)
+ * deliberately do NOT: their key changes mean a DIFFERENT record, and
+ * showing the previous record's data against the new one would lie.
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { workItemsApi, type WorkItem } from "@/lib/workItemsApi";
 import { attributesApi } from "@/lib/attributesApi";
 import { queryKeys } from "@/queries/query-keys";
@@ -35,6 +43,7 @@ export function useOpportunitiesQuery(
     },
     enabled: enabled && !!workspaceId,
     staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -60,6 +69,7 @@ export function useAccountsQuery(
     },
     enabled: enabled && !!workspaceId,
     staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -85,6 +95,7 @@ export function useCallNotesQuery(
     },
     enabled: enabled && !!workspaceId,
     staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -108,6 +119,7 @@ export function useContactsQuery(
     },
     enabled: enabled && !!workspaceId,
     staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
   });
 }
 

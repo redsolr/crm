@@ -64,6 +64,7 @@ import {
 } from "./table-model";
 import { CrmCellEditor } from "./CrmCellEditor";
 import { CrmCard, CrmCardField } from "./CrmCard";
+import { CrmRefreshIndicator } from "./CrmRefreshIndicator";
 import {
   useGutterAffordances,
   type RowPointerHandlers,
@@ -102,6 +103,10 @@ interface Props<Row> {
    *  renders it as its own row above the filter bar; on phones it
    *  collapses into the same "Filters" toggle as the filter bar. */
   toolbar?: ReactNode;
+  /** Background refetch in flight over already-visible rows — owners
+   *  pass `isFetching && !isLoading`. Renders the subtle toolbar
+   *  refresh indicator; never blocks or dims the data. */
+  refreshing?: boolean;
   /** Attio-style calculation row rendered under the table, given the
    *  currently VISIBLE (filtered) rows. */
   renderFooter?: (visibleRows: Row[]) => ReactNode;
@@ -132,6 +137,7 @@ export function CrmRecordTable<Row>({
   inlineCreate,
   testIdPrefix,
   toolbar,
+  refreshing,
   renderFooter,
 }: Props<Row>) {
   const [editing, setEditing] = useState<EditingCell | null>(null);
@@ -456,7 +462,15 @@ export function CrmRecordTable<Row>({
         className="crm-table-controls"
         data-mobile-open={filtersOpen ? "true" : undefined}
       >
-      {toolbar && <div className="crm-table-toolbar">{toolbar}</div>}
+      {toolbar && (
+        <div className="crm-table-toolbar">
+          {toolbar}
+          <CrmRefreshIndicator
+            active={refreshing === true}
+            testId={`${testIdPrefix}-refreshing`}
+          />
+        </div>
+      )}
       {filterableColumns.length > 0 && (
         <div
           className="crm-table-filter-bar"

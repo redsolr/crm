@@ -36,6 +36,7 @@ import { CompanyLogo } from "./CompanyLogo";
 import { SalesPeekPanel } from "./peek/SalesPeekPanel";
 import { usePeekRoute } from "@/lib/sales/use-peek-route";
 import { CrmRecordTable } from "./table/CrmRecordTable";
+import { CrmTableSkeleton } from "./table/CrmTableSkeleton";
 import { CrmViewSwitcher } from "./table/CrmViewSwitcher";
 import type {
   CrmColumn,
@@ -278,12 +279,15 @@ export function SalesCompaniesView() {
     sort?.columnId === DEFAULT_SORT.columnId &&
     sort.direction === DEFAULT_SORT.direction;
 
+  // First load only (no cached data): real chrome + shimmer rows.
+  // Column labels are static, so the true headers render immediately.
   if (bundleLoading || accounts.isLoading) {
     return (
-      <div className="sales-companies-view flex-1 min-w-0 flex items-center justify-center">
-        <span className="text-sm text-[var(--theme-text-muted)]">
-          Loading companies…
-        </span>
+      <div className="sales-companies-view crm-mobile-page-scroll flex-1 min-w-0 flex flex-col min-h-0">
+        <div className="crm-view-header">
+          <h1 className="crm-view-title">Companies</h1>
+        </div>
+        <CrmTableSkeleton columns={columns} testIdPrefix="sales-companies" />
       </div>
     );
   }
@@ -328,6 +332,7 @@ export function SalesCompaniesView() {
           onFiltersChange={setFilters}
           onRowClick={(account) => openPeek(account.id)}
           testIdPrefix="sales-companies"
+          refreshing={accounts.isFetching && !accounts.isLoading}
           toolbar={
             // Moved out of the view header (2026-08-04 mobile pass) so
             // both record tables carry their saved-view controls the

@@ -1387,6 +1387,77 @@ body.is-dragging .project-board-card {
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Table skeleton + refresh indicator (stale-while-revalidate) ──
+   First load (no cached data): CrmTableSkeleton renders the real
+   table chrome with shimmer bars — never a centered "Loading…" line.
+   Background refetch over visible rows: CrmRefreshIndicator spins in
+   the toolbar; the data itself never blocks or dims. */
+
+.crm-skeleton-bar {
+  display: inline-block;
+  height: 10px;
+  max-width: 100%;
+  border-radius: 4px;
+  background: var(--theme-bg-hover);
+  animation: crm-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes crm-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Skeleton rows are not interactive — no hover/cursor affordances. */
+.crm-table-skeleton tbody tr {
+  cursor: default;
+}
+
+.crm-table-skeleton tbody tr:hover {
+  background: transparent;
+}
+
+/* Mobile shimmer card — same footprint as .crm-card. */
+.crm-skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--theme-border-primary);
+  border-radius: 10px;
+  background: var(--theme-bg-secondary);
+}
+
+.crm-refresh-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--theme-text-muted);
+  white-space: nowrap;
+}
+
+.crm-refresh-indicator svg {
+  animation: crm-spin 1s linear infinite;
+}
+
+@keyframes crm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crm-skeleton-bar,
+  .crm-refresh-indicator svg {
+    animation: none;
+  }
+}
+
 /* ── Jira-style list interactions (drag rank + inline create) ── */
 
 /* The affordances live on an OVERLAY at the table root, floating in a

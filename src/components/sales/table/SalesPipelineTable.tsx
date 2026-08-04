@@ -72,6 +72,9 @@ interface Props {
    *  control strip — chips · view switcher · column filters share one
    *  line in table mode). */
   filterChips?: ReactNode;
+  /** Background refetch over visible rows (`isFetching && !isLoading`)
+   *  — forwarded to CrmRecordTable's toolbar refresh indicator. */
+  refreshing?: boolean;
 }
 
 export function SalesPipelineTable({
@@ -82,6 +85,7 @@ export function SalesPipelineTable({
   accountAttributesById,
   onOpenOpportunity,
   filterChips,
+  refreshing,
 }: Props) {
   const upsert = useUpsertAttributeValue();
   const transition = useTransitionWorkItem();
@@ -379,6 +383,7 @@ export function SalesPipelineTable({
           />
         )}
         testIdPrefix="sales-pipeline"
+        refreshing={refreshing}
         toolbar={
           <>
             {filterChips}

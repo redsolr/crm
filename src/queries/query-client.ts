@@ -27,7 +27,13 @@ export function createQueryClient(): QueryClient {
           return failureCount < 2;
         },
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-        refetchOnWindowFocus: false,
+        // Stale-while-revalidate safety net (2026-08-04): returning to
+        // the tab silently refetches anything older than staleTime, so
+        // an overnight tab converges without navigation. Cheap — fresh
+        // queries don't refire — and it composes with the realtime
+        // layer's push invalidation where that's enabled; without the
+        // worker (REALTIME_URL unset) it's the ONLY catch-up signal.
+        refetchOnWindowFocus: true,
         refetchOnReconnect: true,
       },
       mutations: {
