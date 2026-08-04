@@ -29,8 +29,8 @@ jobs:
     timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -53,8 +53,8 @@ jobs:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -79,7 +79,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Mocked tier
         run: npx cross-env MOCK_AUTH=true playwright test --project=mocked
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: playwright-report-mocked
@@ -105,8 +105,8 @@ jobs:
           --health-timeout=3s
           --health-retries=10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -167,7 +167,7 @@ jobs:
         env:
           CRM_MCP_TOKEN: ${{ secrets.CRM_MCP_TOKEN }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: playwright-report-real-auth
@@ -175,7 +175,7 @@ jobs:
           retention-days: 14
       - name: Worker log on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wrangler-log
           path: /tmp/wrangler.log
@@ -186,23 +186,10 @@ jobs:
     # test tier is green (a var-disabled real-auth counts as pass; a
     # failed one blocks the deploy). Vercel's push-triggered
     # auto-deploys are OFF (vercel.json git.deploymentEnabled: false)
-    # so this job is the ONLY deployer: it asks Vercel's API to build
-    # this exact commit from the project's GitHub link. The build +
-    # Neon migration (scripts/migrate-deploy.mjs) run on Vercel's
-    # infra, where the sensitive-scoped DATABASE_URL lives — it never
-    # reaches GitHub.
-    #
-    # Plain API calls, no Vercel CLI: VERCEL_TOKEN is a team-scoped
-    # token (vcp_*) with no user identity, which the CLI cannot use
-    # (it always resolves a user first) but the REST API accepts.
-    #
-    # Gated on `RUN_VERCEL_DEPLOY` so the workflow stays green before
-    # the secret exists. To enable:
-    #   1. Add repo secret VERCEL_TOKEN (Vercel dashboard → Account
-    #      Settings → Tokens, scoped to the team)
-    #   2. Set repo variable RUN_VERCEL_DEPLOY=true
-    # The IDs below are link config, not credentials (team + project
-    # from .vercel/project.json, repoId from the project's git link).
+    # so the pipeline is the only deployer. The implementation lives
+    # in deploy.yml (reusable — same file is the manual
+    # deploy/rollback button in the Actions tab). Gated on the
+    # `RUN_VERCEL_DEPLOY` repo variable + VERCEL_TOKEN repo secret.
     needs: [gates, mocked-e2e, real-auth]
     if: >-
       ${{ !cancelled() &&
@@ -212,39 +199,7 @@ jobs:
           needs.gates.result == 'success' &&
           needs['mocked-e2e'].result == 'success' &&
           (needs['real-auth'].result == 'success' || needs['real-auth'].result == 'skipped') }}
-    timeout-minutes: 20
-    runs-on: ubuntu-latest
-    env:
-      VERCEL_TEAM_ID: team_txhXzjQ4P5MWPOyivnlDIPIY
-      VERCEL_PROJECT_ID: prj_8yUb9DHGWeS8hCxde0f4ocrQFCXj
-      VERCEL_REPO_ID: "1299076978"
-    steps:
-      - name: Create production deployment for this commit
-        run: |
-          resp=$(curl -sf -X POST "https://api.vercel.com/v13/deployments?teamId=$VERCEL_TEAM_ID" \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{"name":"crm","project":"'"$VERCEL_PROJECT_ID"'","target":"production","gitSource":{"type":"github","repoId":'"$VERCEL_REPO_ID"',"ref":"${{ github.sha }}"}}')
-          id=$(echo "$resp" | jq -r '.id // empty')
-          if [ -z "$id" ]; then
-            echo "deployment creation failed:" >&2
-            echo "$resp" | jq . >&2
-            exit 1
-          fi
-          echo "created $id -> https://$(echo "$resp" | jq -r .url)"
-          echo "DEPLOYMENT_ID=$id" >> "$GITHUB_ENV"
-
-      - name: Wait for deployment to go READY
-        run: |
-          for i in $(seq 1 60); do
-            state=$(curl -sf -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-              "https://api.vercel.com/v13/deployments/$DEPLOYMENT_ID?teamId=$VERCEL_TEAM_ID" | jq -r .readyState)
-            echo "[$i] $state"
-            case "$state" in
-              READY) exit 0 ;;
-              ERROR|CANCELED) echo "deployment ended $state" >&2; exit 1 ;;
-            esac
-            sleep 15
-          done
-          echo "timed out waiting for deployment" >&2
-          exit 1
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ref: ${{ github.sha }}
+    secrets: inherit

@@ -1,0 +1,77 @@
+# Production deploy to Vercel — the single deploy implementation.
+#
+# Two entry points:
+#   workflow_call      the ci/cd workflow's `deploy` job invokes this
+#                      after every test tier is green (ci.yml holds
+#                      the gating + the RUN_VERCEL_DEPLOY arming var)
+#   workflow_dispatch  manual "deploy this ref" button in the Actions
+#                      tab — redeploy or roll back production to any
+#                      commit without a laptop CLI session
+#
+# The job POSTs Vercel's REST API with a gitSource ref: Vercel pulls
+# the commit from the project's GitHub link and builds it on Vercel
+# infra, where the sensitive-scoped DATABASE_URL lives (the Neon
+# migration runs there via scripts/migrate-deploy.mjs). VERCEL_TOKEN
+# is a team-scoped token (vcp_*) with no user identity — the Vercel
+# CLI cannot use those (it always resolves a user first), which is
+# why this speaks raw API. The IDs below are link config, not
+# credentials (team + project from .vercel/project.json, repoId from
+# the Vercel project's git link).
+name: deploy
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit SHA or ref to deploy to production
+        required: true
+        type: string
+    secrets:
+      VERCEL_TOKEN:
+        required: true
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit SHA or ref to deploy to production
+        required: true
+        type: string
+        default: main
+
+jobs:
+  vercel:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TEAM_ID: team_txhXzjQ4P5MWPOyivnlDIPIY
+      VERCEL_PROJECT_ID: prj_8yUb9DHGWeS8hCxde0f4ocrQFCXj
+      VERCEL_REPO_ID: "1299076978"
+      DEPLOY_REF: ${{ inputs.ref }}
+    steps:
+      - name: Create production deployment
+        run: |
+          resp=$(curl -sf -X POST "https://api.vercel.com/v13/deployments?teamId=$VERCEL_TEAM_ID" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"name":"crm","project":"'"$VERCEL_PROJECT_ID"'","target":"production","gitSource":{"type":"github","repoId":'"$VERCEL_REPO_ID"',"ref":"'"$DEPLOY_REF"'"}}')
+          id=$(echo "$resp" | jq -r '.id // empty')
+          if [ -z "$id" ]; then
+            echo "deployment creation failed:" >&2
+            echo "$resp" | jq . >&2
+            exit 1
+          fi
+          echo "created $id -> https://$(echo "$resp" | jq -r .url)"
+          echo "DEPLOYMENT_ID=$id" >> "$GITHUB_ENV"
+
+      - name: Wait for deployment to go READY
+        run: |
+          for i in $(seq 1 60); do
+            state=$(curl -sf -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+              "https://api.vercel.com/v13/deployments/$DEPLOYMENT_ID?teamId=$VERCEL_TEAM_ID" | jq -r .readyState)
+            echo "[$i] $state"
+            case "$state" in
+              READY) exit 0 ;;
+              ERROR|CANCELED) echo "deployment ended $state" >&2; exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "timed out waiting for deployment" >&2
+          exit 1
