@@ -1389,18 +1389,10 @@ body.is-dragging .project-board-card {
 
 /* ── Jira-style list interactions (drag rank + inline create) ── */
 
-/* Jira-narrow gutter: a slim leading column INSIDE one uniform table
-   (row lines run edge to edge, NO inner vertical line — a separate
-   inner frame read as a nested table, founder 2026-08-04). The
-   affordances float over the gutter strip. */
-.crm-table-lead-th {
-  width: 20px;
-  padding: 7px 0;
-}
-
-.crm-table-lead-cell {
-  width: 20px;
-  padding: 0;
+/* No gutter column at all (an empty lead column read as a phantom
+   second frame, founder 2026-08-04): the affordances float inside the
+   FIRST cell's own left padding (the title column's pl-5). */
+.crm-table tbody td.crm-table-anchor-cell {
   position: relative;
 }
 

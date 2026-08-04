@@ -171,7 +171,6 @@ export function CrmRecordTable<Row>({
   // Manual rank is only truthful while no column sort is applied
   // (Jira's rule) — sorting hides the grips and the between-row "+".
   const manualOrderActive = sort === null;
-  const hasLeadColumn = onReorder !== undefined || inlineCreate !== undefined;
 
   const filterableColumns = columns.filter((c) => c.filter !== undefined);
   const activeFilterCount = filterableColumns.filter(
@@ -193,7 +192,7 @@ export function CrmRecordTable<Row>({
       })()
     : visibleRows;
   const [titleColumn, ...cardColumns] = columns;
-  const colCount = columns.length + (hasLeadColumn ? 1 : 0);
+  const colCount = columns.length;
   const slotIndex =
     createSlot === "end" ? displayRows.length : createSlot;
 
@@ -242,7 +241,10 @@ export function CrmRecordTable<Row>({
         }
       : {};
 
-  const renderLeadCell = (
+  // Gutter affordances float INSIDE the first cell's own left padding
+  // (no extra column — an empty lead column read as a phantom second
+  // frame, founder 2026-08-04).
+  const renderGutterAffordances = (
     rowId: string,
     rowIndex: number,
     drag?: SortableDragProps,
@@ -263,7 +265,7 @@ export function CrmRecordTable<Row>({
             : null
         : null;
     return (
-      <td className="crm-table-lead-cell">
+      <>
         {onReorder !== undefined && manualOrderActive && drag && (
           <button
             type="button"
@@ -298,12 +300,12 @@ export function CrmRecordTable<Row>({
             </span>
           </button>
         )}
-      </td>
+      </>
     );
   };
 
-  const renderRowCells = (row: Row, rowId: string) =>
-    columns.map((column) => {
+  const renderRowCells = (row: Row, rowId: string, gutter?: ReactNode) =>
+    columns.map((column, columnIndex) => {
       const isEditing =
         editing?.rowId === rowId && editing.columnId === column.id;
       const editable = column.edit !== undefined;
@@ -313,8 +315,8 @@ export function CrmRecordTable<Row>({
           className={`${
             column.align === "right" ? "text-right tabular-nums" : ""
           } ${editable ? "crm-cell-editable" : ""} ${
-            column.cellClassName ?? ""
-          }`}
+            columnIndex === 0 ? "crm-table-anchor-cell" : ""
+          } ${column.cellClassName ?? ""}`}
           data-testid={`${testIdPrefix}-cell-${column.id}`}
           onClick={
             editable
@@ -326,6 +328,7 @@ export function CrmRecordTable<Row>({
               : undefined
           }
         >
+          {columnIndex === 0 ? gutter : null}
           {isEditing && column.edit ? (
             <CrmCellEditor
               dataType={column.edit.dataType}
@@ -376,8 +379,11 @@ export function CrmRecordTable<Row>({
         >
           {(drag) => (
             <>
-              {renderLeadCell(rowId, rowIndex, drag)}
-              {renderRowCells(row, rowId)}
+              {renderRowCells(
+                row,
+                rowId,
+                renderGutterAffordances(rowId, rowIndex, drag),
+              )}
             </>
           )}
         </CrmSortableRow>
@@ -390,8 +396,13 @@ export function CrmRecordTable<Row>({
           onClick={onRowClick ? () => onRowClick(row) : undefined}
           {...rowPointerHandlers(rowId, rowIndex)}
         >
-          {hasLeadColumn && renderLeadCell(rowId, rowIndex)}
-          {renderRowCells(row, rowId)}
+          {renderRowCells(
+            row,
+            rowId,
+            inlineCreate !== undefined
+              ? renderGutterAffordances(rowId, rowIndex)
+              : undefined,
+          )}
         </tr>
       ),
     );
@@ -404,7 +415,6 @@ export function CrmRecordTable<Row>({
     <table className="crm-table" data-testid={`${testIdPrefix}-table`}>
       <thead>
         <tr>
-          {hasLeadColumn && <th className="crm-table-lead-th" />}
           {columns.map((column) => (
             <th
               key={column.id}
