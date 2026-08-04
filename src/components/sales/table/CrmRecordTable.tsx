@@ -135,6 +135,16 @@ export function CrmRecordTable<Row>({
   // Inline-create slot: index into the visible rows the form renders
   // AT (form sits before that row); "end" pins to the table bottom.
   const [createSlot, setCreateSlot] = useState<number | "end" | null>(null);
+  // Which gutter affordance the hovered row shows (Jira mechanic,
+  // founder 2026-08-04): the row's vertical PADDING bands (top/bottom
+  // ~28%) offer the insert "+" at the nearer boundary; the inner text
+  // band offers the reorder grip. Tracked per pointer position — pure
+  // CSS hover can't split a row into bands.
+  const [rowZone, setRowZone] = useState<{
+    rowId: string;
+    zone: "top" | "inner" | "bottom";
+  } | null>(null);
+
   // Post-drop order override so the dropped row doesn't snap back
   // during the gap before the owner's optimistic cache patch lands.
   // Keyed to the rows-prop identity: any rows change (optimistic
@@ -195,40 +205,77 @@ export function CrmRecordTable<Row>({
     onReorder(displayRows[oldIndex], finalOrder);
   }
 
-  const renderLeadCell = (rowIndex: number, drag?: SortableDragProps) => (
-    <td className="crm-table-lead-cell">
-      {onReorder !== undefined && manualOrderActive && drag && (
-        <button
-          type="button"
-          className="crm-drag-handle"
-          aria-label="Drag to reorder"
-          data-testid={`${testIdPrefix}-drag-handle`}
-          ref={drag.setActivatorNodeRef}
-          {...drag.attributes}
-          {...drag.listeners}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <GripVertical size={13} aria-hidden="true" />
-        </button>
-      )}
-      {inlineCreate !== undefined && manualOrderActive && (
-        <button
-          type="button"
-          className="crm-row-insert-zone"
-          aria-label="Insert a row below"
-          data-testid={`${testIdPrefix}-insert-after`}
-          onClick={(e) => {
-            e.stopPropagation();
-            setCreateSlot(rowIndex + 1);
-          }}
-        >
-          <span className="crm-row-insert-icon" aria-hidden="true">
-            <Plus size={12} />
-          </span>
-        </button>
-      )}
-    </td>
-  );
+  // Pointer→band tracking on the hovered row. Only rerenders when the
+  // (row, band) pair actually changes.
+  const rowPointerHandlers = (rowId: string) =>
+    manualOrderActive && (onReorder !== undefined || inlineCreate !== undefined)
+      ? {
+          onPointerMove: (e: React.PointerEvent<HTMLTableRowElement>) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const rel = (e.clientY - rect.top) / rect.height;
+            const zone: "top" | "inner" | "bottom" =
+              rel < 0.28 ? "top" : rel > 0.72 ? "bottom" : "inner";
+            setRowZone((prev) =>
+              prev?.rowId === rowId && prev.zone === zone
+                ? prev
+                : { rowId, zone },
+            );
+          },
+          onPointerLeave: () => setRowZone(null),
+        }
+      : {};
+
+  const renderLeadCell = (
+    rowId: string,
+    rowIndex: number,
+    drag?: SortableDragProps,
+  ) => {
+    const zone = rowZone?.rowId === rowId ? rowZone.zone : null;
+    const edge =
+      inlineCreate !== undefined &&
+      manualOrderActive &&
+      (zone === "top" || zone === "bottom")
+        ? zone
+        : null;
+    return (
+      <td className="crm-table-lead-cell">
+        {onReorder !== undefined && manualOrderActive && drag && (
+          <button
+            type="button"
+            className="crm-drag-handle"
+            data-visible={zone === "inner" ? "true" : undefined}
+            aria-label="Drag to reorder"
+            data-testid={`${testIdPrefix}-drag-handle`}
+            ref={drag.setActivatorNodeRef}
+            {...drag.attributes}
+            {...drag.listeners}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical size={13} aria-hidden="true" />
+          </button>
+        )}
+        {edge !== null && (
+          <button
+            type="button"
+            className="crm-row-insert-zone"
+            data-edge={edge}
+            aria-label={
+              edge === "top" ? "Insert a row above" : "Insert a row below"
+            }
+            data-testid={`${testIdPrefix}-insert-after`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setCreateSlot(edge === "top" ? rowIndex : rowIndex + 1);
+            }}
+          >
+            <span className="crm-row-insert-icon" aria-hidden="true">
+              <Plus size={12} />
+            </span>
+          </button>
+        )}
+      </td>
+    );
+  };
 
   const renderRowCells = (row: Row, rowId: string) =>
     columns.map((column) => {
@@ -300,10 +347,11 @@ export function CrmRecordTable<Row>({
           disabled={!manualOrderActive}
           onClick={onRowClick ? () => onRowClick(row) : undefined}
           testIdPrefix={testIdPrefix}
+          rowHandlers={rowPointerHandlers(rowId)}
         >
           {(drag) => (
             <>
-              {renderLeadCell(rowIndex, drag)}
+              {renderLeadCell(rowId, rowIndex, drag)}
               {renderRowCells(row, rowId)}
             </>
           )}
@@ -315,8 +363,9 @@ export function CrmRecordTable<Row>({
           data-testid={`${testIdPrefix}-row`}
           data-row-id={rowId}
           onClick={onRowClick ? () => onRowClick(row) : undefined}
+          {...rowPointerHandlers(rowId)}
         >
-          {hasLeadColumn && renderLeadCell(rowIndex)}
+          {hasLeadColumn && renderLeadCell(rowId, rowIndex)}
           {renderRowCells(row, rowId)}
         </tr>
       ),
@@ -547,12 +596,17 @@ function CrmSortableRow({
   disabled,
   onClick,
   testIdPrefix,
+  rowHandlers,
   children,
 }: {
   rowId: string;
   disabled: boolean;
   onClick?: () => void;
   testIdPrefix: string;
+  rowHandlers: {
+    onPointerMove?: (e: React.PointerEvent<HTMLTableRowElement>) => void;
+    onPointerLeave?: () => void;
+  };
   children: (drag: SortableDragProps) => ReactNode;
 }) {
   const {
@@ -576,6 +630,7 @@ function CrmSortableRow({
         transition,
       }}
       onClick={onClick}
+      {...rowHandlers}
     >
       {children({ setActivatorNodeRef, listeners, attributes })}
     </tr>

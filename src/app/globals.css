@@ -1416,7 +1416,9 @@ body.is-dragging .project-board-card {
   touch-action: none;
 }
 
-.crm-record-table-row:hover .crm-drag-handle,
+/* Grip visibility is zone-driven (pointer in the row's inner text
+   band), not plain row hover — the padding bands belong to insert. */
+.crm-drag-handle[data-visible="true"],
 .crm-record-table-row[data-dragging="true"] .crm-drag-handle {
   opacity: 1;
 }
@@ -1437,19 +1439,17 @@ body.is-dragging .project-board-card {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
-/* Insert-below affordance on the row's bottom boundary. Jira
-   behavior: a thin invisible hover ZONE spans the row width along the
-   boundary line; hovering anywhere on the line reveals the "+" in the
-   gutter plus an insert line across the row. Row hover alone shows
-   nothing — that belongs to the drag grip. The zone escapes the
-   gutter cell via absolute positioning (table cells don't clip);
-   60vw comfortably crosses the visible row. */
+/* Insert affordance on a row boundary. Rendered only while the
+   pointer sits in the row's top/bottom padding band (zone-driven —
+   see CrmRecordTable), anchored to the nearer boundary: a clickable
+   strip with the gutter "+" and a 2px insert line across the row.
+   The strip escapes the gutter cell via absolute positioning (table
+   cells don't clip); 60vw comfortably crosses the visible row. */
 .crm-row-insert-zone {
   position: absolute;
   left: 0;
-  bottom: -5px;
   width: 60vw;
-  height: 10px;
+  height: 12px;
   z-index: 5;
   display: block;
   padding: 0;
@@ -1457,7 +1457,15 @@ body.is-dragging .project-board-card {
   cursor: pointer;
 }
 
-/* The insert line across the row, revealed on zone hover. */
+.crm-row-insert-zone[data-edge="top"] {
+  top: -6px;
+}
+
+.crm-row-insert-zone[data-edge="bottom"] {
+  bottom: -6px;
+}
+
+/* The insert line across the row. */
 .crm-row-insert-zone::after {
   content: "";
   position: absolute;
@@ -1466,7 +1474,7 @@ body.is-dragging .project-board-card {
   top: 50%;
   height: 2px;
   transform: translateY(-50%);
-  background: transparent;
+  background: var(--theme-border-hover);
   pointer-events: none;
 }
 
@@ -1481,22 +1489,9 @@ body.is-dragging .project-board-card {
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  background: var(--theme-bg-tertiary);
+  background: var(--theme-bg-hover);
   border: 1px solid var(--theme-border-hover);
   color: var(--theme-text-primary);
-  opacity: 0;
-  transition: opacity 0.1s ease;
-}
-
-.crm-row-insert-zone:hover::after,
-.crm-row-insert-zone:focus-visible::after {
-  background: var(--theme-border-hover);
-}
-
-.crm-row-insert-zone:hover .crm-row-insert-icon,
-.crm-row-insert-zone:focus-visible .crm-row-insert-icon {
-  opacity: 1;
-  background: var(--theme-bg-hover);
 }
 
 /* Bottom "+ Create" row (Jira list-footer create). */
