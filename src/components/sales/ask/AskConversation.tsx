@@ -34,6 +34,7 @@ import { useAuth } from "@/stores/use-auth";
 import { useAskPanel } from "@/stores/use-ask-panel";
 import { chatApiClient } from "@/lib/chat/client";
 import { buildAskWireText } from "@/lib/sales/ask-messages";
+import { AskMarkdown } from "./AskMarkdown";
 import { queryKeys } from "@/queries/query-keys";
 
 /**
@@ -343,7 +344,7 @@ export function AskConversation({ pageContext }: AskConversationProps) {
                 <div
                   key={i}
                   data-testid="crm-ask-message-assistant"
-                  className="crm-ask-message-assistant self-start max-w-full text-[14px] leading-relaxed text-[var(--theme-text-primary)] whitespace-pre-wrap"
+                  className="crm-ask-message-assistant self-start max-w-full text-[var(--theme-text-primary)]"
                 >
                   {message.steps !== undefined && message.steps.length > 0 && (
                     <div className="crm-ask-tool-steps flex flex-col gap-1 mb-1.5">
@@ -360,13 +361,13 @@ export function AskConversation({ pageContext }: AskConversationProps) {
                     </div>
                   )}
                   {message.content === "" && streaming ? (
-                    <span className="crm-ask-thinking text-[var(--theme-text-muted)]">
+                    <span className="crm-ask-thinking text-[14px] text-[var(--theme-text-muted)]">
                       {message.steps !== undefined && message.steps.length > 0
                         ? "Working…"
                         : "Thinking…"}
                     </span>
                   ) : (
-                    message.content
+                    <AskMarkdown content={message.content} />
                   )}
                 </div>
               ),

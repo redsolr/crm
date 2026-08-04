@@ -1441,6 +1441,112 @@ body.is-dragging .project-board-card {
   white-space: nowrap;
 }
 
+/* ── Ask assistant prose (react-markdown output) ──
+   The model replies in markdown; these are the element styles that
+   turn it into readable prose (Tailwind preflight zeroes margins and
+   list styles). Theme tokens only. */
+
+.crm-ask-markdown {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--theme-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.crm-ask-markdown > * + * {
+  margin-top: 0.75em;
+}
+
+.crm-ask-markdown ul {
+  list-style: disc;
+  padding-left: 1.4em;
+}
+
+.crm-ask-markdown ol {
+  list-style: decimal;
+  padding-left: 1.4em;
+}
+
+.crm-ask-markdown li + li {
+  margin-top: 0.3em;
+}
+
+.crm-ask-markdown strong {
+  font-weight: 650;
+}
+
+.crm-ask-markdown h1,
+.crm-ask-markdown h2,
+.crm-ask-markdown h3,
+.crm-ask-markdown h4 {
+  font-weight: 650;
+  font-size: 15px;
+  margin-top: 1.1em;
+}
+
+.crm-ask-markdown a {
+  color: var(--theme-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.crm-ask-markdown code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 0.85em;
+  background: var(--theme-bg-tertiary);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: 5px;
+  padding: 0.15em 0.35em;
+}
+
+.crm-ask-markdown pre {
+  background: var(--theme-bg-tertiary);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+}
+
+.crm-ask-markdown pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.crm-ask-markdown blockquote {
+  border-left: 3px solid var(--theme-border-secondary);
+  padding-left: 12px;
+  color: var(--theme-text-secondary);
+}
+
+.crm-ask-markdown hr {
+  border: none;
+  border-top: 1px solid var(--theme-border-primary);
+}
+
+.crm-ask-markdown table {
+  border-collapse: collapse;
+  font-size: 13.5px;
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.crm-ask-markdown th,
+.crm-ask-markdown td {
+  border: 1px solid var(--theme-border-secondary);
+  padding: 5px 10px;
+  text-align: left;
+}
+
+.crm-ask-markdown th {
+  font-weight: 600;
+  background: var(--theme-bg-tertiary);
+}
+
 .crm-refresh-indicator svg {
   animation: crm-spin 1s linear infinite;
 }

@@ -55,7 +55,7 @@ export function SalesAskView() {
       <div className="sales-ask-body flex-1 min-h-0 flex overflow-hidden">
         <AskHistoryRail />
         <div className="sales-ask-main flex-1 min-w-0 min-h-0 flex justify-center">
-          <div className="sales-ask-column crm-screen-center w-full max-w-[720px] min-h-0 flex flex-col">
+          <div className="sales-ask-column crm-screen-center w-full max-w-[768px] min-h-0 flex flex-col">
             <AskConversation pageContext={null} />
           </div>
         </div>
