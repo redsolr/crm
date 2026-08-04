@@ -2,8 +2,8 @@
  * Pipeline Summary tab (Tier 1 — mocked) — the day-start feed.
  *
  * Claims (2026-08-04, after the modern-CRM scan):
- * - The tab strip is Summary | Table | Board; the Summary tab carries
- *   a due-count badge (overdue/today next actions + commitments).
+ * - The tab strip is Summary | Table | Board; the pulse strip carries
+ *   the due count (overdue/today next actions + commitments).
  * - Due & overdue lists the overdue next action; Overlooked lists
  *   active deals with no next action.
  * - Rows open the URL-routed peek (?peek=).
@@ -36,15 +36,16 @@ test.describe("Pipeline Summary tab", () => {
     });
     await createOpportunityViaUi(authedPage, "Summary overlooked deal");
 
-    // Badge counts the overdue next action.
-    await expect(
-      authedPage.getByTestId("sales-pipeline-due-count"),
-    ).toHaveText("1", { timeout: STEP_TIMEOUT });
-
     await authedPage.getByTestId("sales-pipeline-mode-summary").click();
     await expect(
       authedPage.getByTestId("sales-pipeline-summary"),
     ).toBeVisible();
+
+    // The pulse strip carries the due count.
+    await expect(authedPage.getByTestId("summary-pulse")).toContainText(
+      "1 due",
+      { timeout: STEP_TIMEOUT },
+    );
 
     // Due & overdue carries the overdue next action.
     const dueRow = authedPage.getByTestId("summary-action-row");

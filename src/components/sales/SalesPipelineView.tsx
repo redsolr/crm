@@ -49,7 +49,6 @@ import { formatTHB } from "@/lib/format-currency";
 import { SalesPipelineTable } from "./table/SalesPipelineTable";
 import { usePeekRoute } from "@/lib/sales/use-peek-route";
 import { SalesPipelineSummary } from "./SalesPipelineSummary";
-import { useCommitmentsInbox } from "@/lib/sales/use-commitments-inbox";
 
 /** localStorage key persisting the kanban ⇄ table mode choice. */
 const PIPELINE_VIEW_MODE_STORAGE_KEY = "crm-pipeline-view-mode";
@@ -150,15 +149,6 @@ export function SalesPipelineView() {
     : [];
   // Account snapshots feed the card's company-logo row (favicon domain).
   const accountAttributesById = useAccountAttributes(allAccounts, accountDefs);
-  // Commitments feed the Summary tab's due list + the tab badge
-  // (react-query dedupes with the Summary's own hook call).
-  const commitmentType = bundle?.workItemTypes.find(
-    (t) => t.key === SALES_TYPE_KEYS.commitment,
-  );
-  const commitmentDefs = commitmentType
-    ? bundle?.attributeDefinitionsByType[commitmentType.id] ?? []
-    : [];
-  const commitmentsInbox = useCommitmentsInbox(workspaceId, commitmentDefs);
 
   if (isLoading) {
     return (
@@ -193,20 +183,6 @@ export function SalesPipelineView() {
   // surface the closed columns in the kanban. Otherwise the closed
   // toggle is user-controlled.
   const effectiveShowClosed = filter === "closed" ? true : showClosed;
-
-  // Summary tab badge — everything due NOW: overdue/today next
-  // actions on active deals + overdue/today commitments.
-  const today = todayDateString();
-  const dueActionCount = allOpportunities.filter((o) => {
-    if (o.state.category === "done" || o.state.category === "dead")
-      return false;
-    const d = attributesByOpportunityId[o.id]?.nextActionDate ?? null;
-    return d !== null && d <= today;
-  }).length;
-  const dueCount =
-    dueActionCount +
-    commitmentsInbox.buckets.overdue.length +
-    commitmentsInbox.buckets.due_today.length;
 
   return (
     <div
@@ -316,14 +292,6 @@ export function SalesPipelineView() {
           onClick={() => changeViewMode("summary")}
         >
           Summary
-          {dueCount > 0 && (
-            <span
-              className="crm-tab-count"
-              data-testid="sales-pipeline-due-count"
-            >
-              {dueCount}
-            </span>
-          )}
         </button>
         <button
           type="button"

@@ -1076,7 +1076,12 @@ body.is-dragging .project-board-card {
      chrome, first to go on a phone topbar. */
   .crm-topbar {
     gap: 8px;
-    padding: 0 10px;
+    padding: 0 12px;
+  }
+  /* Pull the hamburger's 6px icon inset back out so its GLYPH sits on
+     the shared 12px mobile gutter with every row below. */
+  .crm-topbar-menu-btn {
+    margin-left: -6px;
   }
   .crm-topbar-crumb {
     min-width: 0;
@@ -1123,7 +1128,10 @@ body.is-dragging .project-board-card {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 0 20px;
+  /* 8px strip + 12px tab-button padding = tab TEXT sits on the same
+     20px gutter as the view title (tabs are borderless text — they
+     align by glyph, boxed elements align by edge). */
+  padding: 0 8px;
   border-bottom: 1px solid var(--theme-border-primary);
 }
 
@@ -1144,6 +1152,12 @@ body.is-dragging .project-board-card {
     padding-right: 12px;
     scrollbar-width: none;
   }
+  /* Tabs are borderless TEXT — their glyphs (not box edges) sit on
+     the 12px gutter: 0 strip + 12px tab-button padding. */
+  .crm-tabs {
+    padding-left: 0;
+    padding-right: 0;
+  }
   .crm-tabs::-webkit-scrollbar,
   .crm-chip-row::-webkit-scrollbar,
   .crm-table-toolbar::-webkit-scrollbar {
@@ -1154,22 +1168,6 @@ body.is-dragging .project-board-card {
   .crm-table-toolbar > * {
     flex-shrink: 0;
   }
-}
-
-/* Due-count badge on the Summary tab — glanceable "N need me". */
-.crm-tab-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  margin-left: 6px;
-  padding: 0 4px;
-  border-radius: 8px;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--crm-red, #e5484d);
-  background: color-mix(in srgb, var(--crm-red, #e5484d) 14%, transparent);
 }
 
 /* ── Pipeline Summary tab (the day-start feed) ── */
@@ -1213,6 +1211,14 @@ body.is-dragging .project-board-card {
 .crm-summary-empty {
   font-size: 13px;
   color: var(--theme-text-muted);
+}
+
+@media (max-width: 767px) {
+  /* Join the shared 12px mobile gutter (desktop keeps px-5 = 20px). */
+  .sales-pipeline-summary {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
 }
 
 .crm-tab-btn {

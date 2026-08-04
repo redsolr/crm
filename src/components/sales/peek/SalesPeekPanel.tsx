@@ -215,7 +215,7 @@ export function SalesPeekPanel({ bundle, workItemId, onClose }: Props) {
           onClick={onClose}
           aria-label="Back to list"
           data-testid="sales-peek-back"
-          className="sales-peek-back p-1.5 -ml-1 text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-hover)] rounded-md transition-colors"
+          className="sales-peek-back p-1.5 -ml-1.5 text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-hover)] rounded-md transition-colors"
         >
           <BackIcon />
         </button>
