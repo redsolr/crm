@@ -71,12 +71,16 @@ async function openDealPage(page: Page, title: string): Promise<string> {
 
 /** Move the open deal's stage via the detail select (non-closing keys). */
 async function moveStage(page: Page, stageKey: string): Promise<void> {
-  await page
-    .getByTestId("sales-opportunity-detail-stage-select")
-    .selectOption(stageKey);
-  // The PATCH + activity write settle server-side; the select is
-  // optimistic, so give the round-trip a beat before the next move.
-  await page.waitForTimeout(800);
+  const select = page.getByTestId("sales-opportunity-detail-stage-select");
+  await select.selectOption(stageKey);
+  // The select is CONTROLLED by server truth (cache → refetch), so
+  // waiting for it to read the target waits for the PATCH (incl. its
+  // conflict retries) to actually LAND. The previous blind 800ms beat
+  // raced the write on slow CI: a retrying PATCH still in flight was
+  // aborted by the next action/reload and the move silently vanished
+  // (the 2026-08-04 "won stayed trial" red — server logged
+  // `Error: aborted` at exactly those moments).
+  await expect(select).toHaveValue(stageKey, { timeout: 45_000 });
 }
 
 test("full funnel: win with call+commitment, lose with reason, park and RESURFACE on revisit", async ({
