@@ -593,8 +593,10 @@ body.is-dragging .project-board-card {
 /* ── CRM shell chrome ── */
 
 :root {
-  /* Single source for the rail width — the topbar's screen-centering
-     math (.crm-topbar-center) offsets by it; change both never. */
+  /* Single source for the rail width — the content columns'
+     screen-centering (.crm-screen-center) offsets by it; change both
+     never. (The topbar search centers by JS measurement instead —
+     use-screen-centered.ts.) */
   --crm-sidebar-width: 264px;
 }
 
@@ -1072,13 +1074,12 @@ body.is-dragging .project-board-card {
 
 .crm-topbar {
   position: relative;
-  /* Above the content plane: at ≥1440px BOTH the topbar center and
-     the content columns carry transforms (screen-centering), and a
-     transform is a stacking context — without this z-index the search
-     dropdown's z-60 is CAPPED inside the topbar's context while the
-     transformed content (later in DOM) wins hit-testing, making the
-     suggestions unclickable at full screen only (founder 2026-08-04,
-     probe-verified). Kept below the overlay tier (drawers/menus ≥40). */
+  /* Above the content plane: the content columns carry a transform at
+     ≥1440px (.crm-screen-center) — a stacking context that would
+     otherwise win hit-testing over the search dropdown (the
+     2026-08-04 full-screen-only unclickable-suggestions bug; the
+     topbar's own transform branch is gone — JS centering now — but
+     the content one remains). Kept below the overlay tier (≥40). */
   z-index: 20;
   display: flex;
   align-items: center;
@@ -1150,27 +1151,12 @@ body.is-dragging .project-board-card {
   align-items: center;
 }
 
-/* Wide windows: pin the search to the true center of the SCREEN.
-   The flex fallback above centers within the topbar, which starts
-   after the sidebar — so the box sits half-a-rail right of where
-   Slack/Attio put theirs. Only kicks in when there's room for the
-   absolute box to clear the crumb (left) and presence/Ask (right);
-   below the breakpoint the collision-free flex centering stays. */
-@media (min-width: 1440px) {
-  .crm-topbar-center {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: calc(50vw - var(--crm-sidebar-width));
-    transform: translateX(-50%);
-    width: min(560px, 44vw);
-  }
-  /* The center column left the flex flow — the crumb takes over as
-     the spacer that pushes presence + Ask to the right edge. */
-  .crm-topbar-crumb {
-    flex: 1;
-  }
-}
+/* True screen centering of the search is JS-MEASURED with clamping
+   (use-screen-centered.ts, founder 2026-08-04) — ONE mechanism at
+   every width. The previous ≥1440px CSS branch here (absolute +
+   translateX) created a stacking context that made the dropdown
+   unclickable at full screen only; never reintroduce transform-based
+   centering on chrome that owns overlays. */
 
 /* ── Tab strip (Board ⇄ Table etc.) ── */
 

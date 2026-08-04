@@ -214,13 +214,13 @@ test.describe("Global search", () => {
     await expect(authedPage.getByTestId("crm-search-dropdown")).toHaveCount(0);
   });
 
-  test("suggestions stay clickable on the ≥1440px screen-centered branch", async ({
+  test("suggestions stay clickable + truly screen-centered at full screen", async ({
     authedPage,
   }) => {
-    // At ≥1440px the topbar center AND the content columns carry
-    // transforms (screen-centering) — each is a stacking context, and
-    // without the topbar's z-index the transformed content under the
-    // dropdown intercepted every click (2026-08-04, full-screen-only).
+    // Full screen is where the 2026-08-04 traps lived: the content
+    // columns' centering transform won hit-testing over the dropdown,
+    // and the search's own centering was a CSS transform branch (now
+    // JS-measured — use-screen-centered.ts).
     await authedPage.setViewportSize({ width: 1920, height: 900 });
     await setupSalesHandlers(authedPage);
     await authedPage.goto("/sales");
@@ -232,6 +232,10 @@ test.describe("Global search", () => {
       .locator(".crm-topbar-search-field")
       .boundingBox();
     if (!fieldBox) throw new Error("no search field box");
+    // The FEATURE claim: the box centers on the SCREEN (not on the
+    // area right of the sidebar, whose midpoint sits half-a-rail off).
+    const fieldCenter = fieldBox.x + fieldBox.width / 2;
+    expect(Math.abs(fieldCenter - 1920 / 2)).toBeLessThanOrEqual(8);
     await authedPage.mouse.click(
       fieldBox.x + 10,
       fieldBox.y + fieldBox.height / 2,

@@ -23,6 +23,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useClickOutside } from "@/hooks/use-click-outside";
+import { useScreenCentered } from "@/hooks/use-screen-centered";
 import { routeForHit } from "@/lib/sales/search-results";
 import {
   clearRecentSearches,
@@ -51,6 +52,11 @@ export function GlobalSearchBar() {
   const [recents, setRecents] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // True screen centering, JS-measured with clamping (see the hook) —
+  // the dropdown anchors to this same container, so alignment holds by
+  // construction at every width.
+  useScreenCentered(containerRef);
 
   const search = useCrmSearch(query);
   const { flatHits } = search;
