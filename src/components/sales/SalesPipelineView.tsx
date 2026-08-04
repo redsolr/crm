@@ -25,10 +25,31 @@
 
 import { useState, useSyncExternalStore } from "react";
 import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS as DndCss } from "@dnd-kit/utilities";
+import {
   SALES_FILTERS,
   SALES_TYPE_KEYS,
   type SalesFilterId,
 } from "@/lib/sales/constants";
+import {
+  DEFAULT_TAB_ORDER,
+  PIPELINE_TAB_ORDER_STORAGE_KEY,
+  sanitizeTabOrder,
+  type PipelineTabId,
+} from "./pipeline-tab-order";
 import { useSalesWorkspaceBundle } from "@/lib/sales/use-sales-workspace";
 import {
   useAccountsQuery,
@@ -114,6 +135,93 @@ function writeStoredViewMode(mode: PipelineViewMode) {
   for (const listener of viewModeListeners) listener();
 }
 
+// The TAB ORDER is a second persisted external store (drag-to-
+// rearrange like Jira's project tab strip, founder 2026-08-04) — same
+// hydration-safe shape as the view mode above.
+const tabOrderListeners = new Set<() => void>();
+let tabOrderCache: PipelineTabId[] | null = null;
+
+function readStoredTabOrder(): readonly PipelineTabId[] {
+  if (tabOrderCache === null) {
+    try {
+      const stored = window.localStorage.getItem(
+        PIPELINE_TAB_ORDER_STORAGE_KEY,
+      );
+      tabOrderCache = sanitizeTabOrder(
+        stored === null ? null : (JSON.parse(stored) as unknown),
+      );
+    } catch (err) {
+      console.warn(
+        "[SalesPipelineView] could not read persisted tab order:",
+        err,
+      );
+      tabOrderCache = [...DEFAULT_TAB_ORDER];
+    }
+  }
+  return tabOrderCache;
+}
+
+function subscribeToTabOrder(callback: () => void): () => void {
+  tabOrderListeners.add(callback);
+  return () => {
+    tabOrderListeners.delete(callback);
+  };
+}
+
+function writeStoredTabOrder(order: PipelineTabId[]) {
+  tabOrderCache = order;
+  try {
+    window.localStorage.setItem(
+      PIPELINE_TAB_ORDER_STORAGE_KEY,
+      JSON.stringify(order),
+    );
+  } catch (err) {
+    console.warn("[SalesPipelineView] could not persist tab order:", err);
+  }
+  for (const listener of tabOrderListeners) listener();
+}
+
+const TAB_LABELS: Record<PipelineTabId, string> = {
+  summary: "Summary",
+  table: "Table",
+  kanban: "Board",
+};
+
+/** One draggable layout tab — the whole tab is both the mode switch
+ *  (click) and the drag handle (5px activation distance keeps clicks
+ *  intact). */
+function SortablePipelineTab({
+  id,
+  active,
+  onSelect,
+}: {
+  id: PipelineTabId;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id });
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      {...attributes}
+      {...listeners}
+      // After the dnd spreads on purpose: this IS a tab (the dnd
+      // attributes would stamp role="button").
+      role="tab"
+      aria-selected={active}
+      className="crm-tab-btn"
+      data-active={active ? "true" : undefined}
+      data-testid={`sales-pipeline-mode-${id}`}
+      style={{ transform: DndCss.Transform.toString(transform), transition }}
+      onClick={onSelect}
+    >
+      {TAB_LABELS[id]}
+    </button>
+  );
+}
+
 export function SalesPipelineView() {
   const { bundle, isLoading } = useSalesWorkspaceBundle();
   const workspaceId = bundle?.workspace.id;
@@ -140,6 +248,24 @@ export function SalesPipelineView() {
     () => "table" as PipelineViewMode,
   );
   const changeViewMode = writeStoredViewMode;
+
+  // Tab strip order — persisted external store + dnd wiring.
+  const tabOrder = useSyncExternalStore(
+    subscribeToTabOrder,
+    readStoredTabOrder,
+    () => DEFAULT_TAB_ORDER,
+  );
+  const tabSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+  function onTabDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = tabOrder.indexOf(active.id as PipelineTabId);
+    const newIndex = tabOrder.indexOf(over.id as PipelineTabId);
+    if (oldIndex === -1 || newIndex === -1) return;
+    writeStoredTabOrder(arrayMove([...tabOrder], oldIndex, newIndex));
+  }
 
   // Derived data BEFORE conditional returns so hook order stays stable.
   const allOpportunities = opportunities.data?.data ?? [];
@@ -308,42 +434,31 @@ export function SalesPipelineView() {
         aria-label="Pipeline layout"
         data-testid="sales-pipeline-mode-toggle"
       >
-        {/* Overview first, then the default working view, then the
-            alternate (Jira order, earned once Summary existed). Table
-            stays the first-run DEFAULT (2026-07-18 decision). */}
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewMode === "summary"}
-          className="crm-tab-btn"
-          data-active={viewMode === "summary" ? "true" : undefined}
-          data-testid="sales-pipeline-mode-summary"
-          onClick={() => changeViewMode("summary")}
+        {/* Tabs render in the user's PERSISTED order and drag to
+            rearrange (Jira tab strip, founder 2026-08-04). Default:
+            overview first, then the default working view, then the
+            alternate; Table stays the first-run mode DEFAULT
+            (2026-07-18 decision — order and active mode are separate
+            choices). */}
+        <DndContext
+          sensors={tabSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onTabDragEnd}
         >
-          Summary
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewMode === "table"}
-          className="crm-tab-btn"
-          data-active={viewMode === "table" ? "true" : undefined}
-          data-testid="sales-pipeline-mode-table"
-          onClick={() => changeViewMode("table")}
-        >
-          Table
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewMode === "kanban"}
-          className="crm-tab-btn"
-          data-active={viewMode === "kanban" ? "true" : undefined}
-          data-testid="sales-pipeline-mode-kanban"
-          onClick={() => changeViewMode("kanban")}
-        >
-          Board
-        </button>
+          <SortableContext
+            items={[...tabOrder]}
+            strategy={horizontalListSortingStrategy}
+          >
+            {tabOrder.map((id) => (
+              <SortablePipelineTab
+                key={id}
+                id={id}
+                active={viewMode === id}
+                onSelect={() => changeViewMode(id)}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Chips slice record lists — the Summary owns its own slicing.
