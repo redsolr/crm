@@ -135,15 +135,19 @@ export function CrmRecordTable<Row>({
   // Inline-create slot: index into the visible rows the form renders
   // AT (form sits before that row); "end" pins to the table bottom.
   const [createSlot, setCreateSlot] = useState<number | "end" | null>(null);
-  // Which gutter affordance the hovered row shows (Jira mechanic,
-  // founder 2026-08-04): the row's vertical PADDING bands (top/bottom
-  // ~28%) offer the insert "+" at the nearer boundary; the inner text
-  // band offers the reorder grip. Tracked per pointer position — pure
-  // CSS hover can't split a row into bands.
-  const [rowZone, setRowZone] = useState<{
-    rowId: string;
-    zone: "top" | "inner" | "bottom";
-  } | null>(null);
+  // Which gutter affordance the pointer offers (Jira mechanic,
+  // founder 2026-08-04): a row's vertical PADDING bands (top/bottom
+  // ~28%) offer the insert "+" at the nearer BOUNDARY SLOT; the inner
+  // text band offers the reorder grip. Tracked per pointer position —
+  // pure CSS hover can't split a row into bands. Normalized to the
+  // slot index (not per-row zones): the band below boundary k and the
+  // band above it both resolve to slot k, so crossing the line keeps
+  // ONE stable button instead of remounting a twin from the other row.
+  const [gutterHover, setGutterHover] = useState<
+    | { kind: "slot"; slot: number }
+    | { kind: "grip"; rowId: string }
+    | null
+  >(null);
 
   // Post-drop order override so the dropped row doesn't snap back
   // during the gap before the owner's optimistic cache patch lands.
@@ -206,22 +210,35 @@ export function CrmRecordTable<Row>({
   }
 
   // Pointer→band tracking on the hovered row. Only rerenders when the
-  // (row, band) pair actually changes.
-  const rowPointerHandlers = (rowId: string) =>
+  // resolved affordance actually changes.
+  const rowPointerHandlers = (rowId: string, rowIndex: number) =>
     manualOrderActive && (onReorder !== undefined || inlineCreate !== undefined)
       ? {
           onPointerMove: (e: React.PointerEvent<HTMLTableRowElement>) => {
             const rect = e.currentTarget.getBoundingClientRect();
             const rel = (e.clientY - rect.top) / rect.height;
-            const zone: "top" | "inner" | "bottom" =
-              rel < 0.28 ? "top" : rel > 0.72 ? "bottom" : "inner";
-            setRowZone((prev) =>
-              prev?.rowId === rowId && prev.zone === zone
-                ? prev
-                : { rowId, zone },
-            );
+            const next:
+              | { kind: "slot"; slot: number }
+              | { kind: "grip"; rowId: string } =
+              rel < 0.28
+                ? { kind: "slot", slot: rowIndex }
+                : rel > 0.72
+                  ? { kind: "slot", slot: rowIndex + 1 }
+                  : { kind: "grip", rowId };
+            setGutterHover((prev) => {
+              if (
+                prev !== null &&
+                prev.kind === next.kind &&
+                (prev.kind === "slot"
+                  ? prev.slot === (next as { slot: number }).slot
+                  : prev.rowId === (next as { rowId: string }).rowId)
+              ) {
+                return prev;
+              }
+              return next;
+            });
           },
-          onPointerLeave: () => setRowZone(null),
+          onPointerLeave: () => setGutterHover(null),
         }
       : {};
 
@@ -230,12 +247,20 @@ export function CrmRecordTable<Row>({
     rowIndex: number,
     drag?: SortableDragProps,
   ) => {
-    const zone = rowZone?.rowId === rowId ? rowZone.zone : null;
-    const edge =
-      inlineCreate !== undefined &&
-      manualOrderActive &&
-      (zone === "top" || zone === "bottom")
-        ? zone
+    const gripVisible =
+      gutterHover?.kind === "grip" && gutterHover.rowId === rowId;
+    // Each boundary slot k renders exactly ONE button, anchored in the
+    // row ABOVE it (slot 0 anchors in row 0 at its top edge) — the
+    // pointer reaching the same slot from either neighboring row keeps
+    // the same element.
+    const hoverSlot = gutterHover?.kind === "slot" ? gutterHover.slot : null;
+    const edge: "top" | "bottom" | null =
+      inlineCreate !== undefined && manualOrderActive && hoverSlot !== null
+        ? hoverSlot === 0 && rowIndex === 0
+          ? "top"
+          : hoverSlot === rowIndex + 1
+            ? "bottom"
+            : null
         : null;
     return (
       <td className="crm-table-lead-cell">
@@ -243,7 +268,7 @@ export function CrmRecordTable<Row>({
           <button
             type="button"
             className="crm-drag-handle"
-            data-visible={zone === "inner" ? "true" : undefined}
+            data-visible={gripVisible ? "true" : undefined}
             aria-label="Drag to reorder"
             data-testid={`${testIdPrefix}-drag-handle`}
             ref={drag.setActivatorNodeRef}
@@ -254,7 +279,7 @@ export function CrmRecordTable<Row>({
             <GripVertical size={13} aria-hidden="true" />
           </button>
         )}
-        {edge !== null && (
+        {edge !== null && hoverSlot !== null && (
           <button
             type="button"
             className="crm-row-insert-zone"
@@ -265,7 +290,7 @@ export function CrmRecordTable<Row>({
             data-testid={`${testIdPrefix}-insert-after`}
             onClick={(e) => {
               e.stopPropagation();
-              setCreateSlot(edge === "top" ? rowIndex : rowIndex + 1);
+              setCreateSlot(hoverSlot);
             }}
           >
             <span className="crm-row-insert-icon" aria-hidden="true">
@@ -347,7 +372,7 @@ export function CrmRecordTable<Row>({
           disabled={!manualOrderActive}
           onClick={onRowClick ? () => onRowClick(row) : undefined}
           testIdPrefix={testIdPrefix}
-          rowHandlers={rowPointerHandlers(rowId)}
+          rowHandlers={rowPointerHandlers(rowId, rowIndex)}
         >
           {(drag) => (
             <>
@@ -363,7 +388,7 @@ export function CrmRecordTable<Row>({
           data-testid={`${testIdPrefix}-row`}
           data-row-id={rowId}
           onClick={onRowClick ? () => onRowClick(row) : undefined}
-          {...rowPointerHandlers(rowId)}
+          {...rowPointerHandlers(rowId, rowIndex)}
         >
           {hasLeadColumn && renderLeadCell(rowId, rowIndex)}
           {renderRowCells(row, rowId)}
