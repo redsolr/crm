@@ -167,14 +167,18 @@ export function GlobalSearchBar() {
       data-testid="crm-topbar-search"
       role="search"
     >
+      {/* Jira-visible field (founder 2026-08-04): the RESTING border
+          sits on the ladder's visible tier and the icon/placeholder/
+          keycap read a step brighter — the box must be findable on the
+          dark topbar without hovering. */}
       <div
         className={`crm-topbar-search-field flex items-center gap-2 w-full px-3 py-1.5 rounded-lg border bg-[var(--theme-bg-tertiary)] text-sm transition-colors ${
           isOpen
-            ? "border-[var(--theme-border-hover)]"
-            : "border-[var(--theme-border-primary)] hover:border-[var(--theme-border-hover)]"
+            ? "border-[var(--theme-text-muted)]"
+            : "border-[var(--theme-border-hover)] hover:border-[var(--theme-text-muted)]"
         }`}
       >
-        <span className="crm-topbar-search-icon flex-shrink-0 text-[var(--theme-text-muted)]">
+        <span className="crm-topbar-search-icon flex-shrink-0 text-[var(--theme-text-secondary)]">
           <MagnifierIcon size={14} />
         </span>
         <input
@@ -190,9 +194,9 @@ export function GlobalSearchBar() {
           onFocus={() => setIsOpen(true)}
           onKeyDown={onInputKeyDown}
           placeholder="Search companies, deals, contacts, call notes…"
-          className="crm-topbar-search-input flex-1 min-w-0 bg-transparent text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-muted)] focus:outline-none"
+          className="crm-topbar-search-input flex-1 min-w-0 bg-transparent text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)] focus:outline-none"
         />
-        <kbd className="crm-topbar-search-keycap flex-shrink-0 px-1.5 py-0.5 rounded border border-[var(--theme-border-primary)] bg-[var(--theme-bg-secondary)] font-mono text-[10px] leading-none text-[var(--theme-text-muted)]">
+        <kbd className="crm-topbar-search-keycap flex-shrink-0 px-1.5 py-0.5 rounded border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-secondary)] font-mono text-[10px] leading-none text-[var(--theme-text-secondary)]">
           /
         </kbd>
       </div>

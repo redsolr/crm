@@ -811,7 +811,10 @@ body.is-dragging .project-board-card {
   border-radius: 7px;
   font-size: 13.5px;
   text-align: left;
-  color: var(--theme-text-secondary);
+  /* Nav labels read WHITE at rest (iCloud/OpenAI-console sidebars,
+     founder 2026-08-04) — secondary was too dim for primary nav;
+     section headers stay muted for hierarchy. */
+  color: var(--theme-text-primary);
   transition:
     background 0.12s ease,
     color 0.12s ease;
