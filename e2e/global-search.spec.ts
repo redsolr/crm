@@ -191,4 +191,35 @@ test.describe("Global search", () => {
     ).toHaveCount(0);
     await expect(authedPage.getByTestId("sales-nav-pipeline")).toBeVisible();
   });
+
+  test("suggestions stay clickable on the ≥1440px screen-centered branch", async ({
+    authedPage,
+  }) => {
+    // At ≥1440px the topbar center AND the content columns carry
+    // transforms (screen-centering) — each is a stacking context, and
+    // without the topbar's z-index the transformed content under the
+    // dropdown intercepted every click (2026-08-04, full-screen-only).
+    await authedPage.setViewportSize({ width: 1920, height: 900 });
+    await setupSalesHandlers(authedPage);
+    await authedPage.goto("/sales");
+    await expect(authedPage.getByTestId("crm-search-input")).toBeVisible({
+      timeout: STEP_TIMEOUT,
+    });
+
+    const fieldBox = await authedPage
+      .locator(".crm-topbar-search-field")
+      .boundingBox();
+    if (!fieldBox) throw new Error("no search field box");
+    await authedPage.mouse.click(
+      fieldBox.x + 10,
+      fieldBox.y + fieldBox.height / 2,
+    );
+    await expect(authedPage.getByTestId("crm-search-dropdown")).toBeVisible({
+      timeout: STEP_TIMEOUT,
+    });
+    await authedPage.getByTestId("crm-search-nav-contacts").click();
+    await expect(authedPage).toHaveURL(/\/sales\/contacts$/, {
+      timeout: STEP_TIMEOUT,
+    });
+  });
 });

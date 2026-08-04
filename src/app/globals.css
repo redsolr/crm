@@ -1072,6 +1072,14 @@ body.is-dragging .project-board-card {
 
 .crm-topbar {
   position: relative;
+  /* Above the content plane: at ≥1440px BOTH the topbar center and
+     the content columns carry transforms (screen-centering), and a
+     transform is a stacking context — without this z-index the search
+     dropdown's z-60 is CAPPED inside the topbar's context while the
+     transformed content (later in DOM) wins hit-testing, making the
+     suggestions unclickable at full screen only (founder 2026-08-04,
+     probe-verified). Kept below the overlay tier (drawers/menus ≥40). */
+  z-index: 20;
   display: flex;
   align-items: center;
   gap: 12px;
