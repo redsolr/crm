@@ -1389,27 +1389,46 @@ body.is-dragging .project-board-card {
 
 /* ── Jira-style list interactions (drag rank + inline create) ── */
 
-/* Jira-narrow gutter — just wide enough for the grip / boundary "+". */
+/* Jira-narrow gutter that reads as margin OUTSIDE the table frame:
+   row lines stop at a vertical edge line running along the gutter's
+   right border, and both affordances center ON that line. */
 .crm-table-lead-th {
-  width: 18px;
+  width: 20px;
   padding: 7px 0;
 }
 
 .crm-table-lead-cell {
-  width: 18px;
+  width: 20px;
   padding: 0;
   position: relative;
 }
 
+/* Horizontal row/header lines don't cross the gutter margin… */
+.crm-table thead th.crm-table-lead-th,
+.crm-table tbody td.crm-table-lead-cell {
+  border-bottom-color: transparent;
+}
+
+/* …the frame's vertical edge line does. */
+.crm-table thead th.crm-table-lead-th,
+.crm-table tbody td.crm-table-lead-cell {
+  border-right: 1px solid var(--theme-border-primary);
+}
+
 .crm-drag-handle {
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 16px;
   height: 20px;
-  margin-left: 1px;
   border-radius: 4px;
   color: var(--theme-text-muted);
+  background: var(--claude-content);
   opacity: 0;
   cursor: grab;
   /* dnd-kit pointer sensor needs the browser's touch gestures off. */
@@ -1465,11 +1484,12 @@ body.is-dragging .project-board-card {
   bottom: -6px;
 }
 
-/* The insert line across the row. */
+/* The insert line across the row — starts at the frame's vertical
+   edge line (the gutter margin stays clean). */
 .crm-row-insert-zone::after {
   content: "";
   position: absolute;
-  left: 0;
+  left: 20px;
   right: 0;
   top: 50%;
   height: 2px;
@@ -1478,11 +1498,12 @@ body.is-dragging .project-board-card {
   pointer-events: none;
 }
 
-/* Raised, solid button sitting exactly ON the boundary line at the
-   row's left edge (Jira look) — above the 2px insert line. */
+/* Raised, solid button centered exactly on the INTERSECTION of the
+   boundary line and the frame's vertical edge line (Jira look) —
+   above the 2px insert line. */
 .crm-row-insert-icon {
   position: absolute;
-  left: 0;
+  left: 9px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
