@@ -218,8 +218,10 @@ export function SalesPipelineView() {
         >
           + Opportunity
         </button>
-        {/* Mobile-only single "+" (CSS-hidden ≥768px) — opens a small
-            action menu instead of two side-by-side CTAs. */}
+        {/* Mobile-only single "+ New" (CSS-hidden ≥768px) — a FIXED
+            pill FAB (bottom-right, Jira/Gmail pattern): the header
+            scrolls away with the page, so the create affordance must
+            not live in it. Opens the action menu upward. */}
         <div className="crm-header-add relative">
           <button
             data-testid="sales-header-add-button"
@@ -273,17 +275,8 @@ export function SalesPipelineView() {
         aria-label="Pipeline layout"
         data-testid="sales-pipeline-mode-toggle"
       >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewMode === "kanban"}
-          className="crm-tab-btn"
-          data-active={viewMode === "kanban" ? "true" : undefined}
-          data-testid="sales-pipeline-mode-kanban"
-          onClick={() => changeViewMode("kanban")}
-        >
-          Board
-        </button>
+        {/* Default view leads (Jira/Linear tab convention): Table is
+            the default (2026-07-18 decision), so it comes first. */}
         <button
           type="button"
           role="tab"
@@ -294,6 +287,17 @@ export function SalesPipelineView() {
           onClick={() => changeViewMode("table")}
         >
           Table
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewMode === "kanban"}
+          className="crm-tab-btn"
+          data-active={viewMode === "kanban" ? "true" : undefined}
+          data-testid="sales-pipeline-mode-kanban"
+          onClick={() => changeViewMode("kanban")}
+        >
+          Board
         </button>
       </div>
 

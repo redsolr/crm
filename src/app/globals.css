@@ -1515,13 +1515,26 @@ body.is-dragging .project-board-card {
     display: none;
   }
 
-  /* Two side-by-side header CTAs → one "+ New" menu. */
+  /* Two side-by-side header CTAs → one "+ New" pill FAB pinned to
+     the bottom-right (thumb reach; survives the header scrolling
+     away with the page). */
   .crm-header-cta-desktop {
     display: none;
   }
 
   .crm-header-add {
     display: block;
+    position: fixed;
+    right: 16px;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    z-index: 45;
+  }
+
+  .crm-header-add > .crm-btn-primary {
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-size: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -1534,7 +1547,8 @@ body.is-dragging .project-board-card {
 .crm-header-add-menu {
   position: absolute;
   right: 0;
-  top: calc(100% + 6px);
+  /* Opens UPWARD — the trigger is a bottom-pinned FAB. */
+  bottom: calc(100% + 8px);
   z-index: 41;
   min-width: 180px;
   padding: 4px;
