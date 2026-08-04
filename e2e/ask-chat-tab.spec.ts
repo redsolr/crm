@@ -20,7 +20,71 @@ import { setupSalesHandlers } from "./handlers/sales.handlers";
 import { setupAskHandlers } from "./handlers/ask.handlers";
 import { STEP_TIMEOUT } from "./helpers/sales-ui";
 
+/** 1×1 transparent PNG — enough for the paste → wire → thumbnail loop. */
+const TINY_PNG =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
 test.describe("Chat tab", () => {
+  test("Ctrl+V screenshot: preview strip → rides the send → thumbnail in the bubble", async ({
+    authedPage,
+  }) => {
+    await setupSalesHandlers(authedPage);
+    await setupAskHandlers(authedPage, {
+      streamContent: "That screenshot shows the pipeline table.",
+    });
+    await authedPage.goto("/sales/ask");
+    await expect(authedPage.getByTestId("crm-ask-input")).toBeVisible({
+      timeout: STEP_TIMEOUT,
+    });
+
+    // Paste an image into the composer (ClipboardEvent with a File —
+    // the same shape a screenshot paste produces).
+    await authedPage.evaluate((pngBase64) => {
+      const textarea = document.querySelector(
+        '[data-testid="crm-ask-input"]',
+      );
+      if (textarea === null) throw new Error("composer not found");
+      const bytes = Uint8Array.from(atob(pngBase64), (c) => c.charCodeAt(0));
+      const dt = new DataTransfer();
+      dt.items.add(new File([bytes], "shot.png", { type: "image/png" }));
+      textarea.dispatchEvent(
+        new ClipboardEvent("paste", {
+          clipboardData: dt,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    }, TINY_PNG);
+
+    // Preview strip with a removable thumbnail.
+    await expect(authedPage.getByTestId("crm-ask-attachment")).toHaveCount(1, {
+      timeout: STEP_TIMEOUT,
+    });
+
+    // Send — the request body carries the image as a data URL.
+    const requestPromise = authedPage.waitForRequest(
+      (r) =>
+        r.method() === "POST" && /\/api\/chats\/[^/]+\/responses$/.test(r.url()),
+    );
+    await authedPage
+      .getByTestId("crm-ask-input")
+      .fill("What's in this screenshot?");
+    await authedPage.keyboard.press("Enter");
+    const request = await requestPromise;
+    const body = request.postDataJSON() as { images?: string[] };
+    expect(Array.isArray(body.images)).toBe(true);
+    expect(body.images?.[0]?.startsWith("data:image/png;base64,")).toBe(true);
+
+    // The user bubble shows the thumbnail; the staged strip cleared.
+    await expect(
+      authedPage.getByTestId("crm-ask-message-image"),
+    ).toBeVisible({ timeout: STEP_TIMEOUT });
+    await expect(authedPage.getByTestId("crm-ask-attachments")).toHaveCount(0);
+    await expect(
+      authedPage.getByTestId("crm-ask-message-assistant"),
+    ).toContainText("That screenshot", { timeout: STEP_TIMEOUT });
+  });
+
   test("sidebar tab → send → history rail → reopen rehydrates → delete", async ({
     authedPage,
   }) => {

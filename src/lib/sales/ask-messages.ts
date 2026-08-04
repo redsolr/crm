@@ -30,6 +30,13 @@ export interface AskMessage {
    * reloaded conversation shows the final answer without them.
    */
   steps?: string[];
+  /**
+   * Pasted screenshots (data URLs) sent WITH this user turn — rendered
+   * as thumbnails in the bubble. Live-only like `steps`: images ride
+   * the request to the model but are not persisted in chat history, so
+   * a reloaded conversation shows the text alone.
+   */
+  images?: string[];
 }
 
 export interface AskConversationState {
@@ -39,7 +46,7 @@ export interface AskConversationState {
 }
 
 export type AskEvent =
-  | { type: "send"; text: string }
+  | { type: "send"; text: string; images?: string[] }
   | { type: "chunk"; text: string }
   | { type: "tool_step"; summary: string }
   | { type: "complete" }
@@ -100,7 +107,13 @@ export function askReducer(
       return {
         messages: [
           ...state.messages,
-          { role: "user", content: event.text },
+          {
+            role: "user",
+            content: event.text,
+            ...(event.images !== undefined && event.images.length > 0
+              ? { images: event.images }
+              : {}),
+          },
           { role: "assistant", content: "" },
         ],
         status: "streaming",

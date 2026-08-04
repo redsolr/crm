@@ -56,6 +56,29 @@ describe("askReducer", () => {
     expect(next.error).toBeNull();
   });
 
+  it("send carries pasted screenshots on the user bubble (and omits the key when empty)", () => {
+    const withImages = askReducer(initialAskState, {
+      type: "send",
+      text: "what's in this screenshot?",
+      images: ["data:image/png;base64,iVBORw0KGgo="],
+    });
+    expect(withImages.messages[0]).toEqual({
+      role: "user",
+      content: "what's in this screenshot?",
+      images: ["data:image/png;base64,iVBORw0KGgo="],
+    });
+
+    const withoutImages = askReducer(initialAskState, {
+      type: "send",
+      text: "plain",
+      images: [],
+    });
+    expect(withoutImages.messages[0]).toEqual({
+      role: "user",
+      content: "plain",
+    });
+  });
+
   it("send clears a prior error", () => {
     const errored: AskConversationState = {
       messages: [{ role: "user", content: "earlier" }],

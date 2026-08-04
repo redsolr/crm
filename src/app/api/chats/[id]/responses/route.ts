@@ -2,6 +2,10 @@ import { type NextRequest } from "next/server";
 import { apiError, readJsonBody } from "@/server/api-error";
 import { runAskStream, type AskSseWriter } from "@/server/ask";
 import { loadChat } from "@/server/chats";
+import {
+  MAX_PASTED_IMAGES,
+  isValidImageDataUrl,
+} from "@/lib/chat/image-paste";
 
 /**
  * `POST /api/chats/{id}/responses` — Anthropic-style SSE streaming for
@@ -35,6 +39,25 @@ export async function POST(
   }
   const input = typeof rawInput === "string" ? rawInput : null;
 
+  // Pasted screenshots (data URLs) riding this turn — strict shape:
+  // only accepted image mime types, bounded count and size.
+  const rawImages = (body as { images?: unknown }).images;
+  let images: string[] = [];
+  if (rawImages !== undefined) {
+    if (
+      !Array.isArray(rawImages) ||
+      rawImages.length > MAX_PASTED_IMAGES ||
+      !rawImages.every(isValidImageDataUrl)
+    ) {
+      return apiError(
+        422,
+        "validation_failed",
+        `images must be up to ${MAX_PASTED_IMAGES} image data URLs (png/jpeg/webp/gif, ≤5MB each)`,
+      );
+    }
+    images = rawImages;
+  }
+
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       let closed = false;
@@ -61,7 +84,7 @@ export async function POST(
         },
       };
 
-      void runAskStream(id, input, writer, request.signal)
+      void runAskStream(id, input, writer, request.signal, images)
         .catch((err) => {
           // runAskStream handles its own errors; this guards the seam.
           console.error(`[ask] unhandled stream failure for chat ${id}:`, err);

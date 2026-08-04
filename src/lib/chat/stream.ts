@@ -139,6 +139,11 @@ function toResponsesRequest(
 
   if (!options.isToolContinuation) {
     body.input = request.content;
+    if (request.images !== undefined && request.images.length > 0) {
+      // Pasted screenshots ride THIS turn only (data URLs — the
+      // backend forwards them to the model as image content parts).
+      body.images = request.images;
+    }
   }
   if (request.matter_id !== undefined && request.matter_id !== "") {
     // Matter-scoped chat → server runs the agentic tool loop over this matter.

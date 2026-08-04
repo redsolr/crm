@@ -29,11 +29,17 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/stores/use-auth";
 import { useAskPanel } from "@/stores/use-ask-panel";
 import { chatApiClient } from "@/lib/chat/client";
 import { buildAskWireText } from "@/lib/sales/ask-messages";
+import {
+  MAX_PASTED_IMAGES,
+  extractPastedImages,
+  fileToDataUrl,
+} from "@/lib/chat/image-paste";
 import { AskMarkdown } from "./AskMarkdown";
 import { queryKeys } from "@/queries/query-keys";
 
@@ -126,8 +132,29 @@ export function AskConversation({ pageContext }: AskConversationProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState("");
+  // Pasted screenshots (data URLs) staged for the NEXT send — Ctrl+V
+  // in the composer attaches, ✕ removes, a successful send clears.
+  const [attachments, setAttachments] = useState<string[]>([]);
 
   const streaming = conversation.status === "streaming";
+
+  const onComposerPaste = useCallback(
+    (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const files = extractPastedImages(e.clipboardData.items);
+      if (files.length === 0) return;
+      e.preventDefault();
+      void Promise.all(files.map(fileToDataUrl))
+        .then((urls) => {
+          setAttachments((prev) =>
+            [...prev, ...urls].slice(0, MAX_PASTED_IMAGES),
+          );
+        })
+        .catch((err) => {
+          console.error("[AskConversation] failed to read pasted image:", err);
+        });
+    },
+    [],
+  );
 
   // Focus the composer on mount (drawer open / page load) and again
   // whenever the transcript resets to empty ("new conversation" from
@@ -151,8 +178,9 @@ export function AskConversation({ pageContext }: AskConversationProps) {
   const sendMessage = useCallback(
     async (raw: string) => {
       const text = raw.trim();
+      const images = attachments;
       if (
-        text === "" ||
+        (text === "" && images.length === 0) ||
         useAskPanel.getState().conversation.status === "streaming"
       ) {
         return;
@@ -171,9 +199,11 @@ export function AskConversation({ pageContext }: AskConversationProps) {
       }
 
       setDraft("");
-      // The transcript stores the user's own words; the wire text below
-      // may additionally carry the page-context preamble.
-      dispatchConversation({ type: "send", text });
+      setAttachments([]);
+      // The transcript stores the user's own words (+ pasted-screenshot
+      // thumbnails); the wire text below may additionally carry the
+      // page-context preamble.
+      dispatchConversation({ type: "send", text, images });
       const wireText = buildAskWireText(pageContext, text);
 
       // Lazy conversation create on first send; the id lives in the store
@@ -226,6 +256,7 @@ export function AskConversation({ pageContext }: AskConversationProps) {
           request: {
             role: "user",
             content: wireText,
+            ...(images.length > 0 ? { images } : {}),
             chat_id: activeChatId,
             account_id: accountId,
             user_id: userId,
@@ -278,6 +309,7 @@ export function AskConversation({ pageContext }: AskConversationProps) {
     [
       user,
       pageContext,
+      attachments,
       dispatchConversation,
       setChatId,
       setStreamAbort,
@@ -338,6 +370,22 @@ export function AskConversation({ pageContext }: AskConversationProps) {
                   data-testid="crm-ask-message-user"
                   className="crm-ask-message-user self-end max-w-[85%] px-3.5 py-2 rounded-xl rounded-br-sm bg-[var(--theme-bg-hover)] text-[14px] text-[var(--theme-text-primary)] whitespace-pre-wrap"
                 >
+                  {message.images !== undefined && message.images.length > 0 && (
+                    <div className="crm-ask-message-images flex flex-wrap gap-1.5 mb-1.5">
+                      {message.images.map((src, imageIndex) => (
+                        <Image
+                          key={imageIndex}
+                          src={src}
+                          alt={`Pasted screenshot ${imageIndex + 1}`}
+                          data-testid="crm-ask-message-image"
+                          width={320}
+                          height={200}
+                          unoptimized
+                          className="crm-ask-message-image h-auto w-auto max-h-40 max-w-full rounded-lg border border-[var(--theme-border-secondary)]"
+                        />
+                      ))}
+                    </div>
+                  )}
                   {message.content}
                 </div>
               ) : (
@@ -395,6 +443,42 @@ export function AskConversation({ pageContext }: AskConversationProps) {
           focus-within lifts the outline to the hover tier — a real
           focus ring. */}
       <div className="crm-ask-composer flex-shrink-0 px-3 pb-3 pt-1">
+        {attachments.length > 0 && (
+          <div
+            className="crm-ask-attachments flex flex-wrap gap-2 px-1 pb-2"
+            data-testid="crm-ask-attachments"
+          >
+            {attachments.map((src, index) => (
+              <div
+                key={index}
+                className="crm-ask-attachment relative"
+                data-testid="crm-ask-attachment"
+              >
+                <Image
+                  src={src}
+                  alt={`Pasted screenshot ${index + 1}`}
+                  width={96}
+                  height={64}
+                  unoptimized
+                  className="h-16 w-auto rounded-md border border-[var(--theme-border-secondary)] object-cover"
+                />
+                <button
+                  type="button"
+                  aria-label={`Remove screenshot ${index + 1}`}
+                  data-testid="crm-ask-attachment-remove"
+                  onClick={() =>
+                    setAttachments((prev) =>
+                      prev.filter((_, i) => i !== index),
+                    )
+                  }
+                  className="crm-ask-attachment-remove absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--theme-bg-active)] border border-[var(--theme-border-hover)] text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] text-[9px] leading-none"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="crm-ask-composer-box flex items-end gap-2 rounded-xl border border-[var(--theme-border-secondary)] focus-within:border-[var(--theme-border-hover)] bg-[var(--theme-bg-hover)] px-4 py-3 transition-colors">
           <textarea
             ref={textareaRef}
@@ -403,6 +487,7 @@ export function AskConversation({ pageContext }: AskConversationProps) {
             disabled={streaming}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onComposerKeyDown}
+            onPaste={onComposerPaste}
             placeholder={
               streaming ? "Answering…" : "Ask about your pipeline…"
             }
@@ -424,7 +509,7 @@ export function AskConversation({ pageContext }: AskConversationProps) {
             <button
               type="button"
               onClick={() => void sendMessage(draft)}
-              disabled={draft.trim() === ""}
+              disabled={draft.trim() === "" && attachments.length === 0}
               title="Send"
               data-testid="crm-ask-send"
               className="crm-ask-send-button flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-active)] border border-[var(--theme-border-secondary)] disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
@@ -434,7 +519,8 @@ export function AskConversation({ pageContext }: AskConversationProps) {
           )}
         </div>
         <p className="crm-ask-hint mt-1.5 px-1 text-[11px] text-[var(--theme-text-muted)]">
-          Enter to send · Shift+Enter for a new line · Ctrl/Cmd+J toggles
+          Enter to send · Shift+Enter for a new line · paste a screenshot ·
+          Ctrl/Cmd+J toggles
         </p>
       </div>
     </div>

@@ -64,12 +64,19 @@ interface PendingToolCall {
  * Run one Ask send: append the user input, loop model turns executing
  * sales tools between them, stream text deltas + tool_step events, and
  * persist the assistant's visible text when the turn settles.
+ *
+ * `images` (pasted screenshots as data URLs) ride THIS turn only: the
+ * current user message is sent to the model as multimodal content, but
+ * chat history persists the text alone — a reloaded conversation shows
+ * the words without the screenshots (same live-only rule as tool
+ * steps).
  */
 export async function runAskStream(
   chatId: string,
   input: string | null,
   writer: AskSseWriter,
   abortSignal: AbortSignal,
+  images: string[] = [],
 ): Promise<void> {
   if (input !== null && input !== "") {
     await appendMessage(chatId, "user", input);
@@ -87,6 +94,24 @@ export async function runAskStream(
     { role: "system", content: SYSTEM_PROMPT },
     ...history,
   ];
+
+  // Attach the screenshots to the CURRENT user turn as image parts.
+  if (images.length > 0) {
+    const last = messages[messages.length - 1];
+    if (last !== undefined && last.role === "user") {
+      const text = typeof last.content === "string" ? last.content : "";
+      messages[messages.length - 1] = {
+        role: "user",
+        content: [
+          ...(text !== "" ? [{ type: "text" as const, text }] : []),
+          ...images.map((url) => ({
+            type: "image_url" as const,
+            image_url: { url },
+          })),
+        ],
+      };
+    }
+  }
 
   let visibleText = "";
   let outputTokens = 0;

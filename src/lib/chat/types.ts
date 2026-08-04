@@ -79,6 +79,9 @@ export interface ChatToolStep {
 export interface ChatRequest {
   role: string;
   content: string;
+  /** Pasted screenshots (image data URLs) riding this turn — the
+   *  backend forwards them to the model as image content parts. */
+  images?: string[];
   id?: string;
   chat_id?: string;
   folder_id?: string;
