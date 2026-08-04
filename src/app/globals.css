@@ -1389,13 +1389,14 @@ body.is-dragging .project-board-card {
 
 /* ── Jira-style list interactions (drag rank + inline create) ── */
 
+/* Jira-narrow gutter — just wide enough for the grip / boundary "+". */
 .crm-table-lead-th {
-  width: 26px;
+  width: 18px;
   padding: 7px 0;
 }
 
 .crm-table-lead-cell {
-  width: 26px;
+  width: 18px;
   padding: 0;
   position: relative;
 }
@@ -1404,9 +1405,9 @@ body.is-dragging .project-board-card {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
+  width: 16px;
   height: 20px;
-  margin-left: 3px;
+  margin-left: 1px;
   border-radius: 4px;
   color: var(--theme-text-muted);
   opacity: 0;
@@ -1436,17 +1437,20 @@ body.is-dragging .project-board-card {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
-/* Hover "+" on the row's bottom boundary — insert a record below. */
+/* "+" on the row's bottom boundary — insert a record below. Jira
+   behavior: invisible until the pointer is ON the boundary zone
+   itself (the button is its own hover target), NOT on mere row hover
+   — row hover belongs to the drag grip. */
 .crm-row-insert-btn {
   position: absolute;
-  left: 4px;
-  bottom: -9px;
+  left: 1px;
+  bottom: -8px;
   z-index: 5;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 4px;
   background: var(--theme-bg-tertiary);
   border: 1px solid var(--theme-border-hover);
@@ -1456,11 +1460,9 @@ body.is-dragging .project-board-card {
   transition: opacity 0.1s ease;
 }
 
-.crm-record-table-row:hover .crm-row-insert-btn {
+.crm-row-insert-btn:hover,
+.crm-row-insert-btn:focus-visible {
   opacity: 1;
-}
-
-.crm-row-insert-btn:hover {
   background: var(--theme-bg-hover);
 }
 
