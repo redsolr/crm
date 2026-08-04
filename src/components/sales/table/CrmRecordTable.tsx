@@ -318,7 +318,7 @@ export function CrmRecordTable<Row>({
         onPointerLeave={scheduleClear}
         onClick={(e) => e.stopPropagation()}
       >
-        <GripVertical size={13} aria-hidden="true" />
+        <GripVertical size={16} aria-hidden="true" />
       </button>,
       rootEl,
     );
@@ -669,7 +669,7 @@ export function CrmRecordTable<Row>({
             }}
           >
             <span className="crm-row-insert-icon" aria-hidden="true">
-              <Plus size={14} />
+              <Plus size={16} />
             </span>
           </button>
         )}

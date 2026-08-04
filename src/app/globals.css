@@ -1403,14 +1403,14 @@ body.is-dragging .project-board-card {
   position: absolute;
   /* Centered ON the shell's MEASURED left edge (--gutter-edge is set
      inline from a live rect — see CrmRecordTable): edge - width/2. */
-  left: calc(var(--gutter-edge, 26px) - 10px);
+  left: calc(var(--gutter-edge, 26px) - 12px);
   transform: translateY(-50%);
   z-index: 30;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 22px;
+  width: 24px;
+  height: 26px;
   border-radius: 4px;
   color: var(--theme-text-muted);
   background: transparent;
@@ -1468,15 +1468,15 @@ body.is-dragging .project-board-card {
    same center line as the grip. */
 .crm-row-insert-icon {
   position: absolute;
-  left: calc(var(--gutter-edge, 26px) - 11px);
+  left: calc(var(--gutter-edge, 26px) - 13px);
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
   background: var(--theme-bg-hover);
   border: 1px solid var(--theme-border-hover);
