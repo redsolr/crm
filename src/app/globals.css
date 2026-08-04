@@ -1357,14 +1357,14 @@ body.is-dragging .project-board-card {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--theme-text-muted);
-  /* Dense rows (founder 2026-08-02): Attio-class ~34px rhythm — the
-     inline stage select sets the row floor, padding stays tight. */
-  padding: 7px 12px;
+  /* Jira-class ~40px row rhythm (founder 2026-08-04 — supersedes the
+     2026-08-02 dense Attio ~34px call). */
+  padding: 9px 12px;
   border-bottom: 1px solid var(--theme-border-secondary);
 }
 
 .crm-table tbody td {
-  padding: 5px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--theme-border-primary);
   color: var(--theme-text-secondary);
 }
@@ -1411,9 +1411,13 @@ body.is-dragging .project-board-card {
   justify-content: center;
   width: 24px;
   height: 26px;
-  border-radius: 4px;
-  color: var(--theme-text-muted);
-  background: transparent;
+  border-radius: 6px;
+  /* Same raised, filled treatment as the insert + (founder
+     2026-08-04). */
+  color: var(--theme-text-primary);
+  background: var(--theme-bg-hover);
+  border: 1px solid var(--theme-border-hover);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   cursor: grab;
   /* dnd-kit pointer sensor needs the browser's touch gestures off. */
   touch-action: none;
@@ -1421,7 +1425,6 @@ body.is-dragging .project-board-card {
 
 .crm-drag-handle:hover {
   background: var(--theme-bg-tertiary);
-  color: var(--theme-text-primary);
 }
 
 .crm-drag-handle:active {
@@ -1490,21 +1493,26 @@ body.is-dragging .project-board-card {
   border-bottom: none;
 }
 
+/* Jira-visible chip: a raised rounded button in the footer band, not
+   a muted full-width text line (founder 2026-08-04). */
 .crm-table-create-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  width: 100%;
-  padding: 8px 12px;
-  color: var(--theme-text-muted);
-  font-size: 13px;
-  text-align: left;
+  margin: 7px 10px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  color: var(--theme-text-primary);
+  background: var(--theme-bg-tertiary);
+  border: 1px solid var(--theme-border-secondary);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
 }
 
 .crm-table-create-btn:hover {
-  color: var(--theme-text-primary);
-  background: var(--theme-bg-secondary);
+  background: var(--theme-bg-hover);
+  border-color: var(--theme-border-hover);
 }
 
 /* Inline create form row. */
