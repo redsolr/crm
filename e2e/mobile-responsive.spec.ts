@@ -144,7 +144,21 @@ test.describe("Mobile shell (390px)", () => {
       authedPage.getByTestId("sales-pipeline-table"),
     ).toBeHidden();
 
+    // Peek state is URL-routed (?peek=) — shareable, back-closable.
+    const rowId = await cards.first().getAttribute("data-row-id");
     await cards.first().click();
+    await expect(authedPage.getByTestId("sales-peek-panel")).toBeVisible({
+      timeout: STEP_TIMEOUT,
+    });
+    await expect(authedPage).toHaveURL(/\?peek=/);
+
+    // The mobile back affordance closes it and cleans the URL.
+    await authedPage.getByTestId("sales-peek-back").click();
+    await expect(authedPage.getByTestId("sales-peek-panel")).toHaveCount(0);
+    await expect(authedPage).not.toHaveURL(/peek=/);
+
+    // A pasted share link opens straight into the peek.
+    await authedPage.goto(`/sales?peek=${rowId}`);
     await expect(authedPage.getByTestId("sales-peek-panel")).toBeVisible({
       timeout: STEP_TIMEOUT,
     });

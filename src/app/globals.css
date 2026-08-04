@@ -1156,6 +1156,65 @@ body.is-dragging .project-board-card {
   }
 }
 
+/* Due-count badge on the Summary tab — glanceable "N need me". */
+.crm-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--crm-red, #e5484d);
+  background: color-mix(in srgb, var(--crm-red, #e5484d) 14%, transparent);
+}
+
+/* ── Pipeline Summary tab (the day-start feed) ── */
+
+.crm-summary-pulse {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--theme-border-primary);
+  border-radius: 10px;
+  background: var(--theme-bg-secondary);
+  font-size: 13px;
+  color: var(--theme-text-secondary);
+}
+
+.crm-summary-pulse-value {
+  font-weight: 650;
+  color: var(--crm-green);
+}
+
+.crm-summary-pulse-due {
+  font-weight: 650;
+  color: var(--crm-red, #e5484d);
+}
+
+.crm-summary-pulse-clear {
+  color: var(--theme-text-muted);
+}
+
+.crm-summary-heading {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--theme-text-muted);
+  margin-bottom: 8px;
+}
+
+.crm-summary-empty {
+  font-size: 13px;
+  color: var(--theme-text-muted);
+}
+
 .crm-tab-btn {
   padding: 7px 12px;
   font-size: 12.5px;
@@ -1496,6 +1555,10 @@ body.is-dragging .project-board-card {
   display: none;
 }
 
+.sales-peek-back {
+  display: none;
+}
+
 @media (max-width: 767px) {
   /* Search box → icon (opens the ⌘K palette; the icon's chassis is
      shared with the hamburger — see "Topbar icon buttons"). The crumb
@@ -1513,6 +1576,11 @@ body.is-dragging .project-board-card {
   /* Ask keeps only the spark. */
   .crm-ask-ai-label {
     display: none;
+  }
+
+  /* Full-screen peek gets an explicit back-to-list affordance. */
+  .sales-peek-back {
+    display: flex;
   }
 
   /* Two side-by-side header CTAs → one "+ New" pill FAB pinned to

@@ -24,11 +24,12 @@ import { CompanyLogo } from "./CompanyLogo";
 import { PersonAvatar } from "./PersonAvatar";
 import { CreateContactModal } from "./CreateContactModal";
 import { SalesPeekPanel } from "./peek/SalesPeekPanel";
+import { usePeekRoute } from "@/lib/sales/use-peek-route";
 import { CrmCard, CrmCardField } from "./table/CrmCard";
 
 export function SalesContactsView() {
   const { bundle, isLoading: bundleLoading } = useSalesWorkspaceBundle();
-  const [peekId, setPeekId] = useState<string | null>(null);
+  const { peekId, openPeek, closePeek } = usePeekRoute();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const workspaceId = bundle?.workspace.id;
   const contacts = useContactsQuery(workspaceId);
@@ -137,7 +138,7 @@ export function SalesContactsView() {
                     className="sales-contacts-row"
                     data-testid="sales-contacts-row"
                     data-contact-id={contact.id}
-                    onClick={() => setPeekId(contact.id)}
+                    onClick={() => openPeek(contact.id)}
                   >
                     <td className="pl-5 font-medium text-[var(--theme-text-primary)]">
                       <span className="flex items-center gap-2 min-w-0">
@@ -224,7 +225,7 @@ export function SalesContactsView() {
                 key={contact.id}
                 testId="sales-contacts-card"
                 rowId={contact.id}
-                onOpen={() => setPeekId(contact.id)}
+                onOpen={() => openPeek(contact.id)}
                 title={
                   <span className="flex items-center gap-2 min-w-0">
                     <PersonAvatar name={contact.title} size={18} />
@@ -288,7 +289,7 @@ export function SalesContactsView() {
         <SalesPeekPanel
           bundle={bundle}
           workItemId={peekId}
-          onClose={() => setPeekId(null)}
+          onClose={closePeek}
         />
       )}
 

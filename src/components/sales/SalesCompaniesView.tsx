@@ -34,6 +34,7 @@ import { latestActivity, timeAgo } from "@/lib/sales/relative-time";
 import { domainFromUrl } from "@/lib/sales/company-domain";
 import { CompanyLogo } from "./CompanyLogo";
 import { SalesPeekPanel } from "./peek/SalesPeekPanel";
+import { usePeekRoute } from "@/lib/sales/use-peek-route";
 import { CrmRecordTable } from "./table/CrmRecordTable";
 import { CrmViewSwitcher } from "./table/CrmViewSwitcher";
 import type {
@@ -57,7 +58,7 @@ export function SalesCompaniesView() {
   const { bundle, isLoading: bundleLoading } = useSalesWorkspaceBundle();
   // Row click opens the right-snap peek panel; expand promotes to the
   // full account detail route (web-app mini-panel pattern).
-  const [peekId, setPeekId] = useState<string | null>(null);
+  const { peekId, openPeek, closePeek } = usePeekRoute();
   const [sort, setSort] = useState<TableSort | null>(DEFAULT_SORT);
   const [filters, setFilters] = useState<TableFilters>({});
   const workspaceId = bundle?.workspace.id;
@@ -325,7 +326,7 @@ export function SalesCompaniesView() {
           onSortChange={setSort}
           filters={filters}
           onFiltersChange={setFilters}
-          onRowClick={(account) => setPeekId(account.id)}
+          onRowClick={(account) => openPeek(account.id)}
           testIdPrefix="sales-companies"
           toolbar={
             // Moved out of the view header (2026-08-04 mobile pass) so
@@ -365,7 +366,7 @@ export function SalesCompaniesView() {
         <SalesPeekPanel
           bundle={bundle}
           workItemId={peekId}
-          onClose={() => setPeekId(null)}
+          onClose={closePeek}
         />
       )}
     </div>

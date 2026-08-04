@@ -47,11 +47,14 @@ import {
 import { useAccountAttributes } from "@/lib/sales/use-account-attributes";
 import { formatTHB } from "@/lib/format-currency";
 import { SalesPipelineTable } from "./table/SalesPipelineTable";
+import { usePeekRoute } from "@/lib/sales/use-peek-route";
+import { SalesPipelineSummary } from "./SalesPipelineSummary";
+import { useCommitmentsInbox } from "@/lib/sales/use-commitments-inbox";
 
 /** localStorage key persisting the kanban ⇄ table mode choice. */
 const PIPELINE_VIEW_MODE_STORAGE_KEY = "crm-pipeline-view-mode";
 
-type PipelineViewMode = "kanban" | "table";
+type PipelineViewMode = "summary" | "kanban" | "table";
 
 // The persisted view mode is an EXTERNAL store (module value backed
 // by localStorage), read via useSyncExternalStore: the server
@@ -63,13 +66,14 @@ let viewModeCache: PipelineViewMode | null = null;
 function readStoredViewMode(): PipelineViewMode {
   if (viewModeCache === null) {
     try {
-      // TABLE is the default (user decision 2026-07-18) — board is the
-      // opt-in. Only an explicit stored "kanban" choice restores it.
+      // TABLE is the first-run default (user decision 2026-07-18) —
+      // summary/board are opt-ins that persist per user, so whoever
+      // ends the day on Summary starts there tomorrow.
+      const stored = window.localStorage.getItem(
+        PIPELINE_VIEW_MODE_STORAGE_KEY,
+      );
       viewModeCache =
-        window.localStorage.getItem(PIPELINE_VIEW_MODE_STORAGE_KEY) ===
-        "kanban"
-          ? "kanban"
-          : "table";
+        stored === "kanban" || stored === "summary" ? stored : "table";
     } catch (err) {
       console.warn(
         "[SalesPipelineView] could not read persisted view mode:",
@@ -112,8 +116,9 @@ export function SalesPipelineView() {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showClosed, setShowClosed] = useState(false);
   // Card click opens the right-snap peek panel; expand promotes to the
-  // full detail route (web-app mini-panel pattern).
-  const [peekId, setPeekId] = useState<string | null>(null);
+  // full detail route (web-app mini-panel pattern). Peek state IS the
+  // URL (`?peek=`) — shareable, back-button closes it.
+  const { peekId, openPeek, closePeek } = usePeekRoute();
   // Kanban ⇄ table — persisted external store (see module helpers).
   const viewMode = useSyncExternalStore(
     subscribeToViewMode,
@@ -145,6 +150,15 @@ export function SalesPipelineView() {
     : [];
   // Account snapshots feed the card's company-logo row (favicon domain).
   const accountAttributesById = useAccountAttributes(allAccounts, accountDefs);
+  // Commitments feed the Summary tab's due list + the tab badge
+  // (react-query dedupes with the Summary's own hook call).
+  const commitmentType = bundle?.workItemTypes.find(
+    (t) => t.key === SALES_TYPE_KEYS.commitment,
+  );
+  const commitmentDefs = commitmentType
+    ? bundle?.attributeDefinitionsByType[commitmentType.id] ?? []
+    : [];
+  const commitmentsInbox = useCommitmentsInbox(workspaceId, commitmentDefs);
 
   if (isLoading) {
     return (
@@ -179,6 +193,20 @@ export function SalesPipelineView() {
   // surface the closed columns in the kanban. Otherwise the closed
   // toggle is user-controlled.
   const effectiveShowClosed = filter === "closed" ? true : showClosed;
+
+  // Summary tab badge — everything due NOW: overdue/today next
+  // actions on active deals + overdue/today commitments.
+  const today = todayDateString();
+  const dueActionCount = allOpportunities.filter((o) => {
+    if (o.state.category === "done" || o.state.category === "dead")
+      return false;
+    const d = attributesByOpportunityId[o.id]?.nextActionDate ?? null;
+    return d !== null && d <= today;
+  }).length;
+  const dueCount =
+    dueActionCount +
+    commitmentsInbox.buckets.overdue.length +
+    commitmentsInbox.buckets.due_today.length;
 
   return (
     <div
@@ -275,8 +303,28 @@ export function SalesPipelineView() {
         aria-label="Pipeline layout"
         data-testid="sales-pipeline-mode-toggle"
       >
-        {/* Default view leads (Jira/Linear tab convention): Table is
-            the default (2026-07-18 decision), so it comes first. */}
+        {/* Overview first, then the default working view, then the
+            alternate (Jira order, earned once Summary existed). Table
+            stays the first-run DEFAULT (2026-07-18 decision). */}
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewMode === "summary"}
+          className="crm-tab-btn"
+          data-active={viewMode === "summary" ? "true" : undefined}
+          data-testid="sales-pipeline-mode-summary"
+          onClick={() => changeViewMode("summary")}
+        >
+          Summary
+          {dueCount > 0 && (
+            <span
+              className="crm-tab-count"
+              data-testid="sales-pipeline-due-count"
+            >
+              {dueCount}
+            </span>
+          )}
+        </button>
         <button
           type="button"
           role="tab"
@@ -301,9 +349,22 @@ export function SalesPipelineView() {
         </button>
       </div>
 
-      <FilterChips value={filter} onChange={setFilter} />
+      {/* Chips slice record lists — the Summary owns its own slicing. */}
+      {viewMode !== "summary" && (
+        <FilterChips value={filter} onChange={setFilter} />
+      )}
 
-      {isEmpty ? (
+      {viewMode === "summary" ? (
+        <SalesPipelineSummary
+          bundle={bundle}
+          opportunities={allOpportunities}
+          accountsById={Object.fromEntries(allAccounts.map((a) => [a.id, a]))}
+          attributesById={attributesByOpportunityId}
+          accountDomainsById={accountAttributesById}
+          activePipelineValue={activePipelineValue}
+          onOpenOpportunity={openPeek}
+        />
+      ) : isEmpty ? (
         <EmptyState
           hasAccounts={allAccounts.length > 0}
           onAddCompany={() => setShowAccountModal(true)}
@@ -316,7 +377,7 @@ export function SalesPipelineView() {
           accountsById={Object.fromEntries(allAccounts.map((a) => [a.id, a]))}
           attributesById={attributesByOpportunityId}
           accountAttributesById={accountAttributesById}
-          onOpenOpportunity={setPeekId}
+          onOpenOpportunity={openPeek}
         />
       ) : (
         <SalesKanbanBoard
@@ -327,7 +388,7 @@ export function SalesPipelineView() {
           accountAttributesById={accountAttributesById}
           showClosed={effectiveShowClosed}
           onToggleClosed={setShowClosed}
-          onOpenOpportunity={setPeekId}
+          onOpenOpportunity={openPeek}
         />
       )}
 
@@ -335,7 +396,7 @@ export function SalesPipelineView() {
         <SalesPeekPanel
           bundle={bundle}
           workItemId={peekId}
-          onClose={() => setPeekId(null)}
+          onClose={closePeek}
         />
       )}
 

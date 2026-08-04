@@ -78,6 +78,21 @@ const CloseIcon = () => (
   </svg>
 );
 
+const BackIcon = () => (
+  <svg
+    width="17"
+    height="17"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M15 18l-6-6 6-6" />
+  </svg>
+);
+
 interface Props {
   bundle: SalesWorkspaceBundle;
   workItemId: string;
@@ -191,6 +206,19 @@ export function SalesPeekPanel({ bundle, workItemId, onClose }: Props) {
     >
       {/* ── Header ── */}
       <div className="sales-peek-header flex items-center gap-1 px-3 h-12 border-b border-[var(--theme-border-primary)] flex-shrink-0">
+        {/* Mobile-only (CSS-hidden ≥768px): the peek covers the whole
+            screen on phones, so it needs an explicit way BACK to the
+            list (same action as close — the URL param drops and the
+            list beneath is revealed). */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Back to list"
+          data-testid="sales-peek-back"
+          className="sales-peek-back p-1.5 -ml-1 text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] hover:bg-[var(--theme-bg-hover)] rounded-md transition-colors"
+        >
+          <BackIcon />
+        </button>
         <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-text-muted)]">
           {isOpportunity ? "Opportunity" : "Company"}
         </span>
