@@ -1389,40 +1389,32 @@ body.is-dragging .project-board-card {
 
 /* ── Jira-style list interactions (drag rank + inline create) ── */
 
-/* No gutter column at all (an empty lead column read as a phantom
-   second frame, founder 2026-08-04): the affordances float inside the
-   FIRST cell's own left padding (the title column's pl-5). */
-.crm-table tbody td.crm-table-anchor-cell {
-  position: relative;
+/* The affordances live on an OVERLAY at the table root, floating in a
+   real margin strip LEFT of the shell (Jira anatomy: the table frame
+   is untouched, hover controls sit outside it). The shell shifts
+   right to open the strip; rows never reserve space for controls. */
+.crm-table-shell-gutter {
+  margin-left: 26px;
 }
 
-/* Both affordances anchor flush to the row's LEFT EDGE (x=0) — same
-   anchor, no computed offsets; only the vertical centering differs
-   (grip on the row middle, + on the boundary line). */
+/* Overlay grip — portaled to the root, vertically centered on the
+   hovered row via inline `top`, drag listeners are the row's own. */
 .crm-drag-handle {
   position: absolute;
-  left: 0;
-  top: 50%;
+  left: 2px;
   transform: translateY(-50%);
-  z-index: 4;
+  z-index: 30;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 20px;
+  width: 20px;
+  height: 22px;
   border-radius: 4px;
   color: var(--theme-text-muted);
-  opacity: 0;
+  background: transparent;
   cursor: grab;
   /* dnd-kit pointer sensor needs the browser's touch gestures off. */
   touch-action: none;
-}
-
-/* Grip visibility is zone-driven (pointer in the row's inner text
-   band), not plain row hover — the padding bands belong to insert. */
-.crm-drag-handle[data-visible="true"],
-.crm-record-table-row[data-dragging="true"] .crm-drag-handle {
-  opacity: 1;
 }
 
 .crm-drag-handle:hover {
@@ -1441,39 +1433,27 @@ body.is-dragging .project-board-card {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
-/* Insert affordance on a row boundary. Rendered only while the
-   pointer sits in the row's top/bottom padding band (zone-driven —
-   see CrmRecordTable), anchored to the nearer boundary: a clickable
-   strip with the gutter "+" and a 2px insert line across the row.
-   The strip escapes the gutter cell via absolute positioning (table
-   cells don't clip); 60vw comfortably crosses the visible row. */
+/* Insert overlay — a full-width clickable strip at the root, centered
+   on the boundary via inline `top`: the "+" sits in the margin strip,
+   the 2px line crosses the shell. */
 .crm-row-insert-zone {
   position: absolute;
   left: 0;
-  width: 60vw;
+  right: 0;
   height: 12px;
-  z-index: 5;
+  transform: translateY(-50%);
+  z-index: 25;
   display: block;
   padding: 0;
   background: transparent;
   cursor: pointer;
 }
 
-/* The strip centers on the CENTER of the 1px boundary line (which
-   sits just outside the padding box) — hence the half-pixel. */
-.crm-row-insert-zone[data-edge="top"] {
-  top: -6.5px;
-}
-
-.crm-row-insert-zone[data-edge="bottom"] {
-  bottom: -6.5px;
-}
-
-/* The insert line across the full row (Jira's spans edge to edge). */
+/* The insert line across the shell (starts at the shell's edge). */
 .crm-row-insert-zone::after {
   content: "";
   position: absolute;
-  left: 0;
+  left: 26px;
   right: 0;
   top: 50%;
   height: 2px;
@@ -1482,8 +1462,7 @@ body.is-dragging .project-board-card {
   pointer-events: none;
 }
 
-/* Raised, solid button on the boundary line over the gutter strip —
-   same x-center as the grip. */
+/* Raised, solid button in the margin strip — same x-lane as the grip. */
 .crm-row-insert-icon {
   position: absolute;
   left: 0;
