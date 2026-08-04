@@ -1401,7 +1401,8 @@ body.is-dragging .project-board-card {
    hovered row via inline `top`, drag listeners are the row's own. */
 .crm-drag-handle {
   position: absolute;
-  left: 2px;
+  /* Centered ON the shell's left edge (x=26): 26 - 20/2. */
+  left: 16px;
   transform: translateY(-50%);
   z-index: 30;
   display: inline-flex;
@@ -1462,10 +1463,11 @@ body.is-dragging .project-board-card {
   pointer-events: none;
 }
 
-/* Raised, solid button in the margin strip — same x-lane as the grip. */
+/* Raised, solid button straddling the shell's left edge (x=26):
+   26 - 22/2 — same center line as the grip. */
 .crm-row-insert-icon {
   position: absolute;
-  left: 0;
+  left: 15px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
