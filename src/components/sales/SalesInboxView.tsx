@@ -8,17 +8,18 @@
 import { useSalesWorkspaceBundle } from "@/lib/sales/use-sales-workspace";
 import { SalesCommitmentInbox } from "./SalesCommitmentInbox";
 import { SalesFollowupPanel } from "./SalesFollowupPanel";
+import { CrmViewSkeleton } from "./crm/CrmViewSkeleton";
 
 export function SalesInboxView() {
   const { bundle, isLoading } = useSalesWorkspaceBundle();
 
   if (isLoading) {
     return (
-      <div className="sales-inbox-view flex-1 min-w-0 flex items-center justify-center">
-        <span className="text-sm text-[var(--theme-text-muted)]">
-          Loading inbox…
-        </span>
-      </div>
+      <CrmViewSkeleton
+        title="Inbox"
+        meta="Every promise across every opportunity. No commitment dropped."
+        testId="sales-inbox-view-skeleton"
+      />
     );
   }
 
@@ -42,7 +43,7 @@ export function SalesInboxView() {
         <span className="crm-view-meta">
           Every promise across every opportunity. No commitment dropped.
         </span>
-        <div className="flex-1" />
+        <div className="flex-1" />
       </div>
       <SalesFollowupPanel bundle={bundle} />
       <SalesCommitmentInbox bundle={bundle} />

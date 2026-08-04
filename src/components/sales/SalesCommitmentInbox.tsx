@@ -72,10 +72,23 @@ export function SalesCommitmentInbox({ bundle }: Props) {
   if (isLoading) {
     return (
       <div
-        className="sales-inbox-loading py-12 text-center text-sm text-[var(--theme-text-muted)]"
+        className="sales-inbox-loading crm-view-skeleton-body"
         data-testid="sales-inbox-loading"
+        aria-busy="true"
+        aria-label="Loading commitments"
       >
-        Loading commitments…
+        {Array.from({ length: 5 }, (_, r) => (
+          <div key={r} className="crm-view-skeleton-row">
+            <span
+              className="crm-skeleton-bar"
+              style={{ width: `${[64, 48, 72, 40, 56][r]}%` }}
+            />
+            <span
+              className="crm-skeleton-bar"
+              style={{ width: `${[30, 22, 34, 18, 26][r]}%` }}
+            />
+          </div>
+        ))}
       </div>
     );
   }

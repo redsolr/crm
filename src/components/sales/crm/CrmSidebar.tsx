@@ -14,6 +14,7 @@
  */
 
 import { ReactNode, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/stores/use-auth";
 import { useAppContext } from "@/stores/use-app-context";
@@ -267,17 +268,16 @@ export function CrmSidebar() {
             <AskPanel />; the Chat tab above is the full-page surface. */}
 
           <div className="crm-nav-section">Account</div>
-          <button
-            type="button"
+          <Link
+            href="/account"
             className="crm-nav-item"
             data-testid="crm-nav-settings"
-            onClick={() => router.push("/account")}
           >
             <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
               <SettingsIcon />
             </span>
             <span className="flex-1 truncate">Settings</span>
-        </button>
+        </Link>
       </nav>
 
       {/* Footer doubles as the account-menu trigger (web-app parity:
@@ -308,21 +308,17 @@ export function CrmSidebar() {
   );
 }
 
+/**
+ * Nav rows are real `<Link>`s, not buttons with `router.push` — Link
+ * prefetches routes in the viewport, so switching tabs commits
+ * instantly instead of paying a server round-trip per click (the
+ * pre-2026-08-05 behavior: URL froze for the RSC fetch). Disabled
+ * items stay non-navigating buttons.
+ */
 function CrmNavButton({ item, pathname }: { item: NavItem; pathname: string }) {
-  const router = useRouter();
   const active = item.matches(pathname);
-  return (
-    <button
-      type="button"
-      disabled={item.disabled}
-      data-testid={`sales-nav-${item.id}`}
-      data-active={active ? "true" : undefined}
-      className="crm-nav-item"
-      onClick={() => {
-        if (item.disabled) return;
-        router.push(item.href);
-      }}
-    >
+  const inner = (
+    <>
       <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
         {item.icon}
       </span>
@@ -337,7 +333,29 @@ function CrmNavButton({ item, pathname }: { item: NavItem; pathname: string }) {
           {item.count}
         </span>
       ) : null}
-    </button>
+    </>
+  );
+  if (item.disabled) {
+    return (
+      <button
+        type="button"
+        disabled
+        data-testid={`sales-nav-${item.id}`}
+        className="crm-nav-item"
+      >
+        {inner}
+      </button>
+    );
+  }
+  return (
+    <Link
+      href={item.href}
+      data-testid={`sales-nav-${item.id}`}
+      data-active={active ? "true" : undefined}
+      className="crm-nav-item"
+    >
+      {inner}
+    </Link>
   );
 }
 

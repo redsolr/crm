@@ -1418,6 +1418,31 @@ body.is-dragging .project-board-card {
   background: transparent;
 }
 
+/* View-shaped skeleton (CrmViewSkeleton) — the route-level loading
+   boundary + list-bodied views. Real header chrome when known, then
+   shimmer rows with the list rhythm. */
+.crm-view-skeleton-title {
+  width: 120px;
+  height: 16px;
+}
+
+.crm-view-skeleton-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 24px;
+}
+
+.crm-view-skeleton-row {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid var(--theme-border-primary);
+  border-radius: 10px;
+  background: var(--theme-bg-secondary);
+}
+
 /* Mobile shimmer card — same footprint as .crm-card. */
 .crm-skeleton-card {
   display: flex;

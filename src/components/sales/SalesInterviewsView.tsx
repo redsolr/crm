@@ -32,6 +32,7 @@ import type { InterviewScript } from "@/lib/interview/script-schema";
 import type { WorkItem } from "@/lib/workItemsApi";
 import { InterviewMode } from "./interview/InterviewMode";
 import { NewInterviewModal } from "./interview/NewInterviewModal";
+import { CrmViewSkeleton } from "./crm/CrmViewSkeleton";
 
 interface ActiveInterview {
   opportunity: WorkItem;
@@ -109,11 +110,10 @@ export function SalesInterviewsView() {
 
   if (bundleLoading || !bundle) {
     return (
-      <div className="sales-interviews-view flex-1 min-w-0 flex items-center justify-center">
-        <span className="text-sm text-[var(--theme-text-muted)]">
-          Loading interviews…
-        </span>
-      </div>
+      <CrmViewSkeleton
+        title="Interviews"
+        testId="sales-interviews-view-skeleton"
+      />
     );
   }
 

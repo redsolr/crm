@@ -40,7 +40,7 @@ import {
   SALES_TYPE_KEYS,
 } from "@/lib/sales/constants";
 import type { WorkItem } from "@/lib/workItemsApi";
-import { LoadingDots } from "@/components/shared/LoadingDots";
+import { CrmViewSkeleton } from "./crm/CrmViewSkeleton";
 import { CompanyLogo } from "./CompanyLogo";
 import {
   buildMonthBuckets,
@@ -275,9 +275,11 @@ export function SalesReportsView() {
 
   if (bundleLoading || opportunitiesQuery.isLoading) {
     return (
-      <div className="crm-reports-loading flex-1 flex items-center justify-center">
-        <LoadingDots label="Loading reports" />
-      </div>
+      <CrmViewSkeleton
+        title="Reports"
+        meta="Live from the pipeline — no snapshotting, refresh is the data"
+        testId="sales-reports-view-skeleton"
+      />
     );
   }
 
