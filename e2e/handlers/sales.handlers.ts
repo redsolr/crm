@@ -168,6 +168,18 @@ const MEMORY_STATES_DEF: Array<{
   { key: "archived", name: "Archived", category: "dead" },
 ];
 
+const TASK_STATES_DEF: Array<{
+  key: string;
+  name: string;
+  category: WireState["category"];
+}> = [
+  { key: "todo", name: "To Do", category: "not_started" },
+  { key: "in_progress", name: "In Progress", category: "active" },
+  { key: "in_review", name: "In Review", category: "active" },
+  { key: "done", name: "Done", category: "done" },
+  { key: "canceled", name: "Canceled", category: "dead" },
+];
+
 function makeState(
   workflowId: string,
   def: (typeof PIPELINE_STATES_DEF)[number],
@@ -220,6 +232,16 @@ export async function setupSalesHandlers(page: Page) {
       created_at: NOW(),
       updated_at: NOW(),
     },
+    {
+      id: "wf-task",
+      workspace_id: SALES_WORKSPACE_ID,
+      key: "task",
+      name: "Task",
+      description: null,
+      is_default: false,
+      created_at: NOW(),
+      updated_at: NOW(),
+    },
   ];
 
   const statesByWorkflow: Record<string, WireState[]> = {
@@ -232,6 +254,7 @@ export async function setupSalesHandlers(page: Page) {
     "wf-memory": MEMORY_STATES_DEF.map((d, i) =>
       makeState("wf-memory", d, i),
     ),
+    "wf-task": TASK_STATES_DEF.map((d, i) => makeState("wf-task", d, i)),
   };
 
   const types: WireWorkItemType[] = [
@@ -286,6 +309,17 @@ export async function setupSalesHandlers(page: Page) {
       name: "Commitment",
       description: null,
       workflow_id: "wf-commitment",
+      template_id: null,
+      created_at: NOW(),
+      updated_at: NOW(),
+    },
+    {
+      id: "wit-task",
+      workspace_id: SALES_WORKSPACE_ID,
+      key: "task",
+      name: "Task",
+      description: null,
+      workflow_id: "wf-task",
       template_id: null,
       created_at: NOW(),
       updated_at: NOW(),
@@ -475,6 +509,17 @@ export async function setupSalesHandlers(page: Page) {
     defAttr("wit-commitment", "due_date", "Due Date", "date", true, null),
     defAttr("wit-commitment", "promised_to", "Promised To", "text", false, {
       maxLength: 200,
+    }),
+    // Task (work module)
+    defAttr("wit-task", "project", "Project", "select", true, {
+      options: ["jurisimus", "crm", "class_room", "hq", "other"],
+    }),
+    defAttr("wit-task", "priority", "Priority", "select", false, {
+      options: ["urgent", "high", "medium", "low"],
+    }),
+    defAttr("wit-task", "due_date", "Due Date", "date", false, null),
+    defAttr("wit-task", "assignee", "Assignee", "select", false, {
+      options: ["founder", "claude"],
     }),
   ];
 

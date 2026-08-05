@@ -11,17 +11,15 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@/lib/api-client";
-import {
-  workItemsApi,
-  type CreateWorkItemRequest,
-  type WorkItem,
-} from "@/lib/workItemsApi";
+import { workItemsApi, type WorkItem } from "@/lib/workItemsApi";
 import { attributesApi } from "@/lib/attributesApi";
-import type {
-  AttributeDefinition,
-  AttributeValue,
-} from "@/lib/generated/api/models";
+import type { AttributeValue } from "@/lib/generated/api/models";
 import { queryKeys } from "@/queries/query-keys";
+import {
+  createAndStampAttributes,
+  type AttributeBag,
+  type CreateOptions,
+} from "@/lib/records/create-work-item";
 import {
   COMMITMENT_STATE_KEYS,
   MEMORY_STATE_KEYS,
@@ -29,53 +27,7 @@ import {
   SALES_TYPE_KEYS,
 } from "./constants";
 
-/** Map of attribute key → value for a single create call. The hook
- *  fans them out as one PUT per key after the work_item POST settles. */
-export type AttributeBag = Record<string, unknown>;
-
-interface CreateOptions<TKey extends string> {
-  title: string;
-  description?: string;
-  workspace_id: string;
-  parent_id?: string;
-  state_key?: TKey;
-  /** Explicit manual rank (insert-between-rows create). Omitted ⇒ end. */
-  position?: number;
-  attributes?: AttributeBag;
-  /** Type definitions for the work_item kind we're creating —
-   *  needed to map `attribute_bag[key]` → `definition.id` for the
-   *  follow-up `PUT /work_items/:wi/attribute_values/:def` calls. */
-  definitions: AttributeDefinition[];
-}
-
-async function createAndStampAttributes(
-  type_key: string,
-  options: CreateOptions<string>,
-): Promise<WorkItem> {
-  const request: CreateWorkItemRequest = {
-    title: options.title,
-    description: options.description,
-    workspace_id: options.workspace_id,
-    parent_id: options.parent_id,
-    state_key: options.state_key,
-    position: options.position,
-    type_key,
-  };
-  const { workItem } = await workItemsApi.createWorkItem(request);
-
-  const defs = options.definitions ?? [];
-  const bag = options.attributes ?? {};
-  const writes = Object.entries(bag).flatMap(([key, value]) => {
-    if (value === undefined || value === null || value === "") return [];
-    const def = defs.find((d) => d.key === key);
-    if (!def) return [];
-    return [attributesApi.upsertValue(workItem.id, def.id, value)];
-  });
-  if (writes.length > 0) {
-    await Promise.all(writes);
-  }
-  return workItem;
-}
+export type { AttributeBag };
 
 export function useCreateAccount() {
   const queryClient = useQueryClient();

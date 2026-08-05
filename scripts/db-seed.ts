@@ -87,6 +87,18 @@ const WORKFLOWS: WorkflowSpec[] = [
       { key: "archived", name: "Archived", category: "dead", position: 1 },
     ],
   },
+  {
+    key: "task",
+    name: "Task",
+    isDefault: false,
+    states: [
+      { key: "todo", name: "To Do", category: "not_started", position: 0 },
+      { key: "in_progress", name: "In Progress", category: "active", position: 1 },
+      { key: "in_review", name: "In Review", category: "active", position: 2 },
+      { key: "done", name: "Done", category: "done", position: 3 },
+      { key: "canceled", name: "Canceled", category: "dead", position: 4 },
+    ],
+  },
 ];
 
 const TYPES: TypeSpec[] = [
@@ -279,6 +291,41 @@ const TYPES: TypeSpec[] = [
     attributes: [
       { key: "due_date", name: "Due Date", dataType: "date", required: true, position: 0 },
       { key: "promised_to", name: "Promised To", dataType: "text", config: { maxLength: 200 }, position: 1 },
+    ],
+  },
+  // Work module (org-management v1, 2026-08-06): internal task tracking
+  // in the same single-tenant universe — Jira-style "spaces" are the
+  // `project` select options, boards are per-project filtered views.
+  {
+    key: "task",
+    name: "Task",
+    workflowKey: "task",
+    attributes: [
+      {
+        key: "project",
+        name: "Project",
+        dataType: "select",
+        required: true,
+        config: {
+          options: ["jurisimus", "crm", "class_room", "hq", "other"],
+        },
+        position: 0,
+      },
+      {
+        key: "priority",
+        name: "Priority",
+        dataType: "select",
+        config: { options: ["urgent", "high", "medium", "low"] },
+        position: 1,
+      },
+      { key: "due_date", name: "Due Date", dataType: "date", position: 2 },
+      {
+        key: "assignee",
+        name: "Assignee",
+        dataType: "select",
+        config: { options: ["founder", "claude"] },
+        position: 3,
+      },
     ],
   },
 ];

@@ -28,6 +28,7 @@ import {
 } from "@/lib/sales/use-sales-queries";
 import { useCommitmentsInbox } from "@/lib/sales/use-commitments-inbox";
 import { SALES_TYPE_KEYS } from "@/lib/sales/constants";
+import { useTasksQuery } from "@/lib/work/use-work";
 import { useLayoutUI } from "@/stores/use-layout-ui";
 import AccountMenu from "@/components/layout/AccountMenu";
 
@@ -151,6 +152,13 @@ export function CrmSidebar() {
     (o) => o.state.category !== "done" && o.state.category !== "dead"
   ).length;
 
+  // Work module (internal org management, 2026-08-06): open = not done,
+  // not canceled. Same live-count discipline as the pipeline badge.
+  const tasksQuery = useTasksQuery(workspaceId);
+  const openTaskCount = (tasksQuery.data?.data ?? []).filter(
+    (t) => t.state.category !== "done" && t.state.category !== "dead"
+  ).length;
+
   const workflowItems = useMemo<NavItem[]>(
     () => [
       {
@@ -227,6 +235,24 @@ export function CrmSidebar() {
     []
   );
 
+  // Internal-only by intent (docs/design-org-management-pivot.md guard):
+  // the whole app is internal today, so no flag exists yet — but if
+  // customer seats or demo modes ever ship, this section must be
+  // hidden from them BEFORE that ships.
+  const workItems = useMemo<NavItem[]>(
+    () => [
+      {
+        id: "tasks",
+        label: "Tasks",
+        href: "/work",
+        matches: (p) => p.startsWith("/work"),
+        count: openTaskCount > 0 ? openTaskCount : undefined,
+        icon: <TasksIcon />,
+      },
+    ],
+    [openTaskCount]
+  );
+
   return (
     <aside
       className="crm-sidebar"
@@ -261,6 +287,10 @@ export function CrmSidebar() {
           ))}
           <div className="crm-nav-section">Insights</div>
           {insightItems.map((item) => (
+            <CrmNavButton key={item.id} item={item} pathname={pathname} />
+          ))}
+          <div className="crm-nav-section">Work</div>
+          {workItems.map((item) => (
             <CrmNavButton key={item.id} item={item} pathname={pathname} />
           ))}
           {/* The Ask DRAWER additionally lives in the global topbar
@@ -491,6 +521,26 @@ function ReportsIcon() {
     >
       <path d="M3 3v18h18" />
       <path d="M7 14l4-4 4 4 5-5" />
+    </svg>
+  );
+}
+
+function TasksIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M8 10l2.5 2.5L15 8" />
+      <path d="M8 16h8" />
     </svg>
   );
 }
