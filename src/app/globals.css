@@ -2314,11 +2314,17 @@ body.is-dragging .project-board-card {
 
 /* ── CRM cards / panels / rows ── */
 
+/* Panels sit one surface step ABOVE the page (tertiary bg + the
+   stronger border tier) — bg-secondary on the bg-primary page was a
+   ~2-step luminance gap and card edges vanished in dark mode
+   (founder feedback 2026-08-05, the Account page read as one flat
+   sheet). Titles get the secondary text tier for the same reason. */
 .crm-panel {
-  background: var(--theme-bg-secondary);
-  border: 1px solid var(--theme-border-primary);
+  background: var(--theme-bg-tertiary);
+  border: 1px solid var(--theme-border-secondary);
   border-radius: 10px;
   padding: 16px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.18);
 }
 
 .crm-panel-title {
@@ -2326,7 +2332,7 @@ body.is-dragging .project-board-card {
   font-weight: 650;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--theme-text-muted);
+  color: var(--theme-text-secondary);
 }
 
 .crm-row-card {
