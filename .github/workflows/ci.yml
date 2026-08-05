@@ -8,6 +8,8 @@
 #                account involved) driving the multiplayer spec
 #   deploy       production deploy to Vercel — main pushes only, only
 #                when every tier above is green (see job comment)
+#   deploy-dev   dev-env deploy — develop pushes only, same gate;
+#                Preview target → dev-crm.jurisimus.com
 #
 # real-auth is gated on the `RUN_REAL_AUTH_E2E` repo variable so the
 # workflow lands green before the secrets exist. To enable:
@@ -20,7 +22,10 @@
 name: ci/cd
 on:
   push:
-    branches: [main, develop]
+    # feature/** gets the full test pipeline on bare pushes (no PR
+    # needed); the deploy jobs' ref guards keep deploys to main
+    # (production) and develop (dev preview) only.
+    branches: [main, develop, "feature/**"]
   pull_request:
     branches: [main, develop]
 
@@ -202,4 +207,26 @@ jobs:
     uses: ./.github/workflows/deploy.yml
     with:
       ref: ${{ github.sha }}
+      target: production
+    secrets: inherit
+
+  deploy-dev:
+    # Dev-env deploy — pushes to develop only, same all-tiers-green
+    # gate as production. Deploys a PREVIEW deployment (Vercel's
+    # built-in Preview env supplies the dev vars: Neon dev-branch
+    # DATABASE_URL, dev-crm URLs); the develop branch domain
+    # dev-crm.jurisimus.com always serves develop's latest Preview.
+    needs: [gates, mocked-e2e, real-auth]
+    if: >-
+      ${{ !cancelled() &&
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/develop' &&
+          vars.RUN_VERCEL_DEPLOY == 'true' &&
+          needs.gates.result == 'success' &&
+          needs['mocked-e2e'].result == 'success' &&
+          (needs['real-auth'].result == 'success' || needs['real-auth'].result == 'skipped') }}
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ref: ${{ github.sha }}
+      target: preview
     secrets: inherit

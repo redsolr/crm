@@ -1,12 +1,19 @@
-# Production deploy to Vercel — the single deploy implementation.
+# Vercel deploy — the single deploy implementation for BOTH targets:
+#   production  target:"production" → crm.jurisimus.com
+#   preview     no target → a Preview deployment; the develop branch
+#               domain (dev-crm.jurisimus.com) tracks develop's latest
+#               Preview, and Vercel's built-in Preview env scope
+#               supplies the dev vars (Neon dev-branch DATABASE_URL,
+#               dev URLs — founder-configured in Vercel)
 #
 # Two entry points:
-#   workflow_call      the ci/cd workflow's `deploy` job invokes this
+#   workflow_call      the ci/cd workflow's deploy jobs invoke this
 #                      after every test tier is green (ci.yml holds
-#                      the gating + the RUN_VERCEL_DEPLOY arming var)
+#                      the gating + the RUN_VERCEL_DEPLOY arming var):
+#                      main → production, develop → preview
 #   workflow_dispatch  manual "deploy this ref" button in the Actions
-#                      tab — redeploy or roll back production to any
-#                      commit without a laptop CLI session
+#                      tab — redeploy or roll back either target to
+#                      any commit without a laptop CLI session
 #
 # The job POSTs Vercel's REST API with a gitSource ref: Vercel pulls
 # the commit from the project's GitHub link and builds it on Vercel
@@ -22,19 +29,30 @@ on:
   workflow_call:
     inputs:
       ref:
-        description: Commit SHA or ref to deploy to production
+        description: Commit SHA or ref to deploy
         required: true
         type: string
+      target:
+        description: "'production' or 'preview'"
+        required: false
+        type: string
+        default: production
     secrets:
       VERCEL_TOKEN:
         required: true
   workflow_dispatch:
     inputs:
       ref:
-        description: Commit SHA or ref to deploy to production
+        description: Commit SHA or ref to deploy
         required: true
         type: string
         default: main
+      target:
+        description: Deploy target
+        required: true
+        type: choice
+        options: [production, preview]
+        default: production
 
 jobs:
   vercel:
@@ -45,13 +63,22 @@ jobs:
       VERCEL_PROJECT_ID: prj_8yUb9DHGWeS8hCxde0f4ocrQFCXj
       VERCEL_REPO_ID: "1299076978"
       DEPLOY_REF: ${{ inputs.ref }}
+      DEPLOY_TARGET: ${{ inputs.target }}
     steps:
-      - name: Create production deployment
+      - name: Create deployment
+        # Preview deployments carry NO "target" field — that is what
+        # scopes them to Vercel's built-in Preview env (vars, branch
+        # domain routing). Only production sets target explicitly.
         run: |
+          if [ "$DEPLOY_TARGET" = "production" ]; then
+            target_field='"target":"production",'
+          else
+            target_field=''
+          fi
           resp=$(curl -sf -X POST "https://api.vercel.com/v13/deployments?teamId=$VERCEL_TEAM_ID" \
             -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d '{"name":"crm","project":"'"$VERCEL_PROJECT_ID"'","target":"production","gitSource":{"type":"github","repoId":'"$VERCEL_REPO_ID"',"ref":"'"$DEPLOY_REF"'"}}')
+            -d '{"name":"crm","project":"'"$VERCEL_PROJECT_ID"'",'"$target_field"'"gitSource":{"type":"github","repoId":'"$VERCEL_REPO_ID"',"ref":"'"$DEPLOY_REF"'"}}')
           id=$(echo "$resp" | jq -r '.id // empty')
           if [ -z "$id" ]; then
             echo "deployment creation failed:" >&2
