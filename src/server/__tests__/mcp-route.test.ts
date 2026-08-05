@@ -34,10 +34,17 @@ describe("MCP route", () => {
     }
   });
 
-  it("rejects requests without a token", async () => {
+  it("rejects requests without a token, with an OAuth discovery challenge", async () => {
     process.env.CRM_MCP_TOKEN = "test-secret";
     const res = await POST(rpc(LIST_TOOLS));
     expect(res.status).toBe(401);
+    // Remote-MCP posture: the 401 tells OAuth-capable clients where
+    // the RFC 9728 resource metadata lives.
+    const challenge = res.headers.get("WWW-Authenticate") ?? "";
+    expect(challenge).toContain("Bearer");
+    expect(challenge).toContain(
+      "/.well-known/oauth-protected-resource/mcp",
+    );
   });
 
   it("rejects requests with a wrong token", async () => {

@@ -1,13 +1,14 @@
-import { createMcpHandler } from "mcp-handler";
+import { createMcpHandler, withMcpAuth } from "mcp-handler";
 import * as z from "zod";
+import type { AuthInfo } from "@modelcontextprotocol/server";
 import { ASK_TOOLS, type AskToolDefinition } from "@/server/ask-tools";
-import { MCP_AGENT_ACTOR } from "@/server/constants";
+import { actorFromAuthInfo, verifyMcpToken } from "@/server/mcp-auth";
 
 /**
  * MCP server — the agent door to the CRM (public URL: `POST /mcp`, a
  * rewrite of `/api/mcp/mcp`; see next.config.ts).
  *
- * Exposes the SAME five sales tools the in-app Ask panel runs
+ * Exposes the SAME sales tools the in-app Ask panel runs
  * (`src/server/ask-tools.ts`) over the Model Context Protocol's
  * Streamable HTTP transport, so any MCP client (Claude Code, Claude
  * Desktop, Cursor, …) can read and write the pipeline directly —
@@ -17,11 +18,14 @@ import { MCP_AGENT_ACTOR } from "@/server/constants";
  * `registerTool` wants Standard Schema objects, hence the mechanical
  * JSON-schema→zod conversion below), it defines no tools of its own.
  *
- * Auth: static bearer token (`CRM_MCP_TOKEN` env, server-only).
- * Internal-tool posture — one secret, rotated by changing the env var
- * and redeploying. If this ever serves third parties, upgrade to OAuth
- * (protected-resource metadata via mcp-handler's `withMcpAuth`).
- * With the env var unset the endpoint is CLOSED (401), never open.
+ * Auth (2026-08-06, remote-MCP posture): OAuth 2.1 resource server
+ * against our AuthKit authorization server, PLUS the `CRM_MCP_TOKEN`
+ * static bearer as the service side door — see `src/server/mcp-auth.ts`
+ * for the full contract. Unauthenticated requests get 401 with a
+ * `WWW-Authenticate` challenge pointing at the RFC 9728 metadata
+ * (`/.well-known/oauth-protected-resource/mcp`), which is how MCP
+ * clients discover the OAuth flow. Neither env set ⇒ CLOSED (401),
+ * never open.
  */
 
 /** The narrow JSON-schema subset the ask-tools use: flat objects of
@@ -64,12 +68,17 @@ const handler = createMcpHandler(
           description: tool.definition.description,
           inputSchema: z.object(zodShapeFrom(tool.definition)),
         },
-        async (input: unknown) => {
-          // The /mcp door IS Claude (the founder's coding/ops agent) —
-          // distinct from the GPT-powered in-app Ask assistant.
+        async (
+          input: unknown,
+          ctx: { http?: { authInfo?: AuthInfo } },
+        ) => {
+          // WHO-wrote doctrine: OAuth sessions stamp the REAL
+          // authenticated user; the service token stamps Claude (the
+          // founder's coding/ops agent) — distinct from the
+          // GPT-powered in-app Ask assistant.
           const result = await tool.execute(
             (input ?? {}) as Record<string, unknown>,
-            MCP_AGENT_ACTOR,
+            actorFromAuthInfo(ctx.http?.authInfo),
           );
           return {
             content: [{ type: "text" as const, text: result.content }],
@@ -85,21 +94,14 @@ const handler = createMcpHandler(
   },
 );
 
-function unauthorized(): Response {
-  return new Response(
-    JSON.stringify({ error: "unauthorized", hint: "Bearer token required" }),
-    { status: 401, headers: { "Content-Type": "application/json" } },
-  );
-}
-
-async function guarded(req: Request): Promise<Response> {
-  const token = process.env.CRM_MCP_TOKEN;
-  // No token configured → the endpoint is closed, never open-by-default.
-  if (!token) return unauthorized();
-  if (req.headers.get("authorization") !== `Bearer ${token}`) {
-    return unauthorized();
-  }
-  return handler(req);
-}
+// `required: true` — no anonymous access; the wrapper's 401 carries
+// the WWW-Authenticate challenge with our resource-metadata URL so
+// OAuth-capable clients self-configure. The rewrite serves this route
+// at the public /mcp, so the metadata path is resource-specific
+// (RFC 9728 path insertion for the /mcp resource).
+const guarded = withMcpAuth(handler, verifyMcpToken, {
+  required: true,
+  resourceMetadataPath: "/.well-known/oauth-protected-resource/mcp",
+});
 
 export { guarded as GET, guarded as POST, guarded as DELETE };

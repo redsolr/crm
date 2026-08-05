@@ -102,6 +102,7 @@
     "graphology-layout-forceatlas2": "^0.10.1",
     "graphology-types": "^0.24.8",
     "highlight.js": "^11.11.1",
+    "jose": "^6.2.8",
     "jwt-decode": "^4.0.0",
     "lodash.debounce": "^4.0.8",
     "lodash.throttle": "^4.1.1",

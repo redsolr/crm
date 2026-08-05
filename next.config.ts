@@ -5,11 +5,43 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // jose ships ESM-only; listing it here makes next/jest transpile it
+  // for the CJS test runtime (the jest suites that exercise the MCP
+  // OAuth layer import it). The app build handles ESM natively either
+  // way — this line exists for jest.
+  transpilePackages: ["jose"],
   // Public MCP endpoint: agents connect to the clean /mcp URL
   // (Attio-style); the handler physically lives at
   // app/api/mcp/[transport] (mcp-handler's required layout).
   async rewrites() {
     return [{ source: "/mcp", destination: "/api/mcp/mcp" }];
+  },
+  // Remote-MCP CORS: browser-based MCP clients call /mcp and the
+  // OAuth discovery routes cross-origin. Authorization must be
+  // allowed (bearer tokens), Mcp-Session-Id exposed (transport
+  // handshake), and the well-known metadata publicly readable.
+  async headers() {
+    const mcpCors = [
+      { key: "Access-Control-Allow-Origin", value: "*" },
+      {
+        key: "Access-Control-Allow-Methods",
+        value: "GET, POST, DELETE, OPTIONS",
+      },
+      {
+        key: "Access-Control-Allow-Headers",
+        value: "Authorization, Content-Type, Mcp-Session-Id, Mcp-Protocol-Version",
+      },
+      { key: "Access-Control-Expose-Headers", value: "Mcp-Session-Id" },
+    ];
+    return [
+      { source: "/mcp", headers: mcpCors },
+      { source: "/api/mcp/:transport", headers: mcpCors },
+      { source: "/.well-known/oauth-protected-resource", headers: mcpCors },
+      {
+        source: "/.well-known/oauth-protected-resource/:path*",
+        headers: mcpCors,
+      },
+    ];
   },
   // The e2e webServer sets NEXT_DIST_DIR=.next-e2e so its `next dev`
   // can run ALONGSIDE a developer's dev server — two instances can't
