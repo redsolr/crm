@@ -15,6 +15,7 @@
 
 import { useRef, useState } from "react";
 import type { AttributeDefinition } from "@/lib/generated/api/models";
+import { SelectMenu, keyOptions } from "@/components/ui/select";
 
 interface Props {
   dataType: AttributeDefinition["data_type"];
@@ -66,31 +67,25 @@ export function CrmCellEditor({
 
   if (dataType === "select" && Array.isArray(options)) {
     return (
-      <select
-        data-testid={testId}
+      <SelectMenu
+        testId={testId}
         className="crm-cell-editor"
         value={local}
-        autoFocus
-        onChange={(e) => {
-          setLocal(e.target.value);
-          commit(e.target.value);
+        defaultOpen
+        onChange={(next) => {
+          setLocal(next);
+          commit(next);
         }}
-        onBlur={() => cancel()}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") {
-            e.preventDefault();
-            cancel();
-          }
+        // Menu dismissed without a pick (outside click / Escape) ends
+        // the edit session — same contract as the old blur-cancel.
+        onOpenChange={(open) => {
+          if (!open) cancel();
         }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <option value="">—</option>
-        {options.map((o) => (
-          <option key={o} value={o}>
-            {o.replace(/_/g, " ")}
-          </option>
-        ))}
-      </select>
+        options={keyOptions(options)}
+        placeholder="—"
+        emptyOptionLabel="—"
+        ariaLabel="Cell value"
+      />
     );
   }
 

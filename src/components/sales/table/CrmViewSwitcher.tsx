@@ -15,6 +15,7 @@
  */
 
 import { useState } from "react";
+import { SelectMenu } from "@/components/ui/select";
 import { useSavedViews } from "@/queries/views/use-saved-views";
 import {
   buildViewQuery,
@@ -99,21 +100,17 @@ export function CrmViewSwitcher({
       className="crm-view-switcher"
       data-testid={`${testIdPrefix}-view-switcher`}
     >
-      <select
+      <SelectMenu
         className="crm-view-switcher-select"
-        data-testid={`${testIdPrefix}-view-select`}
+        testId={`${testIdPrefix}-view-select`}
         value={activeViewId}
         disabled={isLoading}
-        onChange={(e) => applyView(e.target.value)}
-        aria-label="Saved view"
-      >
-        <option value="">Default view</option>
-        {surfaceViews.map((v) => (
-          <option key={v.id} value={v.id}>
-            {v.name}
-          </option>
-        ))}
-      </select>
+        onChange={applyView}
+        options={surfaceViews.map((v) => ({ value: v.id, label: v.name }))}
+        placeholder="Default view"
+        emptyOptionLabel="Default view"
+        ariaLabel="Saved view"
+      />
 
       {naming ? (
         <>

@@ -35,6 +35,7 @@ import {
 } from "@/lib/sales/constants";
 import { timeAgo } from "@/lib/sales/relative-time";
 import { formatTHB } from "@/lib/format-currency";
+import { SelectMenu, keyOptions } from "@/components/ui/select";
 import { TransitionToClosedModal } from "../TransitionToClosedModal";
 import type {
   AttributeDefinition,
@@ -270,10 +271,9 @@ export function SalesPeekPanel({ bundle, workItemId, onClose }: Props) {
               {isOpportunity ? (
                 <>
                   <PeekRow label="Stage">
-                    <select
+                    <SelectMenu
                       value={record.state.key}
-                      onChange={(e) => {
-                        const next = e.target.value;
+                      onChange={(next) => {
                         if (next === "lost" || next === "not_now") {
                           setClosedTransition(next);
                           return;
@@ -284,16 +284,12 @@ export function SalesPeekPanel({ bundle, workItemId, onClose }: Props) {
                           state_key: next,
                         });
                       }}
+                      options={keyOptions(PIPELINE_STAGE_ORDER)}
+                      searchable={false}
                       className="rounded-md bg-[var(--theme-bg-secondary)] border border-[var(--theme-border-secondary)] px-2 py-1 text-[12.5px] text-[var(--theme-text-primary)] focus:outline-none"
-                      data-testid="sales-peek-stage-select"
-                      aria-label="Pipeline stage"
-                    >
-                      {PIPELINE_STAGE_ORDER.map((s) => (
-                        <option key={s} value={s}>
-                          {s.replace(/_/g, " ")}
-                        </option>
-                      ))}
-                    </select>
+                      testId="sales-peek-stage-select"
+                      ariaLabel="Pipeline stage"
+                    />
                   </PeekRow>
                   <PeekRow label="Company">
                     <span className="text-[13px] text-[var(--theme-text-primary)]">

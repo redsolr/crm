@@ -243,4 +243,43 @@ test.describe("Ask surface", () => {
     // behind the drawer refetched without a manual refresh.
     await pipelineRefetch;
   });
+
+  test("the drawer is drag-resizable and the width survives reopen", async ({
+    authedPage,
+  }) => {
+    await setupSalesHandlers(authedPage);
+    await setupAskHandlers(authedPage);
+
+    await authedPage.goto("/sales");
+    await authedPage.getByTestId("crm-header-ask").click();
+    const panel = authedPage.getByTestId("crm-ask-panel");
+    await expect(panel).toBeVisible({ timeout: STEP_TIMEOUT });
+
+    const before = await panel.boundingBox();
+    if (!before) throw new Error("panel has no bounding box");
+
+    // Drag the leading-edge handle 120px further left → panel widens.
+    const handle = authedPage.getByTestId("crm-ask-resize-handle");
+    const handleBox = await handle.boundingBox();
+    if (!handleBox) throw new Error("resize handle has no bounding box");
+    const startX = handleBox.x + handleBox.width / 2;
+    const startY = handleBox.y + handleBox.height / 2;
+    await authedPage.mouse.move(startX, startY);
+    await authedPage.mouse.down();
+    await authedPage.mouse.move(startX - 120, startY, { steps: 8 });
+    await authedPage.mouse.up();
+
+    const after = await panel.boundingBox();
+    if (!after) throw new Error("panel has no bounding box after drag");
+    expect(after.width).toBeGreaterThan(before.width + 80);
+
+    // The chosen width persists across close → reopen (localStorage).
+    await authedPage.getByTestId("crm-ask-close").click();
+    await expect(panel).toHaveCount(0);
+    await authedPage.getByTestId("crm-header-ask").click();
+    await expect(panel).toBeVisible({ timeout: STEP_TIMEOUT });
+    const reopened = await panel.boundingBox();
+    if (!reopened) throw new Error("panel has no bounding box on reopen");
+    expect(Math.abs(reopened.width - after.width)).toBeLessThanOrEqual(2);
+  });
 });

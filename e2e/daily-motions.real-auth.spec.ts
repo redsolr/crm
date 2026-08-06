@@ -11,6 +11,7 @@ import { localDate } from "./helpers/dates";
 // with the same import (not a hand mirror) means a format change can
 // never silently diverge spec from UI.
 import { formatTHB as thb } from "../src/lib/format-currency";
+import { pickOption } from "./helpers/select";
 
 /**
  * The DAILY sales motions against the real stack (real WorkOS session,
@@ -111,12 +112,12 @@ test("inbox follow-through → stage move with author → reports reconcile", as
   // ── 2. Stage move via the record page, with real attribution ───────
   await page.goto(recordUrl);
   const stageSelect = page.getByTestId("sales-opportunity-detail-stage-select");
-  await stageSelect.selectOption("contacted");
+  await pickOption(stageSelect, "contacted");
   await page.waitForTimeout(1_000);
   await page.reload();
   await expect(
     page.getByTestId("sales-opportunity-detail-stage-select"),
-  ).toHaveValue("contacted", { timeout: 45_000 });
+  ).toHaveAttribute("data-value", "contacted", { timeout: 45_000 });
 
   // The move is in the timeline with the real (non-empty) author name —
   // the session user, never the usr_local placeholder blend.
@@ -222,9 +223,7 @@ test("inbox follow-through → stage move with author → reports reconcile", as
   // rows that crowd the 8-slot Needs-attention panel (won transitions
   // directly — only lost/not_now intercept with the reason modal).
   await page.goto(recordUrl);
-  await page
-    .getByTestId("sales-opportunity-detail-stage-select")
-    .selectOption("won");
+  await pickOption(page.getByTestId("sales-opportunity-detail-stage-select"), "won");
   await page.waitForTimeout(1_000);
 
   await page.waitForTimeout(2_000);

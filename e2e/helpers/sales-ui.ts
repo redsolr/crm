@@ -8,6 +8,7 @@
 
 import { expect } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
+import { pickOption } from "./select";
 
 // Per-step ceiling for post-action UI updates (modal close → mock refetch →
 // re-render, activation-ladder localStorage write). 15s rather than 5s so a
@@ -57,9 +58,7 @@ export async function createAccountViaMobileMenu(page: Page, name: string) {
   await page.getByTestId("sales-header-add-button").click();
   await page.getByTestId("sales-header-add-company").click();
   await page.getByTestId("sales-account-name-input").fill(name);
-  await page
-    .getByTestId("sales-account-source-select")
-    .selectOption("referral");
+  await pickOption(page.getByTestId("sales-account-source-select"), "referral");
   await page.getByRole("button", { name: "Add company" }).click();
   await expect(page.getByTestId("sales-account-name-input")).toHaveCount(0, {
     timeout: STEP_TIMEOUT,
@@ -73,12 +72,8 @@ export async function createOpportunityViaMobileMenu(
   await page.getByTestId("sales-header-add-button").click();
   await page.getByTestId("sales-header-add-opportunity").click();
   await page.getByTestId("sales-opportunity-title-input").fill(title);
-  await page
-    .getByTestId("sales-opportunity-account-select")
-    .selectOption({ index: 1 });
-  await page
-    .getByTestId("sales-opportunity-use-case-select")
-    .selectOption("matter_chaos");
+  await pickOption(page.getByTestId("sales-opportunity-account-select"), { index: 0 });
+  await pickOption(page.getByTestId("sales-opportunity-use-case-select"), "matter_chaos");
   await page.getByRole("button", { name: "Create opportunity" }).click();
   await expect(
     page.getByTestId("sales-opportunity-title-input"),
@@ -89,9 +84,7 @@ export async function createOpportunityViaMobileMenu(
 export async function createAccountViaUi(page: Page, name: string) {
   await page.getByTestId("sales-add-account-button").click();
   await page.getByTestId("sales-account-name-input").fill(name);
-  await page
-    .getByTestId("sales-account-source-select")
-    .selectOption("referral");
+  await pickOption(page.getByTestId("sales-account-source-select"), "referral");
   await page.getByRole("button", { name: "Add company" }).click();
 }
 
@@ -111,12 +104,8 @@ export async function createOpportunityViaUi(
 ) {
   await page.getByTestId("sales-add-opportunity-button").click();
   await page.getByTestId("sales-opportunity-title-input").fill(title);
-  await page
-    .getByTestId("sales-opportunity-account-select")
-    .selectOption({ index: 1 });
-  await page
-    .getByTestId("sales-opportunity-use-case-select")
-    .selectOption("matter_chaos");
+  await pickOption(page.getByTestId("sales-opportunity-account-select"), { index: 0 });
+  await pickOption(page.getByTestId("sales-opportunity-use-case-select"), "matter_chaos");
   if (opts?.nextAction) {
     await page
       .getByLabel("Next action", { exact: true })

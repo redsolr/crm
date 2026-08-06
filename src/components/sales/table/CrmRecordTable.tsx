@@ -64,6 +64,7 @@ import {
   type TableSort,
 } from "./table-model";
 import { CrmCellEditor } from "./CrmCellEditor";
+import { SelectMenu, keyOptions } from "@/components/ui/select";
 import { CrmCard, CrmCardField } from "./CrmCard";
 import { CrmRefreshIndicator } from "./CrmRefreshIndicator";
 import {
@@ -491,21 +492,18 @@ export function CrmRecordTable<Row>({
             <label key={column.id} className="crm-table-filter">
               <span className="crm-table-filter-label">{column.label}</span>
               {column.filter?.type === "select" ? (
-                <select
-                  data-testid={`${testIdPrefix}-filter-${column.id}`}
+                <SelectMenu
+                  testId={`${testIdPrefix}-filter-${column.id}`}
                   className="crm-table-filter-input"
                   value={filters[column.id] ?? ""}
-                  onChange={(e) =>
-                    onFiltersChange({ ...filters, [column.id]: e.target.value })
+                  onChange={(next) =>
+                    onFiltersChange({ ...filters, [column.id]: next })
                   }
-                >
-                  <option value="">Any</option>
-                  {column.filter.options.map((o) => (
-                    <option key={o} value={o}>
-                      {o.replace(/_/g, " ")}
-                    </option>
-                  ))}
-                </select>
+                  options={keyOptions(column.filter.options)}
+                  placeholder="Any"
+                  emptyOptionLabel="Any"
+                  ariaLabel={`Filter by ${column.label}`}
+                />
               ) : (
                 <input
                   data-testid={`${testIdPrefix}-filter-${column.id}`}

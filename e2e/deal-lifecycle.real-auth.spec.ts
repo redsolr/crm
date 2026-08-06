@@ -7,6 +7,7 @@ import {
   trackDeadApiCalls,
 } from "./helpers/real-auth";
 import { localDate } from "./helpers/dates";
+import { pickOption } from "./helpers/select";
 
 /**
  * The FULL deal lifecycle against the real stack (real WorkOS session,
@@ -72,7 +73,7 @@ async function openDealPage(page: Page, title: string): Promise<string> {
 /** Move the open deal's stage via the detail select (non-closing keys). */
 async function moveStage(page: Page, stageKey: string): Promise<void> {
   const select = page.getByTestId("sales-opportunity-detail-stage-select");
-  await select.selectOption(stageKey);
+  await pickOption(select, stageKey);
   // The select is CONTROLLED by server truth (cache → refetch), so
   // waiting for it to read the target waits for the PATCH (incl. its
   // conflict retries) to actually LAND. The previous blind 800ms beat
@@ -80,7 +81,7 @@ async function moveStage(page: Page, stageKey: string): Promise<void> {
   // aborted by the next action/reload and the move silently vanished
   // (the 2026-08-04 "won stayed trial" red — server logged
   // `Error: aborted` at exactly those moments).
-  await expect(select).toHaveValue(stageKey, { timeout: 45_000 });
+  await expect(select).toHaveAttribute("data-value", stageKey, { timeout: 45_000 });
 }
 
 test("full funnel: win with call+commitment, lose with reason, park and RESURFACE on revisit", async ({
@@ -113,7 +114,7 @@ test("full funnel: win with call+commitment, lose with reason, park and RESURFAC
   await page
     .getByTestId("sales-call-note-title-input")
     .fill(`Call — ${DEAL_WIN}`);
-  await page.getByTestId("sales-call-note-outcome-select").selectOption("positive");
+  await pickOption(page.getByTestId("sales-call-note-outcome-select"), "positive");
   await page.getByRole("button", { name: "Log call", exact: true }).click();
   await expect(
     page.locator("[data-testid='sales-call-notes-section-item']", {
@@ -162,7 +163,7 @@ test("full funnel: win with call+commitment, lose with reason, park and RESURFAC
   await page.reload();
   await expect(
     page.getByTestId("sales-opportunity-detail-stage-select"),
-  ).toHaveValue("won", { timeout: 45_000 });
+  ).toHaveAttribute("data-value", "won", { timeout: 45_000 });
 
   // The journey left its trail: several authored "moved stage" entries.
   const moveEntries = page.locator(
@@ -178,26 +179,22 @@ test("full funnel: win with call+commitment, lose with reason, park and RESURFAC
 
   // ── Deal B: lost via the reason modal ──────────────────────────────
   await openDealPage(page, DEAL_LOST);
-  await page
-    .getByTestId("sales-opportunity-detail-stage-select")
-    .selectOption("lost");
+  await pickOption(page.getByTestId("sales-opportunity-detail-stage-select"), "lost");
   const lostReasonSelect = page.getByTestId(
     "sales-transition-lost-reason-select",
   );
   await expect(lostReasonSelect).toBeVisible({ timeout: 45_000 });
-  await lostReasonSelect.selectOption("competitor");
+  await pickOption(lostReasonSelect, "competitor");
   await page.getByRole("button", { name: "Mark lost", exact: true }).click();
   await expect(lostReasonSelect).not.toBeVisible({ timeout: 45_000 });
   await page.reload();
   await expect(
     page.getByTestId("sales-opportunity-detail-stage-select"),
-  ).toHaveValue("lost", { timeout: 45_000 });
+  ).toHaveAttribute("data-value", "lost", { timeout: 45_000 });
 
   // ── Deal C: parked with a PAST revisit date → must RESURFACE ───────
   const parkedUrl = await openDealPage(page, DEAL_PARKED);
-  await page
-    .getByTestId("sales-opportunity-detail-stage-select")
-    .selectOption("not_now");
+  await pickOption(page.getByTestId("sales-opportunity-detail-stage-select"), "not_now");
   const notNowInput = page.getByTestId("sales-transition-not-now-until-input");
   await expect(notNowInput).toBeVisible({ timeout: 45_000 });
   await notNowInput.fill(localDate(-1));

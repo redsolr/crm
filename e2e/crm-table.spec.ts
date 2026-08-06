@@ -20,6 +20,7 @@
 import { test, expect } from "./fixtures/auth.fixture";
 import type { Page } from "@playwright/test";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
+import { pickOption } from "./helpers/select";
 
 const STEP_TIMEOUT = 15_000;
 
@@ -30,7 +31,7 @@ async function addCompany(
 ) {
   await page.getByTestId("sales-add-account-button").click();
   await page.getByTestId("sales-account-name-input").fill(name);
-  await page.getByTestId("sales-account-source-select").selectOption(source);
+  await pickOption(page.getByTestId("sales-account-source-select"), source);
   await page.getByRole("button", { name: /Add company/i }).click();
   // Modal closes when the create round-trip lands.
   await expect(page.getByTestId("sales-account-name-input")).toHaveCount(0, {
@@ -45,12 +46,8 @@ async function addOpportunity(
 ) {
   await page.getByTestId("sales-add-opportunity-button").click();
   await page.getByTestId("sales-opportunity-title-input").fill(title);
-  await page
-    .getByTestId("sales-opportunity-account-select")
-    .selectOption({ label: accountLabel });
-  await page
-    .getByTestId("sales-opportunity-use-case-select")
-    .selectOption("matter_chaos");
+  await pickOption(page.getByTestId("sales-opportunity-account-select"), { label: accountLabel });
+  await pickOption(page.getByTestId("sales-opportunity-use-case-select"), "matter_chaos");
   await page.getByRole("button", { name: /Create opportunity/i }).click();
   await expect(
     page.getByTestId("sales-opportunity-title-input"),
@@ -81,9 +78,7 @@ test.describe("CRM record table", () => {
     await row.getByTestId("sales-companies-cell-segment").click();
     // Editing a cell must NOT open the row peek panel.
     await expect(authedPage.getByTestId("sales-peek-panel")).toHaveCount(0);
-    await authedPage
-      .getByTestId("sales-companies-edit-segment")
-      .selectOption("solo");
+    await pickOption(authedPage.getByTestId("sales-companies-edit-segment"), "solo");
     // Select commits on change — the committed value renders
     // immediately (optimistic cache patch).
     await expect(
@@ -152,9 +147,7 @@ test.describe("CRM record table", () => {
       { hasText: "Solo Law" },
     );
     await soloRow.getByTestId("sales-companies-cell-segment").click();
-    await authedPage
-      .getByTestId("sales-companies-edit-segment")
-      .selectOption("solo");
+    await pickOption(authedPage.getByTestId("sales-companies-edit-segment"), "solo");
     await expect(
       soloRow.getByTestId("sales-companies-cell-segment"),
     ).toContainText("solo", { timeout: STEP_TIMEOUT });
@@ -163,17 +156,13 @@ test.describe("CRM record table", () => {
       { hasText: "Big Firm LLP" },
     );
     await firmRow.getByTestId("sales-companies-cell-segment").click();
-    await authedPage
-      .getByTestId("sales-companies-edit-segment")
-      .selectOption("firm_6_10");
+    await pickOption(authedPage.getByTestId("sales-companies-edit-segment"), "firm_6_10");
     await expect(
       firmRow.getByTestId("sales-companies-cell-segment"),
     ).toContainText("firm 6 10", { timeout: STEP_TIMEOUT });
 
     // ── Filter → 1 row; footer is a live calculation row ───────────
-    await authedPage
-      .getByTestId("sales-companies-filter-segment")
-      .selectOption("solo");
+    await pickOption(authedPage.getByTestId("sales-companies-filter-segment"), "solo");
     await expect(rows).toHaveCount(1, { timeout: STEP_TIMEOUT });
     await expect(
       authedPage.getByTestId("sales-companies-footer"),
@@ -193,22 +182,18 @@ test.describe("CRM record table", () => {
     ).toContainText("Solo firms", { timeout: STEP_TIMEOUT });
 
     // ── Switch back to the default view — filters reset ────────────
-    await authedPage
-      .getByTestId("sales-companies-view-select")
-      .selectOption({ label: "Default view" });
+    await pickOption(authedPage.getByTestId("sales-companies-view-select"), { label: "Default view" });
     await expect(rows).toHaveCount(2, { timeout: STEP_TIMEOUT });
     await expect(
       authedPage.getByTestId("sales-companies-filter-segment"),
-    ).toHaveValue("");
+    ).toHaveAttribute("data-value", "");
 
     // ── Re-apply the saved view — filter state restored ────────────
-    await authedPage
-      .getByTestId("sales-companies-view-select")
-      .selectOption({ label: "Solo firms" });
+    await pickOption(authedPage.getByTestId("sales-companies-view-select"), { label: "Solo firms" });
     await expect(rows).toHaveCount(1, { timeout: STEP_TIMEOUT });
     await expect(
       authedPage.getByTestId("sales-companies-filter-segment"),
-    ).toHaveValue("solo");
+    ).toHaveAttribute("data-value", "solo");
 
     // ── Delete the view — back to default state ────────────────────
     await authedPage.getByTestId("sales-companies-view-delete").click();
@@ -253,8 +238,8 @@ test.describe("CRM record table", () => {
 
     // ── Inline stage change through the select ─────────────────────
     const stageSelect = tableRow.getByTestId("sales-pipeline-stage-select");
-    await stageSelect.selectOption("contacted");
-    await expect(stageSelect).toHaveValue("contacted", {
+    await pickOption(stageSelect, "contacted");
+    await expect(stageSelect).toHaveAttribute("data-value", "contacted", {
       timeout: STEP_TIMEOUT,
     });
 
@@ -272,7 +257,7 @@ test.describe("CRM record table", () => {
     expect(persistedState).toBe("contacted");
 
     // ── Transition to `lost` opens the reason modal, cancel reverts ─
-    await stageSelect.selectOption("lost");
+    await pickOption(stageSelect, "lost");
     await expect(
       authedPage.getByTestId("sales-transition-lost-reason-select"),
     ).toBeVisible({ timeout: STEP_TIMEOUT });
@@ -280,7 +265,7 @@ test.describe("CRM record table", () => {
     await expect(
       authedPage.getByTestId("sales-transition-lost-reason-select"),
     ).toHaveCount(0);
-    await expect(stageSelect).toHaveValue("contacted");
+    await expect(stageSelect).toHaveAttribute("data-value", "contacted");
 
     // ── Inline attribute edit in table mode (value estimate) ───────
     await tableRow.getByTestId("sales-pipeline-cell-value_estimate").click();

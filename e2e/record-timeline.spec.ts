@@ -9,6 +9,7 @@
 
 import { test, expect } from "./fixtures/auth.fixture";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
+import { pickOption } from "./helpers/select";
 import {
   STEP_TIMEOUT,
   ensureBoardMode,
@@ -51,9 +52,7 @@ test.describe("Record-page activity timeline", () => {
     await authedPage
       .getByTestId("sales-call-note-title-input")
       .fill("Discovery call");
-    await authedPage
-      .getByTestId("sales-call-note-outcome-select")
-      .selectOption("positive");
+    await pickOption(authedPage.getByTestId("sales-call-note-outcome-select"), "positive");
     await authedPage
       .getByRole("button", { name: "Log call", exact: true })
       .click();

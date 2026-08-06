@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
+import { SelectMenu, keyOptions } from "@/components/ui/select";
 import { Field, FORM_INPUT_CLASS as INPUT } from "./form";
 import {
   OPPORTUNITY_USE_CASE_OPTIONS,
@@ -110,34 +111,25 @@ export function CreateOpportunityModal({
             />
           </Field>
           <Field label="Account" required>
-            <select
-              data-testid="sales-opportunity-account-select"
+            <SelectMenu
+              testId="sales-opportunity-account-select"
               value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
+              onChange={setAccountId}
+              options={accounts.map((a) => ({ value: a.id, label: a.title }))}
+              placeholder="Pick an account…"
+              searchPlaceholder="Search companies…"
               className={INPUT}
-            >
-              <option value="">Pick an account…</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.title}
-                </option>
-              ))}
-            </select>
+            />
           </Field>
           <Field label="Use case" required>
-            <select
-              data-testid="sales-opportunity-use-case-select"
+            <SelectMenu
+              testId="sales-opportunity-use-case-select"
               value={useCase}
-              onChange={(e) => setUseCase(e.target.value)}
+              onChange={setUseCase}
+              options={keyOptions(OPPORTUNITY_USE_CASE_OPTIONS)}
+              placeholder="Pick a use case…"
               className={INPUT}
-            >
-              <option value="">Pick a use case…</option>
-              {OPPORTUNITY_USE_CASE_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {o.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+            />
           </Field>
           <Field label="Value estimate (USD/yr)">
             <input

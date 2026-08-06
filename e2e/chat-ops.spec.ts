@@ -113,7 +113,7 @@ test.describe("Conversational CRM ops", () => {
     ).toBeVisible({ timeout: STEP_TIMEOUT });
     await expect(
       authedPage.getByTestId("sales-opportunity-detail-stage-select"),
-    ).toHaveValue("call_done", { timeout: STEP_TIMEOUT });
+    ).toHaveAttribute("data-value", "call_done", { timeout: STEP_TIMEOUT });
     await expect(
       authedPage.locator("[data-testid='sales-call-notes-section-item']", {
         hasText: "Call — Thonglor Legal Group",

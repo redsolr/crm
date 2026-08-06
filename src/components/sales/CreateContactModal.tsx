@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
+import { SelectMenu, keyOptions } from "@/components/ui/select";
 import { Field, FORM_INPUT_CLASS as INPUT } from "./form";
 import {
   CONTACT_DECISION_ROLE_OPTIONS,
@@ -112,19 +113,17 @@ export function CreateContactModal({
             </Field>
           </div>
           <Field label="Company">
-            <select
-              data-testid="sales-contact-account-select"
+            <SelectMenu
+              testId="sales-contact-account-select"
               value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
+              onChange={setAccountId}
+              options={accounts.map((a) => ({ value: a.id, label: a.title }))}
+              placeholder="No company"
+              emptyOptionLabel="No company"
+              searchPlaceholder="Search companies…"
               className={INPUT}
-            >
-              <option value="">No company</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.title}
-                </option>
-              ))}
-            </select>
+              ariaLabel="Company"
+            />
           </Field>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Role">
@@ -137,19 +136,15 @@ export function CreateContactModal({
               />
             </Field>
             <Field label="Decision role">
-              <select
-                data-testid="sales-contact-decision-role-select"
+              <SelectMenu
+                testId="sales-contact-decision-role-select"
                 value={decisionRole}
-                onChange={(e) => setDecisionRole(e.target.value)}
+                onChange={setDecisionRole}
+                options={keyOptions(CONTACT_DECISION_ROLE_OPTIONS)}
+                placeholder="Pick one…"
                 className={INPUT}
-              >
-                <option value="">Pick one…</option>
-                {CONTACT_DECISION_ROLE_OPTIONS.map((o) => (
-                  <option key={o} value={o}>
-                    {o.replace(/_/g, " ")}
-                  </option>
-                ))}
-              </select>
+                ariaLabel="Decision role"
+              />
             </Field>
           </div>
           <Field label="Email">

@@ -8,6 +8,7 @@
 import { test, expect } from "./fixtures/auth.fixture";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
 import { STEP_TIMEOUT } from "./helpers/sales-ui";
+import { pickOption } from "./helpers/select";
 
 const COLUMN = (page: import("@playwright/test").Page, title: string) =>
   page.locator(".project-board-column", { hasText: title });
@@ -55,7 +56,7 @@ test.describe("Work board", () => {
     await card.click();
     const projectSelect = authedPage.getByTestId("work-task-project-select");
     await expect(projectSelect).toBeVisible({ timeout: STEP_TIMEOUT });
-    await projectSelect.selectOption("crm");
+    await pickOption(projectSelect, "crm");
     await authedPage.getByRole("button", { name: "Save" }).click();
     await expect(projectSelect).toHaveCount(0);
     await expect(card.locator(".work-task-chip")).toHaveText("Crm", {
@@ -73,9 +74,7 @@ test.describe("Work board", () => {
     // Cancel the task: it leaves the default board, reappears with the
     // canceled lane toggled on.
     await card.click();
-    await authedPage
-      .getByTestId("work-task-stage-select")
-      .selectOption("canceled");
+    await pickOption(authedPage.getByTestId("work-task-stage-select"), "canceled");
     await authedPage.getByRole("button", { name: "Save" }).click();
     await expect(authedPage.getByTestId("work-task-card")).toHaveCount(0, {
       timeout: STEP_TIMEOUT,

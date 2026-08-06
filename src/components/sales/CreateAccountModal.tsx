@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
+import { SelectMenu, keyOptions } from "@/components/ui/select";
 import { Field, FORM_INPUT_CLASS as INPUT } from "./form";
 import {
   ACCOUNT_SOURCE_OPTIONS,
@@ -96,19 +97,14 @@ export function CreateAccountModal({ bundle, onClose, onCreated }: Props) {
             />
           </Field>
           <Field label="Source" required>
-            <select
-              data-testid="sales-account-source-select"
+            <SelectMenu
+              testId="sales-account-source-select"
               value={source}
-              onChange={(e) => setSource(e.target.value)}
+              onChange={setSource}
+              options={keyOptions(ACCOUNT_SOURCE_OPTIONS)}
+              placeholder="Select a source…"
               className={INPUT}
-            >
-              <option value="">Select a source…</option>
-              {ACCOUNT_SOURCE_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {o.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+            />
           </Field>
           <Field label="Company URL">
             <input
@@ -120,32 +116,26 @@ export function CreateAccountModal({ bundle, onClose, onCreated }: Props) {
             />
           </Field>
           <Field label="Segment">
-            <select
+            <SelectMenu
               value={segment}
-              onChange={(e) => setSegment(e.target.value)}
+              onChange={setSegment}
+              options={keyOptions(ACCOUNT_SEGMENT_OPTIONS)}
+              placeholder="—"
+              emptyOptionLabel="—"
               className={INPUT}
-            >
-              <option value="">—</option>
-              {ACCOUNT_SEGMENT_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {o.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+              ariaLabel="Segment"
+            />
           </Field>
           <Field label="Practice area">
-            <select
+            <SelectMenu
               value={practiceArea}
-              onChange={(e) => setPracticeArea(e.target.value)}
+              onChange={setPracticeArea}
+              options={keyOptions(ACCOUNT_PRACTICE_AREA_OPTIONS)}
+              placeholder="—"
+              emptyOptionLabel="—"
               className={INPUT}
-            >
-              <option value="">—</option>
-              {ACCOUNT_PRACTICE_AREA_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {o.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+              ariaLabel="Practice area"
+            />
           </Field>
           <Field label="Current tools">
             <input

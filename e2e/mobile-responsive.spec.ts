@@ -18,6 +18,7 @@
 
 import { test, expect } from "./fixtures/auth.fixture";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
+import { pickOption } from "./helpers/select";
 import {
   createAccountViaMobileMenu,
   createOpportunityViaMobileMenu,
@@ -227,9 +228,7 @@ test.describe("Mobile shell (390px)", () => {
     await authedPage
       .getByTestId("sales-contact-last-name-input")
       .fill("Suksawat");
-    await authedPage
-      .getByTestId("sales-contact-account-select")
-      .selectOption({ label: "Contact Firm" });
+    await pickOption(authedPage.getByTestId("sales-contact-account-select"), { label: "Contact Firm" });
     await authedPage
       .getByTestId("sales-contact-email-input")
       .fill("malee@firm.co.th");

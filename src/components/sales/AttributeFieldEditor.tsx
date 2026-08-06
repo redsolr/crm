@@ -30,6 +30,7 @@ import {
 import { publishFieldFocus } from "@/lib/realtime/use-realtime-connection";
 import { useFieldClaim } from "@/lib/realtime/use-field-claim";
 import { AttributeEnrichmentControls } from "./AttributeEnrichmentControls";
+import { SelectMenu, keyOptions } from "@/components/ui/select";
 import { FORM_INPUT_CLASS } from "./form";
 
 export function AttributeFieldEditor({
@@ -110,24 +111,23 @@ export function AttributeFieldEditor({
     return (
       <label className="block">
         {label}
-        <select
-          data-testid={testid}
+        <SelectMenu
+          testId={testid}
           value={local}
-          onChange={(e) => {
-            setLocal(e.target.value);
-            commit(e.target.value);
+          onChange={(next) => {
+            setLocal(next);
+            commit(next);
           }}
-          onBlur={() => publishFieldFocus(null)}
+          options={keyOptions(config.options)}
+          placeholder="—"
+          emptyOptionLabel="—"
           className={FORM_INPUT_CLASS}
-          {...focusProps}
-        >
-          <option value="">—</option>
-          {config.options.map((o) => (
-            <option key={o} value={o}>
-              {o.replace(/_/g, " ")}
-            </option>
-          ))}
-        </select>
+          ariaLabel={definition.name}
+          style={focusProps.style}
+          onEngagedChange={(engaged) =>
+            publishFieldFocus(engaged ? definition.key : null)
+          }
+        />
       </label>
     );
   }

@@ -11,6 +11,7 @@
 
 import { useRef, useState } from "react";
 import type { WorkItem } from "@/lib/workItemsApi";
+import { SelectMenu, keyOptions } from "@/components/ui/select";
 import { OPPORTUNITY_USE_CASE_OPTIONS } from "@/lib/sales/constants";
 
 export interface InlineOpportunityInput {
@@ -96,34 +97,25 @@ export function InlineOpportunityCreateRow({
         onChange={(e) => setTitle(e.target.value)}
         data-testid="sales-pipeline-inline-title"
       />
-      <select
+      <SelectMenu
         className={INLINE_INPUT_CLASS}
-        aria-label="Account"
+        ariaLabel="Account"
         value={accountId}
-        onChange={(e) => setAccountId(e.target.value)}
-        data-testid="sales-pipeline-inline-account"
-      >
-        <option value="">Company…</option>
-        {accounts.map((a) => (
-          <option key={a.id} value={a.id}>
-            {a.title}
-          </option>
-        ))}
-      </select>
-      <select
+        onChange={setAccountId}
+        options={accounts.map((a) => ({ value: a.id, label: a.title }))}
+        placeholder="Company…"
+        searchPlaceholder="Search companies…"
+        testId="sales-pipeline-inline-account"
+      />
+      <SelectMenu
         className={INLINE_INPUT_CLASS}
-        aria-label="Use case"
+        ariaLabel="Use case"
         value={useCase}
-        onChange={(e) => setUseCase(e.target.value)}
-        data-testid="sales-pipeline-inline-use-case"
-      >
-        <option value="">Use case…</option>
-        {OPPORTUNITY_USE_CASE_OPTIONS.map((o) => (
-          <option key={o} value={o}>
-            {o.replace(/_/g, " ")}
-          </option>
-        ))}
-      </select>
+        onChange={setUseCase}
+        options={keyOptions(OPPORTUNITY_USE_CASE_OPTIONS)}
+        placeholder="Use case…"
+        testId="sales-pipeline-inline-use-case"
+      />
       {error && <span className="text-xs text-red-400">{error}</span>}
       <button
         type="submit"

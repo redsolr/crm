@@ -36,6 +36,7 @@ import type { AttributeDefinition } from "@/lib/generated/api/models";
 import type { WorkItem } from "@/lib/workItemsApi";
 import { queryKeys } from "@/queries/query-keys";
 import { CreateCallNoteModal } from "./CreateCallNoteModal";
+import { SelectMenu, keyOptions } from "@/components/ui/select";
 import { CreateCommitmentModal } from "./CreateCommitmentModal";
 import { TransitionToClosedModal } from "./TransitionToClosedModal";
 import { InterviewMode } from "./interview/InterviewMode";
@@ -153,10 +154,9 @@ export function SalesOpportunityDetailView({ opportunityId }: Props) {
         >
           ▶ Interview
         </button>
-        <select
+        <SelectMenu
           value={opp.state.key}
-          onChange={(e) => {
-            const next = e.target.value;
+          onChange={(next) => {
             // Intercept closures — `lost` requires lost_reason, `not_now`
             // requires not_now_until. The modal handles the attribute
             // write before the workflow transition. Other transitions
@@ -171,16 +171,12 @@ export function SalesOpportunityDetailView({ opportunityId }: Props) {
               state_key: next,
             });
           }}
+          options={keyOptions(PIPELINE_STAGE_ORDER)}
+          searchable={false}
           className="px-3 py-1.5 rounded-md text-[12.5px] bg-[var(--theme-bg-tertiary)] border border-[var(--theme-border-secondary)] text-[var(--theme-text-primary)] focus:outline-none focus:border-[var(--theme-accent-border)]"
-          data-testid="sales-opportunity-detail-stage-select"
-          aria-label="Pipeline stage"
-        >
-          {PIPELINE_STAGE_ORDER.map((s) => (
-            <option key={s} value={s}>
-              {s.replace(/_/g, " ")}
-            </option>
-          ))}
-        </select>
+          testId="sales-opportunity-detail-stage-select"
+          ariaLabel="Pipeline stage"
+        />
       </div>
 
       <div className="px-5 py-5 grid grid-cols-1 lg:grid-cols-3 gap-5">

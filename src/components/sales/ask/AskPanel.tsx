@@ -30,11 +30,29 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useAskPanel } from "@/stores/use-ask-panel";
+import { useResizePanel } from "@/hooks/use-resize-panel";
 import { AskConversation, NewConversationIcon } from "./AskConversation";
 import { usePageContext } from "./use-page-context";
 
 /** CrmShell's content column — portal target + dismiss region. */
 const MAIN_AREA_SELECTOR = ".crm-main";
+
+/** Drag-to-resize width, persisted locally (the drawer is a personal
+ *  ergonomic preference, not workspace state — localStorage, same as
+ *  the pipeline view-mode choice). */
+const ASK_PANEL_WIDTH_KEY = "crm-ask-panel-width";
+const ASK_PANEL_DEFAULT_WIDTH = 460;
+const ASK_PANEL_MIN_WIDTH = 380;
+const ASK_PANEL_MAX_WIDTH = 760;
+
+function storedAskPanelWidth(): number {
+  if (typeof window === "undefined") return ASK_PANEL_DEFAULT_WIDTH;
+  const raw = window.localStorage.getItem(ASK_PANEL_WIDTH_KEY);
+  const parsed = raw === null ? Number.NaN : Number(raw);
+  return Number.isFinite(parsed) && parsed >= ASK_PANEL_MIN_WIDTH
+    ? Math.min(parsed, ASK_PANEL_MAX_WIDTH)
+    : ASK_PANEL_DEFAULT_WIDTH;
+}
 
 const CloseIcon = () => (
   <svg
@@ -77,6 +95,20 @@ export function AskPanel() {
   const pageContext = usePageContext();
 
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Drag-adjustable width (desktop only — phones stay full-width).
+  const { width, isDesktop, handleMouseDown, isDragging } = useResizePanel({
+    defaultWidth: storedAskPanelWidth(),
+    minWidth: ASK_PANEL_MIN_WIDTH,
+    maxWidthRatio: 0.55,
+    maxWidthPx: ASK_PANEL_MAX_WIDTH,
+    side: "right",
+  });
+  useEffect(() => {
+    if (isDesktop && !isDragging) {
+      window.localStorage.setItem(ASK_PANEL_WIDTH_KEY, String(width));
+    }
+  }, [width, isDesktop, isDragging]);
 
   // Global hotkey — Ctrl/Cmd+J toggles the drawer from anywhere in the
   // shell (this component is always mounted alongside CommandPalette;
@@ -139,9 +171,21 @@ export function AskPanel() {
       ref={panelRef}
       role="dialog"
       aria-label="Ask AI"
-      className="crm-ask-panel absolute right-0 top-0 bottom-0 z-30 w-full md:w-[37%] md:min-w-[380px] md:max-w-[560px] flex flex-col bg-[var(--theme-bg-secondary)] border-l border-[var(--theme-border-secondary)] shadow-[-12px_0_32px_rgba(0,0,0,0.4)]"
+      className="crm-ask-panel absolute right-0 top-0 bottom-0 z-30 w-full flex flex-col bg-[var(--theme-bg-secondary)] border-l border-[var(--theme-border-secondary)] shadow-[-12px_0_32px_rgba(0,0,0,0.4)]"
+      style={isDesktop ? { width } : undefined}
       data-testid="crm-ask-panel"
     >
+      {/* Drag-to-resize handle on the leading edge (desktop). */}
+      {isDesktop && (
+        <div
+          className="crm-ask-resize-handle absolute left-0 top-0 bottom-0 w-1.5 -ml-0.5 cursor-ew-resize z-10 hover:bg-[var(--theme-accent-subtle)] active:bg-[var(--theme-accent-subtle)] transition-colors"
+          onMouseDown={handleMouseDown}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize Ask panel"
+          data-testid="crm-ask-resize-handle"
+        />
+      )}
       {/* ── Header ── */}
       <div className="crm-ask-header flex items-center gap-1 px-3 h-12 border-b border-[var(--theme-border-primary)] flex-shrink-0">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-text-muted)]">

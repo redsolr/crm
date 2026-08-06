@@ -102,7 +102,7 @@ test.describe("Command palette", () => {
     ).toBeVisible({ timeout: STEP_TIMEOUT });
     await expect(
       authedPage.getByTestId("sales-opportunity-detail-stage-select"),
-    ).toHaveValue("contacted", { timeout: STEP_TIMEOUT });
+    ).toHaveAttribute("data-value", "contacted", { timeout: STEP_TIMEOUT });
 
     // ── Closed stage from the palette still demands a reason ──────
     await openPalette(authedPage);

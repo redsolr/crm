@@ -19,6 +19,7 @@
 import { test, expect } from "./fixtures/auth.fixture";
 import type { Page } from "@playwright/test";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
+import { pickOption } from "./helpers/select";
 import {
   STEP_TIMEOUT,
   createAccountViaUi,
@@ -62,12 +63,8 @@ test.describe("Pipeline list interactions", () => {
     await expect(form).toBeVisible();
 
     await page.getByTestId("sales-pipeline-inline-title").fill("Deal D");
-    await page
-      .getByTestId("sales-pipeline-inline-account")
-      .selectOption({ label: "Probe Co" });
-    await page
-      .getByTestId("sales-pipeline-inline-use-case")
-      .selectOption("matter_chaos");
+    await pickOption(page.getByTestId("sales-pipeline-inline-account"), { label: "Probe Co" });
+    await pickOption(page.getByTestId("sales-pipeline-inline-use-case"), "matter_chaos");
     await page.getByTestId("sales-pipeline-inline-submit").click();
 
     await expect(page.getByTestId("sales-pipeline-row")).toHaveCount(4, {
@@ -80,7 +77,7 @@ test.describe("Pipeline list interactions", () => {
     );
     await expect(
       page.getByTestId("sales-pipeline-inline-account"),
-    ).not.toHaveValue("");
+    ).not.toHaveAttribute("data-value", "");
 
     await page.getByTestId("sales-pipeline-inline-cancel").click();
     await expect(form).toHaveCount(0);
@@ -109,12 +106,8 @@ test.describe("Pipeline list interactions", () => {
     const form = page.getByTestId("sales-pipeline-inline-create-form");
     await expect(form).toBeVisible();
     await page.getByTestId("sales-pipeline-inline-title").fill("Deal A2");
-    await page
-      .getByTestId("sales-pipeline-inline-account")
-      .selectOption({ label: "Probe Co" });
-    await page
-      .getByTestId("sales-pipeline-inline-use-case")
-      .selectOption("matter_chaos");
+    await pickOption(page.getByTestId("sales-pipeline-inline-account"), { label: "Probe Co" });
+    await pickOption(page.getByTestId("sales-pipeline-inline-use-case"), "matter_chaos");
     await page.getByTestId("sales-pipeline-inline-submit").click();
 
     // Between-slot form closes after the create lands…

@@ -1,6 +1,7 @@
 import { type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { pickOption } from "./select";
 
 /**
  * Shared plumbing for the real-auth tier (`*.real-auth.spec.ts` — the
@@ -77,7 +78,7 @@ export async function createAccountViaUi(
 ): Promise<void> {
   await page.getByTestId("sales-add-account-button").click();
   await page.getByTestId("sales-account-name-input").fill(name);
-  await page.getByTestId("sales-account-source-select").selectOption(source);
+  await pickOption(page.getByTestId("sales-account-source-select"), source);
   await page.getByRole("button", { name: /Add company/i }).click();
 }
 
@@ -88,11 +89,7 @@ export async function createOpportunityViaUi(
 ): Promise<void> {
   await page.getByTestId("sales-add-opportunity-button").click();
   await page.getByTestId("sales-opportunity-title-input").fill(input.title);
-  await page
-    .getByTestId("sales-opportunity-account-select")
-    .selectOption({ label: input.accountName });
-  await page
-    .getByTestId("sales-opportunity-use-case-select")
-    .selectOption(input.useCase ?? "client_comms");
+  await pickOption(page.getByTestId("sales-opportunity-account-select"), { label: input.accountName });
+  await pickOption(page.getByTestId("sales-opportunity-use-case-select"), input.useCase ?? "client_comms");
   await page.getByRole("button", { name: /Create opportunity/i }).click();
 }

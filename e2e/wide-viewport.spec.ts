@@ -18,6 +18,7 @@
 import { test, expect } from "./fixtures/auth.fixture";
 import type { Page } from "@playwright/test";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
+import { pickOption } from "./helpers/select";
 import {
   STEP_TIMEOUT,
   createAccountViaUi,
@@ -101,12 +102,8 @@ test.describe("Wide viewport (≥1440 screen-centered branch)", () => {
     const form = page.getByTestId("sales-pipeline-inline-create-form");
     await expect(form).toBeVisible();
     await page.getByTestId("sales-pipeline-inline-title").fill("Deal A2");
-    await page
-      .getByTestId("sales-pipeline-inline-account")
-      .selectOption({ label: "Probe Co" });
-    await page
-      .getByTestId("sales-pipeline-inline-use-case")
-      .selectOption("matter_chaos");
+    await pickOption(page.getByTestId("sales-pipeline-inline-account"), { label: "Probe Co" });
+    await pickOption(page.getByTestId("sales-pipeline-inline-use-case"), "matter_chaos");
     await page.getByTestId("sales-pipeline-inline-submit").click();
     await expect(form).toHaveCount(0, { timeout: STEP_TIMEOUT });
     await expect
@@ -117,12 +114,8 @@ test.describe("Wide viewport (≥1440 screen-centered branch)", () => {
     await page.getByTestId("sales-pipeline-create-row-button").click();
     await expect(form).toBeVisible();
     await page.getByTestId("sales-pipeline-inline-title").fill("Deal D");
-    await page
-      .getByTestId("sales-pipeline-inline-account")
-      .selectOption({ label: "Probe Co" });
-    await page
-      .getByTestId("sales-pipeline-inline-use-case")
-      .selectOption("matter_chaos");
+    await pickOption(page.getByTestId("sales-pipeline-inline-account"), { label: "Probe Co" });
+    await pickOption(page.getByTestId("sales-pipeline-inline-use-case"), "matter_chaos");
     await page.getByTestId("sales-pipeline-inline-submit").click();
     await expect(page.getByTestId("sales-pipeline-row")).toHaveCount(5, {
       timeout: STEP_TIMEOUT,

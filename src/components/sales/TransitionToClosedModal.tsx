@@ -19,6 +19,7 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
+import { SelectMenu, keyOptions } from "@/components/ui/select";
 import { FORM_INPUT_CLASS as INPUT } from "./form";
 import { OPPORTUNITY_LOST_REASON_OPTIONS } from "@/lib/sales/constants";
 import { useUpsertAttributeValue, useTransitionWorkItem } from "@/lib/sales/use-sales-mutations";
@@ -114,20 +115,16 @@ export function TransitionToClosedModal({
             <span className="block text-xs font-medium text-[var(--theme-text-secondary)] uppercase tracking-wider mb-1.5">
               Lost reason <span className="text-red-400 ml-1">*</span>
             </span>
-            <select
-              data-testid="sales-transition-lost-reason-select"
+            <SelectMenu
+              testId="sales-transition-lost-reason-select"
               value={lostReason}
-              onChange={(e) => setLostReason(e.target.value)}
+              onChange={setLostReason}
+              options={keyOptions(OPPORTUNITY_LOST_REASON_OPTIONS)}
+              placeholder="Pick a reason…"
               className={INPUT}
+              ariaLabel="Lost reason"
               autoFocus
-            >
-              <option value="">Pick a reason…</option>
-              {OPPORTUNITY_LOST_REASON_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {o.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+            />
           </label>
         ) : (
           <label className="block">

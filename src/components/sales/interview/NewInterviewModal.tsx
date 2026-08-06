@@ -13,6 +13,11 @@
 
 import { useMemo, useState } from "react";
 import { Modal } from "@/components/ui/modal";
+import {
+  SelectMenu,
+  TypeaheadCombobox,
+  keyOptions,
+} from "@/components/ui/select";
 import { Field, FORM_INPUT_CLASS as INPUT } from "../form";
 import {
   OPPORTUNITY_USE_CASE_OPTIONS,
@@ -128,24 +133,17 @@ export function NewInterviewModal({
       <Modal.Body>
         <div className="new-interview-form space-y-4">
           <Field label="Company" required>
-            <input
-              type="text"
-              data-testid="new-interview-company-input"
+            <TypeaheadCombobox
+              testId="new-interview-company-input"
               value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void handleStart();
-              }}
+              onValueChange={setCompany}
+              options={accounts.map((a) => ({ value: a.id, label: a.title }))}
+              onEnter={() => void handleStart()}
               placeholder="Firm name — existing or new"
               className={INPUT}
-              list="new-interview-company-options"
+              ariaLabel="Company"
               autoFocus
             />
-            <datalist id="new-interview-company-options">
-              {accounts.map((a) => (
-                <option key={a.id} value={a.title} />
-              ))}
-            </datalist>
             <p className="text-[11px] text-[var(--theme-text-muted)] mt-1">
               {matchedAccount
                 ? `Existing account — the interview attaches to ${matchedAccount.title}.`
@@ -165,38 +163,34 @@ export function NewInterviewModal({
             />
           </Field>
           <Field label="Use case">
-            <select
-              data-testid="new-interview-use-case-select"
+            <SelectMenu
+              testId="new-interview-use-case-select"
               value={useCase}
-              onChange={(e) => setUseCase(e.target.value)}
+              onChange={setUseCase}
+              options={keyOptions(OPPORTUNITY_USE_CASE_OPTIONS)}
               className={INPUT}
-            >
-              {OPPORTUNITY_USE_CASE_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {o.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+              ariaLabel="Use case"
+            />
           </Field>
           <Field label="Script">
             {INTERVIEW_SCRIPTS.length > 1 ? (
-              <select
-                data-testid="new-interview-script-select"
+              <SelectMenu
+                testId="new-interview-script-select"
                 value={scriptKey}
-                onChange={(e) => {
-                  const next = findInterviewScript(e.target.value);
-                  setScriptKey(e.target.value);
+                onChange={(next) => {
+                  const nextScript = findInterviewScript(next);
+                  setScriptKey(next);
                   // Re-prefill from the newly picked preset.
-                  if (next?.default_use_case) setUseCase(next.default_use_case);
+                  if (nextScript?.default_use_case)
+                    setUseCase(nextScript.default_use_case);
                 }}
+                options={INTERVIEW_SCRIPTS.map((s) => ({
+                  value: s.key,
+                  label: s.title,
+                }))}
                 className={INPUT}
-              >
-                {INTERVIEW_SCRIPTS.map((s) => (
-                  <option key={s.key} value={s.key}>
-                    {s.title}
-                  </option>
-                ))}
-              </select>
+                ariaLabel="Script"
+              />
             ) : (
               <p
                 className="text-sm text-[var(--theme-text-secondary)] px-1 py-1.5"

@@ -44,6 +44,7 @@ import { parseAttributeValueForType } from "@/lib/sales/attribute-editing";
 import { fireActivation } from "@/lib/sales/activation";
 import { formatTHB } from "@/lib/format-currency";
 import { CompanyLogo } from "../CompanyLogo";
+import { SelectMenu, keyOptions } from "@/components/ui/select";
 import { TransitionToClosedModal } from "../TransitionToClosedModal";
 import { CrmRecordTable } from "./CrmRecordTable";
 import {
@@ -448,27 +449,20 @@ function StageSelectCell({
   const value = pending ?? serverValue;
 
   return (
-    <select
+    <SelectMenu
       className="crm-stage-select"
-      data-testid="sales-pipeline-stage-select"
+      testId="sales-pipeline-stage-select"
       value={value}
-      aria-label="Pipeline stage"
-      onClick={(e) => e.stopPropagation()}
-      onChange={(e) => {
-        e.stopPropagation();
-        const next = e.target.value;
+      ariaLabel="Pipeline stage"
+      options={keyOptions(PIPELINE_STAGE_ORDER)}
+      searchable={false}
+      onChange={(next) => {
         if (next === serverValue) return;
         setPending(next);
         void onTransition(next).then((result) => {
           if (result !== "applied") setPending(null);
         });
       }}
-    >
-      {PIPELINE_STAGE_ORDER.map((s) => (
-        <option key={s} value={s}>
-          {s.replace(/_/g, " ")}
-        </option>
-      ))}
-    </select>
+    />
   );
 }

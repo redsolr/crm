@@ -19,6 +19,7 @@
 
 import { test, expect } from "./fixtures/auth.fixture";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
+import { pickOption } from "./helpers/select";
 import {
   STEP_TIMEOUT,
   ensureBoardMode,
@@ -53,9 +54,7 @@ test.describe("Sales journey", () => {
     await authedPage
       .getByTestId("sales-account-name-input")
       .fill("Acme, Inc.");
-    await authedPage
-      .getByTestId("sales-account-source-select")
-      .selectOption("intro");
+    await pickOption(authedPage.getByTestId("sales-account-source-select"), "intro");
     await authedPage.getByRole("button", { name: /Add company/i }).click();
 
     // Modal closes; account is created — header tile updates
@@ -71,12 +70,8 @@ test.describe("Sales journey", () => {
     await authedPage
       .getByTestId("sales-opportunity-title-input")
       .fill("Acme — Workflow pilot");
-    await authedPage
-      .getByTestId("sales-opportunity-account-select")
-      .selectOption({ label: "Acme, Inc." });
-    await authedPage
-      .getByTestId("sales-opportunity-use-case-select")
-      .selectOption("matter_chaos");
+    await pickOption(authedPage.getByTestId("sales-opportunity-account-select"), { label: "Acme, Inc." });
+    await pickOption(authedPage.getByTestId("sales-opportunity-use-case-select"), "matter_chaos");
     await authedPage.locator('input[type="number"]').first().fill("120000");
     await authedPage
       .getByRole("button", { name: /Create opportunity/i })
@@ -166,9 +161,7 @@ test.describe("Sales journey", () => {
     await authedPage
       .getByTestId("sales-call-note-title-input")
       .fill("Discovery call");
-    await authedPage
-      .getByTestId("sales-call-note-outcome-select")
-      .selectOption("positive");
+    await pickOption(authedPage.getByTestId("sales-call-note-outcome-select"), "positive");
     await authedPage
       .getByRole("button", { name: "Log call", exact: true })
       .click();
@@ -242,16 +235,16 @@ test.describe("Sales journey", () => {
     const stageSelect = authedPage.getByTestId(
       "sales-opportunity-detail-stage-select",
     );
-    await stageSelect.selectOption("contacted");
-    await expect(stageSelect).toHaveValue("contacted", { timeout: STEP_TIMEOUT });
-    await stageSelect.selectOption("call_done");
-    await expect(stageSelect).toHaveValue("call_done", { timeout: STEP_TIMEOUT });
-    await stageSelect.selectOption("trial");
-    await expect(stageSelect).toHaveValue("trial", { timeout: STEP_TIMEOUT });
+    await pickOption(stageSelect, "contacted");
+    await expect(stageSelect).toHaveAttribute("data-value", "contacted", { timeout: STEP_TIMEOUT });
+    await pickOption(stageSelect, "call_done");
+    await expect(stageSelect).toHaveAttribute("data-value", "call_done", { timeout: STEP_TIMEOUT });
+    await pickOption(stageSelect, "trial");
+    await expect(stageSelect).toHaveAttribute("data-value", "trial", { timeout: STEP_TIMEOUT });
 
     // ── 7) Transition to won — assert state.category === 'done' ────
-    await stageSelect.selectOption("won");
-    await expect(stageSelect).toHaveValue("won", { timeout: STEP_TIMEOUT });
+    await pickOption(stageSelect, "won");
+    await expect(stageSelect).toHaveAttribute("data-value", "won", { timeout: STEP_TIMEOUT });
 
     // Fetch the persisted state via the mock — the API call from the
     // page's perspective is the source of truth for category.
@@ -324,9 +317,7 @@ test.describe("Sales journey", () => {
     await authedPage
       .getByTestId("sales-account-name-input")
       .fill("LostCo");
-    await authedPage
-      .getByTestId("sales-account-source-select")
-      .selectOption("intro");
+    await pickOption(authedPage.getByTestId("sales-account-source-select"), "intro");
     await authedPage.getByRole("button", { name: /Add company/i }).click();
     await expect(authedPage.getByText(/1 account/)).toBeVisible({
       timeout: STEP_TIMEOUT,
@@ -336,12 +327,8 @@ test.describe("Sales journey", () => {
     await authedPage
       .getByTestId("sales-opportunity-title-input")
       .fill("LostCo — Workflow eval");
-    await authedPage
-      .getByTestId("sales-opportunity-account-select")
-      .selectOption({ label: "LostCo" });
-    await authedPage
-      .getByTestId("sales-opportunity-use-case-select")
-      .selectOption("matter_chaos");
+    await pickOption(authedPage.getByTestId("sales-opportunity-account-select"), { label: "LostCo" });
+    await pickOption(authedPage.getByTestId("sales-opportunity-use-case-select"), "matter_chaos");
 
     // Set next_action_date to yesterday so the overdue filter has a hit.
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
@@ -394,9 +381,7 @@ test.describe("Sales journey", () => {
     await expect(
       authedPage.getByTestId("sales-opportunity-detail"),
     ).toBeVisible({ timeout: STEP_TIMEOUT });
-    await authedPage
-      .getByTestId("sales-opportunity-detail-stage-select")
-      .selectOption("lost");
+    await pickOption(authedPage.getByTestId("sales-opportunity-detail-stage-select"), "lost");
     const lostReasonSelect = authedPage.getByTestId(
       "sales-transition-lost-reason-select",
     );
@@ -406,7 +391,7 @@ test.describe("Sales journey", () => {
       exact: true,
     });
     await expect(lostCta).toBeDisabled();
-    await lostReasonSelect.selectOption("competitor");
+    await pickOption(lostReasonSelect, "competitor");
     await expect(lostCta).toBeEnabled();
     await lostCta.click();
 
@@ -417,7 +402,7 @@ test.describe("Sales journey", () => {
     // The detail page's stage select reflects the new state.
     await expect(
       authedPage.getByTestId("sales-opportunity-detail-stage-select"),
-    ).toHaveValue("lost", { timeout: STEP_TIMEOUT });
+    ).toHaveAttribute("data-value", "lost", { timeout: STEP_TIMEOUT });
 
     // Opportunity transitioned to lost (state.category === 'dead') and
     // the lost_reason attribute persisted server-side.

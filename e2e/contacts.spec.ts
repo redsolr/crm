@@ -14,6 +14,7 @@
 
 import { test, expect } from "./fixtures/auth.fixture";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
+import { pickOption } from "./helpers/select";
 import {
   STEP_TIMEOUT,
   openFullViewViaPeek,
@@ -43,15 +44,11 @@ test.describe("Contacts", () => {
     await authedPage
       .getByTestId("sales-contact-last-name-input")
       .fill("Prasert");
-    await authedPage
-      .getByTestId("sales-contact-account-select")
-      .selectOption({ label: "Baker & Partners" });
+    await pickOption(authedPage.getByTestId("sales-contact-account-select"), { label: "Baker & Partners" });
     await authedPage
       .getByTestId("sales-contact-email-input")
       .fill("somchai@firm.co.th");
-    await authedPage
-      .getByTestId("sales-contact-decision-role-select")
-      .selectOption("decision_maker");
+    await pickOption(authedPage.getByTestId("sales-contact-decision-role-select"), "decision_maker");
     await authedPage
       .getByRole("button", { name: "Create contact" })
       .click();
@@ -97,15 +94,13 @@ test.describe("AI-computed columns (attribute enrichment)", () => {
     await authedPage.getByTestId("sales-attr-icp_fit-compute").click();
     await expect(
       authedPage.getByTestId("sales-account-attr-icp_fit"),
-    ).toHaveValue("strong", { timeout: STEP_TIMEOUT });
+    ).toHaveAttribute("data-value", "strong", { timeout: STEP_TIMEOUT });
     await expect(
       authedPage.getByTestId("sales-attr-icp_fit-ai-tag"),
     ).toBeVisible({ timeout: STEP_TIMEOUT });
 
     // Human overrides → provenance resets to manual (AI tag gone).
-    await authedPage
-      .getByTestId("sales-account-attr-icp_fit")
-      .selectOption("moderate");
+    await pickOption(authedPage.getByTestId("sales-account-attr-icp_fit"), "moderate");
     await expect(
       authedPage.getByTestId("sales-attr-icp_fit-ai-tag"),
     ).toHaveCount(0, { timeout: STEP_TIMEOUT });
@@ -117,6 +112,6 @@ test.describe("AI-computed columns (attribute enrichment)", () => {
     ).toContainText("Kept your manual value", { timeout: STEP_TIMEOUT });
     await expect(
       authedPage.getByTestId("sales-account-attr-icp_fit"),
-    ).toHaveValue("moderate");
+    ).toHaveAttribute("data-value", "moderate");
   });
 });

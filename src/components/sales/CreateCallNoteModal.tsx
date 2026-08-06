@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
+import { SelectMenu, keyOptions } from "@/components/ui/select";
 import { Field, FORM_INPUT_CLASS as INPUT } from "./form";
 import {
   CALL_NOTE_OUTCOME_OPTIONS,
@@ -126,35 +127,29 @@ export function CreateCallNoteModal({
               />
             </Field>
             <Field label="Outcome">
-              <select
-                data-testid="sales-call-note-outcome-select"
+              <SelectMenu
+                testId="sales-call-note-outcome-select"
                 value={outcome}
-                onChange={(e) => setOutcome(e.target.value)}
+                onChange={setOutcome}
+                options={keyOptions(CALL_NOTE_OUTCOME_OPTIONS)}
+                placeholder="—"
+                emptyOptionLabel="—"
                 className={INPUT}
-              >
-                <option value="">—</option>
-                {CALL_NOTE_OUTCOME_OPTIONS.map((o) => (
-                  <option key={o} value={o}>
-                    {o.replace(/_/g, " ")}
-                  </option>
-                ))}
-              </select>
+                ariaLabel="Outcome"
+              />
             </Field>
           </div>
           <Field label="Call type">
-            <select
-              data-testid="sales-call-note-type-select"
+            <SelectMenu
+              testId="sales-call-note-type-select"
               value={callType}
-              onChange={(e) => setCallType(e.target.value)}
+              onChange={setCallType}
+              options={keyOptions(CALL_NOTE_CALL_TYPE_OPTIONS)}
+              placeholder="—"
+              emptyOptionLabel="—"
               className={INPUT}
-            >
-              <option value="">—</option>
-              {CALL_NOTE_CALL_TYPE_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {o.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+              ariaLabel="Call type"
+            />
           </Field>
           <Field label="Attendees">
             <input

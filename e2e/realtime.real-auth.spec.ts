@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { pickOption } from "./helpers/select";
 import {
   createAccountViaUi,
   createOpportunityViaUi,
@@ -113,9 +114,9 @@ test("two seats: presence pill, live stage propagation, co-edited note", async (
   // ── Live invalidation: B moves the stage, A updates with NO reload ─
   const stageA = seatA.getByTestId("sales-opportunity-detail-stage-select");
   const stageB = seatB.getByTestId("sales-opportunity-detail-stage-select");
-  await expect(stageB).toHaveValue("identified", { timeout: 30_000 });
-  await stageB.selectOption("contacted");
-  await expect(stageA).toHaveValue("contacted", { timeout: 30_000 });
+  await expect(stageB).toHaveAttribute("data-value", "identified", { timeout: 30_000 });
+  await pickOption(stageB, "contacted");
+  await expect(stageA).toHaveAttribute("data-value", "contacted", { timeout: 30_000 });
 
   // ── Co-edited note: A types, B converges; B appends, A converges ───
   await seatA.getByTestId("live-note-toggle").click();
@@ -162,8 +163,8 @@ test("two seats: presence pill, live stage propagation, co-edited note", async (
     .toBe("");
 
   // ── Cleanup: close the deal so reruns don't accumulate open rows ───
-  await stageA.selectOption("won");
-  await expect(stageB).toHaveValue("won", { timeout: 30_000 });
+  await pickOption(stageA, "won");
+  await expect(stageB).toHaveAttribute("data-value", "won", { timeout: 30_000 });
 
   await contextA.close();
   await contextB.close();

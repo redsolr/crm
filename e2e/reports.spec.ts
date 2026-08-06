@@ -15,6 +15,7 @@
 
 import { test, expect } from "./fixtures/auth.fixture";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
+import { pickOption } from "./helpers/select";
 
 const STEP_TIMEOUT = 15_000;
 
@@ -57,9 +58,7 @@ test.describe("Reports", () => {
     await authedPage
       .getByTestId("sales-account-name-input")
       .fill("Acme, Inc.");
-    await authedPage
-      .getByTestId("sales-account-source-select")
-      .selectOption("intro");
+    await pickOption(authedPage.getByTestId("sales-account-source-select"), "intro");
     await authedPage.getByRole("button", { name: /Add company/i }).click();
     await expect(authedPage.getByText(/1 account/)).toBeVisible({
       timeout: STEP_TIMEOUT,
@@ -69,12 +68,8 @@ test.describe("Reports", () => {
     await authedPage
       .getByTestId("sales-opportunity-title-input")
       .fill("Acme — Workflow pilot");
-    await authedPage
-      .getByTestId("sales-opportunity-account-select")
-      .selectOption({ label: "Acme, Inc." });
-    await authedPage
-      .getByTestId("sales-opportunity-use-case-select")
-      .selectOption("matter_chaos");
+    await pickOption(authedPage.getByTestId("sales-opportunity-account-select"), { label: "Acme, Inc." });
+    await pickOption(authedPage.getByTestId("sales-opportunity-use-case-select"), "matter_chaos");
     await authedPage.locator('input[type="number"]').first().fill("120000");
     await authedPage
       .getByRole("button", { name: /Create opportunity/i })

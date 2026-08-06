@@ -20,6 +20,7 @@ import { test, expect } from "./fixtures/auth.fixture";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
 import { API_ROOT } from "./handlers/shared";
 import { ensureBoardMode } from "./helpers/sales-ui";
+import { pickOption } from "./helpers/select";
 
 const STEP_TIMEOUT = 15_000;
 
@@ -69,9 +70,7 @@ test.describe("Interview mode", () => {
     await authedPage
       .getByTestId("sales-account-name-input")
       .fill("Siam Law Partners");
-    await authedPage
-      .getByTestId("sales-account-source-select")
-      .selectOption("event");
+    await pickOption(authedPage.getByTestId("sales-account-source-select"), "event");
     await authedPage.getByRole("button", { name: /Add company/i }).click();
     await expect(authedPage.getByText(/1 account/)).toBeVisible({
       timeout: STEP_TIMEOUT,
@@ -81,12 +80,8 @@ test.describe("Interview mode", () => {
     await authedPage
       .getByTestId("sales-opportunity-title-input")
       .fill("Siam Law — tour visit");
-    await authedPage
-      .getByTestId("sales-opportunity-account-select")
-      .selectOption({ label: "Siam Law Partners" });
-    await authedPage
-      .getByTestId("sales-opportunity-use-case-select")
-      .selectOption("matter_chaos");
+    await pickOption(authedPage.getByTestId("sales-opportunity-account-select"), { label: "Siam Law Partners" });
+    await pickOption(authedPage.getByTestId("sales-opportunity-use-case-select"), "matter_chaos");
     await authedPage
       .getByRole("button", { name: /Create opportunity/i })
       .click();
@@ -198,9 +193,7 @@ test.describe("Interview mode", () => {
     await expect(preview).toContainText("(ad-hoc)");
     await expect(preview).toContainText("Scroll the chat");
 
-    await authedPage
-      .getByTestId("interview-outcome-select")
-      .selectOption("positive");
+    await pickOption(authedPage.getByTestId("interview-outcome-select"), "positive");
     await authedPage.getByTestId("interview-save-button").click();
 
     // Overlay closes; the interview call note is on the opportunity.

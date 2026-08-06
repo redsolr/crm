@@ -25,6 +25,7 @@ import {
   SALES_TYPE_KEYS,
 } from "@/lib/sales/constants";
 import { useCreateCallNote } from "@/lib/sales/use-sales-mutations";
+import { SelectMenu, keyOptions } from "@/components/ui/select";
 import { BRAND_CTA_CLASS } from "../form";
 import { fireActivation } from "@/lib/sales/activation";
 import type { WorkItem } from "@/lib/workItemsApi";
@@ -602,36 +603,29 @@ export function InterviewMode({
                 <span className="block text-xs font-medium text-[var(--theme-text-secondary)] uppercase tracking-wider mb-1.5">
                   Outcome
                 </span>
-                <select
+                <SelectMenu
                   value={outcome || defaultOutcome}
-                  onChange={(e) => setOutcome(e.target.value)}
-                  data-testid="interview-outcome-select"
+                  onChange={setOutcome}
+                  options={keyOptions(CALL_NOTE_OUTCOME_OPTIONS)}
+                  placeholder="—"
+                  emptyOptionLabel="—"
+                  testId="interview-outcome-select"
+                  ariaLabel="Outcome"
                   className="w-full px-3 py-2 rounded-lg bg-[var(--theme-bg-tertiary)] border border-[var(--theme-border-hover)] text-sm text-[var(--theme-text-primary)] focus:outline-none"
-                >
-                  <option value="">—</option>
-                  {CALL_NOTE_OUTCOME_OPTIONS.map((o) => (
-                    <option key={o} value={o}>
-                      {o.replace(/_/g, " ")}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
               <label className="block">
                 <span className="block text-xs font-medium text-[var(--theme-text-secondary)] uppercase tracking-wider mb-1.5">
                   Call type
                 </span>
-                <select
+                <SelectMenu
                   value={callType}
-                  onChange={(e) => setCallType(e.target.value)}
-                  data-testid="interview-call-type-select"
+                  onChange={setCallType}
+                  options={keyOptions(CALL_NOTE_CALL_TYPE_OPTIONS)}
+                  testId="interview-call-type-select"
+                  ariaLabel="Call type"
                   className="w-full px-3 py-2 rounded-lg bg-[var(--theme-bg-tertiary)] border border-[var(--theme-border-hover)] text-sm text-[var(--theme-text-primary)] focus:outline-none"
-                >
-                  {CALL_NOTE_CALL_TYPE_OPTIONS.map((o) => (
-                    <option key={o} value={o}>
-                      {o.replace(/_/g, " ")}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
             </div>
 

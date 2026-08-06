@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/modal";
+import { SelectMenu } from "@/components/ui/select";
 import { Field, FORM_INPUT_CLASS as INPUT } from "@/components/sales/form";
 import { workItemsApi, type WorkItem } from "@/lib/workItemsApi";
 import type {
@@ -137,50 +138,48 @@ export function TaskEditModal({ task, definitions, values, onClose }: Props) {
           </Field>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Stage">
-              <select
-                data-testid="work-task-stage-select"
+              <SelectMenu
+                testId="work-task-stage-select"
                 value={stateKey}
-                onChange={(e) => setStateKey(e.target.value)}
+                onChange={setStateKey}
+                options={TASK_STATE_ORDER.map((key) => ({
+                  value: key,
+                  label: TASK_STATE_LABELS[key] ?? key,
+                }))}
                 className={INPUT}
-              >
-                {TASK_STATE_ORDER.map((key) => (
-                  <option key={key} value={key}>
-                    {TASK_STATE_LABELS[key] ?? key}
-                  </option>
-                ))}
-              </select>
+                ariaLabel="Stage"
+              />
             </Field>
             <Field label="Project">
-              <select
-                data-testid="work-task-project-select"
+              <SelectMenu
+                testId="work-task-project-select"
                 value={project}
-                onChange={(e) => setProject(e.target.value)}
+                onChange={setProject}
+                options={TASK_PROJECT_OPTIONS.map((o) => ({
+                  value: o,
+                  label: labelizeOptionKey(o),
+                }))}
+                placeholder="Pick a project…"
                 className={INPUT}
-              >
-                <option value="">Pick a project…</option>
-                {TASK_PROJECT_OPTIONS.map((o) => (
-                  <option key={o} value={o}>
-                    {labelizeOptionKey(o)}
-                  </option>
-                ))}
-              </select>
+                ariaLabel="Project"
+              />
             </Field>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Priority">
-              <select
-                data-testid="work-task-priority-select"
+              <SelectMenu
+                testId="work-task-priority-select"
                 value={priority}
-                onChange={(e) => setPriority(e.target.value)}
+                onChange={setPriority}
+                options={TASK_PRIORITY_OPTIONS.map((o) => ({
+                  value: o,
+                  label: labelizeOptionKey(o),
+                }))}
+                placeholder="None"
+                emptyOptionLabel="None"
                 className={INPUT}
-              >
-                <option value="">None</option>
-                {TASK_PRIORITY_OPTIONS.map((o) => (
-                  <option key={o} value={o}>
-                    {labelizeOptionKey(o)}
-                  </option>
-                ))}
-              </select>
+                ariaLabel="Priority"
+              />
             </Field>
             <Field label="Due date">
               <input
@@ -193,19 +192,19 @@ export function TaskEditModal({ task, definitions, values, onClose }: Props) {
             </Field>
           </div>
           <Field label="Assignee">
-            <select
-              data-testid="work-task-assignee-select"
+            <SelectMenu
+              testId="work-task-assignee-select"
               value={assignee}
-              onChange={(e) => setAssignee(e.target.value)}
+              onChange={setAssignee}
+              options={TASK_ASSIGNEE_OPTIONS.map((o) => ({
+                value: o,
+                label: labelizeOptionKey(o),
+              }))}
+              placeholder="Unassigned"
+              emptyOptionLabel="Unassigned"
               className={INPUT}
-            >
-              <option value="">Unassigned</option>
-              {TASK_ASSIGNEE_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {labelizeOptionKey(o)}
-                </option>
-              ))}
-            </select>
+              ariaLabel="Assignee"
+            />
           </Field>
           {error && <p className="text-sm text-red-400">{error}</p>}
         </div>
