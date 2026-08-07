@@ -25,32 +25,73 @@ export interface LastAccount {
   method?: string;
 }
 
-/** Cookie value for a last account (shared by the server write paths). */
+/**
+ * Cookie value for a last account (shared by the server write paths).
+ *
+ * Raw JSON — no pre-encoding. Next's cookie serializer
+ * (`ResponseCookies.set`, used by both the callback route and the
+ * login server action) URL-encodes the value itself; pre-encoding here
+ * produced a DOUBLE-encoded cookie (`%257B…`) that the client's single
+ * decode could never read, so the "Continue as" card never showed in
+ * prod (2026-08-07 fix).
+ */
 export function serializeLastAccount(account: LastAccount): string {
-  return encodeURIComponent(JSON.stringify(account));
+  return JSON.stringify(account);
 }
 
-export function parseLastAccount(cookieValue: string): LastAccount | null {
+/** JSON attempt: the account, `null` for JSON-but-wrong-shape,
+ *  `undefined` for not-JSON (caller keeps peeling encoding layers). */
+function tryParseAccountJson(value: string): LastAccount | null | undefined {
+  let parsed: unknown;
   try {
-    const parsed: unknown = JSON.parse(decodeURIComponent(cookieValue));
-    if (
-      typeof parsed !== "object" ||
-      parsed === null ||
-      typeof (parsed as { email?: unknown }).email !== "string" ||
-      (parsed as { email: string }).email === ""
-    ) {
-      return null;
-    }
-    const record = parsed as Record<string, unknown>;
-    return {
-      email: record.email as string,
-      name: typeof record.name === "string" ? record.name : undefined,
-      method: typeof record.method === "string" ? record.method : undefined,
-    };
+    parsed = JSON.parse(value);
   } catch (error) {
-    console.warn("[last-account] failed to parse cookie value:", error);
+    // Expected while peeling encoding layers — the caller warns once
+    // if EVERY layer fails; per-layer misses stay at debug.
+    console.debug("[last-account] not JSON at this decoding layer:", error);
+    return undefined;
+  }
+  if (
+    typeof parsed !== "object" ||
+    parsed === null ||
+    typeof (parsed as { email?: unknown }).email !== "string" ||
+    (parsed as { email: string }).email === ""
+  ) {
     return null;
   }
+  const record = parsed as Record<string, unknown>;
+  return {
+    email: record.email as string,
+    name: typeof record.name === "string" ? record.name : undefined,
+    method: typeof record.method === "string" ? record.method : undefined,
+  };
+}
+
+/**
+ * Decode-tolerant parse. Depending on WHICH build wrote the cookie the
+ * browser may hold 1 layer of URL-encoding (current: raw JSON, encoded
+ * once by Next) or 2 (historical builds pre-encoded before handing to
+ * Next's serializer, which encoded again). Peel layers until JSON
+ * parses or decoding stops making progress — existing prod cookies
+ * stay readable without waiting for the next login to rewrite them.
+ */
+export function parseLastAccount(cookieValue: string): LastAccount | null {
+  let value = cookieValue;
+  for (let layer = 0; layer < 3; layer++) {
+    const attempt = tryParseAccountJson(value);
+    if (attempt !== undefined) return attempt;
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(value);
+    } catch (error) {
+      console.warn("[last-account] cookie value is not decodable:", error);
+      return null;
+    }
+    if (decoded === value) break;
+    value = decoded;
+  }
+  console.warn("[last-account] failed to parse cookie value — ignoring it");
+  return null;
 }
 
 /** Read the last signed-in account from `document.cookie` (client only). */

@@ -293,6 +293,43 @@ test.describe("Login Page — Continue as last account", () => {
     await expect(page.getByTestId("login-password-input")).toBeFocused();
   });
 
+  test("reads the DOUBLE-encoded cookie historical builds wrote (prod regression)", async ({
+    page,
+    baseURL,
+  }) => {
+    // Before the 2026-08-07 fix the server pre-encoded the value and
+    // Next's cookie serializer encoded it AGAIN, so real prod browsers
+    // hold `%257B…` for up to 180 days. The decode-tolerant parse must
+    // still surface the card for those users.
+    if (!baseURL) throw new Error("baseURL missing from Playwright config");
+    await page.context().addCookies([
+      {
+        name: "crm-last-account",
+        value: encodeURIComponent(
+          encodeURIComponent(
+            JSON.stringify({
+              email: "admin@jurisimus.com",
+              name: "Kreethup Hiranphan",
+              method: "GoogleOAuth",
+            }),
+          ),
+        ),
+        url: baseURL,
+      },
+    ]);
+    await page.goto("/login");
+
+    const card = page.getByTestId("login-last-account");
+    await expect(card).toBeVisible();
+    await expect(card).toContainText("admin@jurisimus.com");
+    await expect(
+      page.getByTestId("login-last-account-continue"),
+    ).toHaveAttribute(
+      "href",
+      "/login/google?login_hint=admin%40jurisimus.com",
+    );
+  });
+
   test("card has no dismiss affordance — the form below IS the alternative", async ({
     page,
     baseURL,
