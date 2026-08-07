@@ -1,6 +1,7 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import { Serwist } from "serwist";
+import type { PushPayload } from "@/server/push";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -27,9 +28,11 @@ serwist.addEventListeners();
  */
 self.addEventListener("push", (event) => {
   if (!event.data) return;
-  let payload: { title?: string; body?: string; url?: string; tag?: string };
+  // Type-only import — erased at compile, so the SW bundle never pulls
+  // server code; the shape stays single-sourced with the sender.
+  let payload: Partial<PushPayload>;
   try {
-    payload = event.data.json() as typeof payload;
+    payload = event.data.json() as Partial<PushPayload>;
   } catch (error) {
     console.error("[sw] push payload is not JSON — dropping it:", error);
     return;
