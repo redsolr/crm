@@ -60,12 +60,11 @@ external Login URI points at `/login/connect`
 authorize with zero screens). Confirmed end-to-end against claude.ai:
 the DCR-registered client honors the delegation (no CIMD flag
 needed), the branded LoginCard renders with the authorize note, and
-the connector lands with all 8 tools. The env's `externalLoginUri`
-currently points at `http://localhost:3100/login/connect` (set for
-the live confirm — the deployed builds don't carry the route yet);
-**flip to `https://crm.jurisimus.com/login/connect` when this build
-deploys**, or null it to restore the hosted screen. While it points
-at localhost, connector auth from any other machine dead-ends.
+the connector lands with all 8 tools. The env's `externalLoginUri` is
+**`https://crm.jurisimus.com/login/connect`** (permanent since the
+2026-08-08 prod deploy of `7edeb0d`) — every OAuth-client sign-in
+runs through the CRM's own login page. Null it via
+`updateAuthkitExternalLoginUri` to restore the hosted screen.
 
 ## Tools
 
