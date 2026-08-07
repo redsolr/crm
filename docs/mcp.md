@@ -44,14 +44,14 @@ Two doors, both verified by `src/server/mcp-auth.ts`; neither env set
    registration. Writes stamp `Claude (agent)`, unchanged. Rotate by
    changing the value and redeploying.
 
-WorkOS-side prerequisites for the OAuth door (dashboard → the crm
-Staging environment, or the WorkOS MCP in an interactive session):
-**dynamic client registration enabled**
-(`isAuthkitDynamicClientRegistrationEnabled`) and the resource URIs
-registered via `setAuthkitOauthResources`
-(`https://crm.jurisimus.com/mcp`, `https://dev-crm.jurisimus.com/mcp`,
-`http://localhost:3100/mcp`). Until both are set, OAuth clients can't
-complete the flow; the service token keeps working regardless.
+WorkOS-side prerequisites for the OAuth door — **DONE 2026-08-07 via
+the WorkOS MCP** (crm Staging env): dynamic client registration
+enabled (`isAuthkitDynamicClientRegistrationEnabled: true`, verified)
+and the resource URIs registered via `setAuthkitOauthResources`
+(`https://crm.jurisimus.com/mcp` = default, plus
+`https://dev-crm.jurisimus.com/mcp` and `http://localhost:3100/mcp`).
+OAuth clients (claude.ai connectors, Cursor, …) can now complete the
+full DCR + PKCE flow; the service token keeps working regardless.
 
 ## Tools
 
@@ -100,9 +100,9 @@ gate (one trip to claude.ai → Settings → Connectors):
    (Add custom connector → `https://crm.jurisimus.com/mcp`, sign in
    with your CRM seat). The ops mailbox is **jadoreran@gmail.com**
    (founder call 2026-08-07) — Gmail/Calendar connect under that
-   account, never the infra root. If CRM registration fails, complete
-   the two WorkOS-side residuals first (§ Auth above: enable dynamic
-   client registration + register the OAuth resources).
+   account, never the infra root. The WorkOS-side prerequisites (DCR
+   + resource registration) are DONE (§ Auth above), so the custom
+   connector's OAuth flow completes end-to-end.
    STATUS 2026-08-07: Gmail ✓ + Calendar ✓ connected (Type "Web");
    CRM connector NOT yet added. The routine-side connector roster
    still reports EMPTY — web-type connectors do not (yet) propagate
