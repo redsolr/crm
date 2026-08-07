@@ -6,6 +6,10 @@ import {
   serializeLastAccount,
 } from "@/lib/last-account";
 import { classifyLoginError, LOGIN_ERROR_PARAM } from "@/lib/login-error";
+import {
+  CONNECT_PENDING_COOKIE,
+  completeStandaloneConnect,
+} from "@/server/connect";
 
 const clientId = process.env.WORKOS_CLIENT_ID!;
 
@@ -69,7 +73,35 @@ export async function GET(request: NextRequest) {
 
     await saveSession(authResponse, request);
 
-    const response = NextResponse.redirect(new URL("/sales", request.url));
+    // Standalone Connect handoff: this sign-in was initiated by an
+    // OAuth client via /login/connect — resume ITS flow instead of
+    // entering the app. Failure surfaces on /login, never a dead end.
+    const pendingConnect = request.cookies.get(CONNECT_PENDING_COOKIE)?.value;
+    let destination = new URL("/sales", request.url).toString();
+    if (pendingConnect) {
+      try {
+        destination = await completeStandaloneConnect(pendingConnect, {
+          id: authResponse.user.id,
+          email: authResponse.user.email,
+          firstName: authResponse.user.firstName,
+          lastName: authResponse.user.lastName,
+        });
+      } catch (error) {
+        console.error("[callback] connect completion failed:", error);
+        const url = new URL("/login", request.url);
+        url.searchParams.set(LOGIN_ERROR_PARAM, "connect_failed");
+        destination = url.toString();
+      }
+    }
+
+    const response = NextResponse.redirect(destination);
+    if (pendingConnect) {
+      response.cookies.set(CONNECT_PENDING_COOKIE, "", {
+        httpOnly: true,
+        maxAge: 0,
+        path: "/",
+      });
+    }
     const { user, authenticationMethod } = authResponse;
     const name =
       [user.firstName, user.lastName].filter(Boolean).join(" ") || undefined;

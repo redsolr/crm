@@ -22,6 +22,7 @@
  */
 
 import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { saveSession } from "@workos-inc/authkit-nextjs";
 import { workos, clientId } from "@/lib/workos";
 import {
@@ -29,6 +30,10 @@ import {
   LAST_ACCOUNT_MAX_AGE_SECONDS,
   serializeLastAccount,
 } from "@/lib/last-account";
+import {
+  CONNECT_PENDING_COOKIE,
+  completeStandaloneConnect,
+} from "@/server/connect";
 
 /** Build an absolute URL for the current request from forwarded headers. */
 async function getRequestBaseUrl(): Promise<string> {
@@ -55,6 +60,12 @@ export async function emailPasswordLogin(
   ) {
     return { error: "Email and password are required" };
   }
+
+  // Standalone Connect: when this sign-in was initiated by an OAuth
+  // client (see src/server/connect.ts), the flow resumes at the URI
+  // AuthKit's completion API returns. `redirect()` throws, so it runs
+  // AFTER the try/catch below.
+  let connectRedirect: string | null = null;
 
   try {
     const authResponse = await workos.userManagement.authenticateWithPassword({
@@ -87,7 +98,27 @@ export async function emailPasswordLogin(
       },
     );
 
-    return {};
+    const pendingConnect = cookieStore.get(CONNECT_PENDING_COOKIE)?.value;
+    if (pendingConnect) {
+      cookieStore.delete(CONNECT_PENDING_COOKIE);
+      try {
+        connectRedirect = await completeStandaloneConnect(pendingConnect, {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        });
+      } catch (connectErr) {
+        console.error(
+          "[emailPasswordLogin] connect completion failed:",
+          connectErr,
+        );
+        return {
+          error:
+            "Signed in, but authorizing the connected app failed — go back to the app and retry the connection.",
+        };
+      }
+    }
   } catch (err: unknown) {
     console.error("[emailPasswordLogin] authentication failed:", err);
     const message =
@@ -101,4 +132,9 @@ export async function emailPasswordLogin(
     }
     return { error: "Something went wrong. Please try again." };
   }
+
+  if (connectRedirect !== null) {
+    redirect(connectRedirect);
+  }
+  return {};
 }

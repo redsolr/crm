@@ -19,7 +19,7 @@
 
 export const LOGIN_ERROR_PARAM = "error";
 
-export type LoginErrorCode = "not_invited" | "auth_failed";
+export type LoginErrorCode = "not_invited" | "auth_failed" | "connect_failed";
 
 /** Map a WorkOS error code + description onto our login-page vocabulary. */
 export function classifyLoginError(
@@ -35,6 +35,11 @@ export const LOGIN_ERROR_MESSAGES: Record<LoginErrorCode, string> = {
   not_invited:
     "This account hasn't been invited to the CRM yet. Ask an admin to send you an invitation, then sign in again.",
   auth_failed: "Sign-in didn't complete. Please try again.",
+  // Standalone Connect (src/server/connect.ts): the sign-in itself
+  // succeeded but AuthKit's completion call failed — the OAuth client
+  // is still waiting and must restart its connection.
+  connect_failed:
+    "Sign-in worked, but authorizing the connected app failed. Go back to the app and retry the connection.",
 };
 
 /** Human message for a raw `?error=` param value (unknown codes → generic). */
