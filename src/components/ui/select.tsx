@@ -110,20 +110,12 @@ function useMenuFloating(open: boolean) {
 
 /** The CRM theme tokens are SCOPED to `.crm-app` — a menu portaled to
  *  <body> would resolve them against :root (light). Portal into the
- *  app shell instead, resolved from the anchor element once open. */
-function usePortalRoot(
-  open: boolean,
-  anchorRef: React.RefObject<HTMLElement | null>,
-) {
-  const [root, setRoot] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    if (open) {
-      setRoot(
-        anchorRef.current?.closest<HTMLElement>(".crm-app") ?? document.body,
-      );
-    }
-  }, [open, anchorRef]);
-  return root;
+ *  app shell instead (there is exactly one `.crm-app` per page).
+ *  Render-time lookup, no state: the menu only renders while open,
+ *  which is always after the shell has committed. */
+function portalRootFor(open: boolean): HTMLElement | null {
+  if (!open || typeof document === "undefined") return null;
+  return document.querySelector<HTMLElement>(".crm-app") ?? document.body;
 }
 
 /** Dismiss when a pointer-down lands outside both the trigger and the
@@ -264,7 +256,7 @@ export function SelectMenu({
   const typeahead = useRef({ buffer: "", at: 0 });
 
   const { refs, floatingStyles } = useMenuFloating(open);
-  const portalRoot = usePortalRoot(open, triggerRef);
+  const portalRoot = portalRootFor(open);
 
   const allOptions = useMemo<SelectOption[]>(
     () =>
@@ -439,6 +431,11 @@ export function SelectMenu({
             className="crm-select-menu"
             data-crm-select-menu
             data-testid="crm-select-menu"
+            // The menu IS the listbox (Radix-content shape) — the
+            // interactive role also matches its focus + key handling.
+            role="listbox"
+            id={listboxId}
+            aria-label={ariaLabel}
             tabIndex={-1}
             onKeyDown={handleMenuKeyDown}
             // Keep pointer interactions inside the menu from reaching
@@ -462,12 +459,7 @@ export function SelectMenu({
               />
             </div>
           )}
-          <div
-            className="crm-select-options"
-            role="listbox"
-            id={listboxId}
-            aria-label={ariaLabel}
-          >
+          <div className="crm-select-options">
             {filtered.map((o, i) => (
               <OptionRow
                 key={o.value === "" ? " empty" : o.value}
@@ -527,7 +519,7 @@ export function TypeaheadCombobox({
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const { refs, floatingStyles } = useMenuFloating(open);
-  const portalRoot = usePortalRoot(open, inputRef);
+  const portalRoot = portalRootFor(open);
 
   const filtered = useMemo(
     () => filterOptions(options, value),
@@ -624,14 +616,21 @@ export function TypeaheadCombobox({
             className="crm-select-menu"
             data-crm-select-menu
             data-testid="crm-select-menu"
+            // The menu IS the listbox the input's aria-controls /
+            // aria-activedescendant point at (combobox pattern).
+            role="listbox"
+            id={listboxId}
+            aria-label={ariaLabel}
+            // preventDefault keeps focus in the input while picking;
+            // stopPropagation shields outside-click hosts (they listen
+            // on mousedown). Option rows stop their own click events,
+            // so no click handler is needed here.
             onMouseDown={(e) => {
-              // Keep focus in the input while picking.
               e.preventDefault();
               e.stopPropagation();
             }}
-            onClick={(e) => e.stopPropagation()}
           >
-            <div className="crm-select-options" role="listbox" id={listboxId}>
+            <div className="crm-select-options">
               {filtered.map((o, i) => (
                 <OptionRow
                   key={o.value}

@@ -29,7 +29,6 @@ import {
   type RealtimeSession,
 } from "@/lib/realtime/realtime-store";
 import type { SalesWorkspaceBundle } from "@/lib/sales/use-sales-workspace";
-import type { WorkItem } from "@/lib/workItemsApi";
 import { CreateCallNoteModal } from "../CreateCallNoteModal";
 
 export function LiveNotePanel({

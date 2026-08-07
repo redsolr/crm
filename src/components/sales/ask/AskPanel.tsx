@@ -26,7 +26,7 @@
  * the page) shows it next. Only Stop and "new conversation" abort.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useAskPanel } from "@/stores/use-ask-panel";
@@ -124,14 +124,15 @@ export function AskPanel() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [togglePanel]);
 
-  // Portal target resolved when the drawer opens — `.crm-main` is
-  // committed by then (this component mounts in the same shell render
-  // as the content column, so a first-render querySelector would miss).
-  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    if (!isOpen) return;
-    setPortalTarget(document.querySelector<HTMLElement>(MAIN_AREA_SELECTOR));
-  }, [isOpen]);
+  // Portal target resolved at render time, but only once the drawer is
+  // open — `.crm-main` is committed by then (this component mounts in
+  // the same shell render as the content column, so a first-render
+  // lookup would miss; the drawer only opens on user action, well
+  // after commit).
+  const portalTarget =
+    isOpen && typeof document !== "undefined"
+      ? document.querySelector<HTMLElement>(MAIN_AREA_SELECTOR)
+      : null;
 
   // Dismiss on clicks in the content area outside the drawer (sidebar is
   // a sibling) and on Escape. Same contract as SalesPeekPanel. Closing

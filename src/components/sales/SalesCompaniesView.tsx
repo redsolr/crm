@@ -121,7 +121,7 @@ export function SalesCompaniesView() {
     const attrString = (account: WorkItem, key: string): string | null => {
       const def = defByKey[key];
       if (!def) return null;
-      const raw = (valuesByAccountId[account.id] ?? []).find(
+      const raw: unknown = (valuesByAccountId[account.id] ?? []).find(
         (v) => v.definition_id === def.id,
       )?.value;
       return typeof raw === "string" && raw !== "" ? raw : null;

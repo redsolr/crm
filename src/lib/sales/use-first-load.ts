@@ -15,12 +15,13 @@
  * `loading` starts false, so no skeleton shows.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export function useFirstLoad(loading: boolean): boolean {
   const [everLoaded, setEverLoaded] = useState(false);
-  useEffect(() => {
-    if (!loading && !everLoaded) setEverLoaded(true);
-  }, [loading, everLoaded]);
+  // Render-time adjust (the React-docs "storing information from
+  // previous renders" pattern) — latches without an effect, so the
+  // skeleton never paints one extra committed frame.
+  if (!loading && !everLoaded) setEverLoaded(true);
   return loading && !everLoaded;
 }

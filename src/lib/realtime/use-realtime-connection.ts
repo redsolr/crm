@@ -55,7 +55,11 @@ export function useRealtimeConnection(): void {
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const pathnameRef = useRef(pathname);
-  pathnameRef.current = pathname;
+  // Ref write belongs in an effect, not render. Declared FIRST so it
+  // runs before the publish-view effect below in the same commit.
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   // ── Socket lifecycle (mount once) ─────────────────────────────────
   useEffect(() => {
@@ -141,7 +145,11 @@ export function useRealtimeConnection(): void {
           };
           try {
             data = JSON.parse(event.data) as typeof data;
-          } catch {
+          } catch (err) {
+            console.warn(
+              "[realtime] dropped malformed frame:",
+              err instanceof Error ? err.message : err,
+            );
             return;
           }
           const s = useRealtimeStore.getState();

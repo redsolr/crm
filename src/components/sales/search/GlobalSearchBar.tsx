@@ -73,11 +73,13 @@ export function GlobalSearchBar() {
   // Derived clamp (no state-sync effect) — same pattern as the palette.
   const activeIndex = Math.min(selected, Math.max(0, navLength - 1));
 
-  // Recents are re-read every time the dropdown opens — another tab or
-  // an earlier search this session may have added entries.
-  useEffect(() => {
-    if (isOpen) setRecents(readRecentSearches());
-  }, [isOpen]);
+  // Opening re-reads recents in the same event — another tab or an
+  // earlier search this session may have added entries. (Event-time
+  // read instead of a setState-in-effect on `isOpen`.)
+  const openDropdown = useCallback(() => {
+    setRecents(readRecentSearches());
+    setIsOpen(true);
+  }, []);
 
   // Global hotkey — `/` focuses the input when the user isn't typing
   // somewhere else and no sibling overlay is up.
@@ -92,11 +94,11 @@ export function GlobalSearchBar() {
       if (useAskPanel.getState().isOpen) return;
       e.preventDefault();
       inputRef.current?.focus();
-      setIsOpen(true);
+      openDropdown();
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [openDropdown]);
 
   // Also fires on Escape — the dropdown closes but the query is kept,
   // Slack-style, so refocusing resumes where the user left off.
@@ -176,20 +178,17 @@ export function GlobalSearchBar() {
       {/* Jira-visible field (founder 2026-08-04): the RESTING border
           sits on the ladder's visible tier and the icon/placeholder/
           keycap read a step brighter — the box must be findable on the
-          dark topbar without hovering. */}
-      <div
+          dark topbar without hovering.
+          A <label>, not a click-handled div: the WHOLE box focuses the
+          input natively (Stripe/Jira behavior — the icon/padding/
+          keycap zones were dead clicks, founder 2026-08-04), and the
+          input's own onFocus opens the dropdown. */}
+      <label
         className={`crm-topbar-search-field flex items-center gap-2 w-full px-3 py-1.5 rounded-lg border bg-[var(--theme-bg-tertiary)] text-sm transition-colors cursor-text ${
           isOpen
             ? "border-[var(--theme-text-muted)]"
             : "border-[var(--theme-border-hover)] hover:border-[var(--theme-text-muted)]"
         }`}
-        // The WHOLE box focuses the input (Stripe/Jira behavior) — the
-        // icon/padding/keycap zones were dead clicks (founder
-        // 2026-08-04, probe-verified).
-        onClick={() => {
-          inputRef.current?.focus();
-          setIsOpen(true);
-        }}
       >
         <span className="crm-topbar-search-icon flex-shrink-0 text-[var(--theme-text-secondary)]">
           <MagnifierIcon size={14} />
@@ -204,7 +203,7 @@ export function GlobalSearchBar() {
             setSelected(0);
             setIsOpen(true);
           }}
-          onFocus={() => setIsOpen(true)}
+          onFocus={openDropdown}
           onKeyDown={onInputKeyDown}
           placeholder="Search companies, deals, contacts, call notes…"
           className="crm-topbar-search-input flex-1 min-w-0 bg-transparent text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)] focus:outline-none"
@@ -212,7 +211,7 @@ export function GlobalSearchBar() {
         <kbd className="crm-topbar-search-keycap flex-shrink-0 px-1.5 py-0.5 rounded border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-secondary)] font-mono text-[10px] leading-none text-[var(--theme-text-secondary)]">
           /
         </kbd>
-      </div>
+      </label>
 
       {isOpen && (
         <div

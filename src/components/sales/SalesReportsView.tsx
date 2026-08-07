@@ -126,7 +126,7 @@ export function SalesReportsView() {
       const row = sourceDef
         ? values.find((v) => v.definition_id === sourceDef.id)
         : undefined;
-      const raw = row?.value;
+      const raw: unknown = row?.value;
       map[a.id] = typeof raw === "string" && raw.length > 0 ? raw : "unknown";
     }
     return map;

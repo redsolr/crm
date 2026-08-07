@@ -43,43 +43,70 @@ const eslintConfig = [
       ...nextPlugin.configs.recommended.rules,
       ...nextPlugin.configs["core-web-vitals"].rules,
       ...reactHooksPlugin.configs.recommended.rules,
-      // The v7 strict rules (set-state-in-effect, refs, immutability,
-      // preserve-manual-memoization, purity) are NEW in eslint-plugin-react-hooks
-      // v7 and the legacy code predates them — downgrade to `warn` and clean
-      // up file-by-file as touched. The classic rules-of-hooks and
-      // exhaustive-deps stay as `error` (they catch real bugs).
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/refs": "warn",
-      "react-hooks/immutability": "warn",
-      "react-hooks/preserve-manual-memoization": "warn",
-      "react-hooks/purity": "warn",
+      // The react-hooks v7 strict rules and jsx-a11y raw-element rules
+      // graduated warn → error on 2026-08-07 after the baseline hit 0
+      // (platform doctrine: no warn tier — a warning nobody must fix
+      // is a warning nobody fixes).
+      "react-hooks/set-state-in-effect": "error",
+      "react-hooks/refs": "error",
+      "react-hooks/immutability": "error",
+      "react-hooks/preserve-manual-memoization": "error",
+      "react-hooks/purity": "error",
       // jsx-a11y: only the rules that fire on raw HTML elements, not the
       // ones that need eslint-plugin-react's JSX context analysis.
-      "jsx-a11y/click-events-have-key-events": "warn",
-      "jsx-a11y/no-static-element-interactions": "warn",
+      "jsx-a11y/click-events-have-key-events": "error",
+      "jsx-a11y/no-static-element-interactions": "error",
       // CLAUDE.md: never swallow errors silently. Every catch block must
-      // log/rethrow/report — no quietly mutating state and moving on.
-      //
-      // Currently `warn` not `error` because the legacy codebase has ~108
-      // pre-existing violations (the lint pipeline was broken for a while —
-      // `next lint` was removed in Next.js 16). Fix file-by-file as we touch
-      // them (same pattern as backend `no-floating-promises`), then flip to
-      // `error` once the count hits zero. New code should not add violations.
-      "local/no-silent-catch": "warn",
+      // log/rethrow/report. Graduated to `error` 2026-08-07 at 0-baseline
+      // (matches the backend config).
+      "local/no-silent-catch": "error",
       // `catch {}` and `catch (e) {}` are still hard errors — egregious form.
       "no-empty": ["error", { allowEmptyCatch: false }],
-      // Match the backend's policy: unused vars warn but don't fail. Allow
-      // `_` prefix for intentionally-unused params (e.g. exhaustiveness checks).
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        {
-          args: "none",
-          varsIgnorePattern: "^_",
-          caughtErrorsIgnorePattern: "^_",
-        },
-      ],
+      // Backend parity: hard error, no `_` escape hatch (CLAUDE.md forbids
+      // it). `args: 'none'` because framework callback signatures routinely
+      // carry parameters an implementation doesn't use.
+      "@typescript-eslint/no-unused-vars": ["error", { args: "none" }],
       // TODO(eslint-plugin-react): re-enable React/JSX rules once
       // eslint-plugin-react supports ESLint v10 (jsx-eslint/eslint-plugin-react#3697).
+    },
+  },
+  // --- Platform-parity type-aware rules (the real-bug tier) -----------------
+  // The backend runs typescript-eslint strictTypeChecked at `error` on a
+  // 0-baseline. Adopted here 2026-08-07 (founder ask): the type-aware rules
+  // that catch real bugs, scoped to authored src. Deliberately NOT adopted
+  // (for now): strict-boolean-expressions (a JSX-wide truthiness sweep of
+  // its own) and eslint-plugin-import (new dependency + repo-wide reorder).
+  {
+    files: ["src/**/*.{ts,tsx,mts,cts}"],
+    // tsconfig excludes these (jest owns the tests, serwist owns sw.ts) —
+    // the project service can't type them; they keep the non-type-aware
+    // rule set above.
+    ignores: ["src/**/__tests__/**", "src/app/sw.ts"],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-base-to-string": "error",
+      "@typescript-eslint/restrict-template-expressions": [
+        "error",
+        { allowNumber: true },
+      ],
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-unsafe-argument": "error",
+      "@typescript-eslint/no-unsafe-assignment": "error",
+      "@typescript-eslint/no-unsafe-call": "error",
+      "@typescript-eslint/no-unsafe-member-access": "error",
+      "@typescript-eslint/no-unsafe-return": "error",
+      "@typescript-eslint/switch-exhaustiveness-check": [
+        "error",
+        { considerDefaultExhaustiveForUnions: true },
+      ],
+      "@typescript-eslint/require-array-sort-compare": "error",
+      "@typescript-eslint/unbound-method": "error",
     },
   },
   {

@@ -51,10 +51,15 @@ export async function currentActor(): Promise<RequestActor> {
       name: fullName !== "" ? fullName : (user.email?.split("@")[0] ?? null),
       email: user.email ?? null,
     };
-  } catch {
+  } catch (err) {
     // withAuth throws when the request never passed through the proxy
     // (unit tests calling handlers directly) — same answer as "no
-    // session".
+    // session", but logged so a proxy misconfiguration in a real
+    // deployment doesn't silently demote every write to the fallback.
+    console.warn(
+      "[actor] withAuth unavailable — using local fallback actor:",
+      err instanceof Error ? err.message : err,
+    );
     return LOCAL_FALLBACK_ACTOR;
   }
 }

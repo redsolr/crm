@@ -47,7 +47,9 @@ export function AttributeFieldEditor({
   testIdPrefix?: string;
 }) {
   const upsert = useUpsertAttributeValue();
-  const value = valueRow?.value;
+  // `unknown`, not the generated model's `any` — everything downstream
+  // narrows via typeof (stringifyAttributeValue, the sync compare).
+  const value: unknown = valueRow?.value;
 
   const [local, setLocal] = useState<string>(() =>
     stringifyAttributeValue(value),

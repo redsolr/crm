@@ -48,9 +48,11 @@ export function WorkView() {
   const taskType = bundle?.workItemTypes.find(
     (t) => t.key === WORK_TYPE_KEYS.task,
   );
-  const taskDefs = taskType
-    ? (bundle?.attributeDefinitionsByType[taskType.id] ?? [])
-    : [];
+  const taskDefs = useMemo(
+    () =>
+      taskType ? (bundle?.attributeDefinitionsByType[taskType.id] ?? []) : [],
+    [bundle, taskType],
+  );
 
   const snapshotsById = useMemo(() => {
     const map: Record<string, TaskSnapshot> = {};

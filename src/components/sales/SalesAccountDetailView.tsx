@@ -130,7 +130,7 @@ export function SalesAccountDetailView({ accountId }: Props) {
 
   // Logo domain from the already-fetched account attribute values.
   const urlDef = accountDefs.find((d) => d.key === "company_url");
-  const companyUrlRaw = urlDef
+  const companyUrlRaw: unknown = urlDef
     ? (accountAttributeValues.data?.data ?? []).find(
         (v) => v.definition_id === urlDef.id,
       )?.value

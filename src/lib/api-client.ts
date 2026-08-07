@@ -315,7 +315,9 @@ export class BaseApiClient {
 
           if (retryResponse.ok) {
             if (retryResponse.status === 204) return undefined as T;
-            return retryResponse.json();
+            // The wrapper's contract: callers declare T, Zod layers
+            // validate where it matters — same assertion as below.
+            return (await retryResponse.json()) as T;
           }
         }
 
@@ -350,6 +352,6 @@ export class BaseApiClient {
       return undefined as T;
     }
 
-    return response.json();
+    return (await response.json()) as T;
   }
 }

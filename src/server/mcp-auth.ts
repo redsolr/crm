@@ -178,7 +178,13 @@ export async function verifyMcpToken(
     const sub = (() => {
       try {
         return decodeJwt(bearer).sub;
-      } catch {
+      } catch (decodeErr) {
+        // Bearer isn't even a decodable JWT — the outer warn below
+        // still fires; note the shape for the same debug trail.
+        console.warn(
+          "[mcp-auth] bearer token is not a decodable JWT:",
+          decodeErr instanceof Error ? decodeErr.message : decodeErr,
+        );
         return undefined;
       }
     })();

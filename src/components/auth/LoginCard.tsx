@@ -1,9 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+} from "react";
 import Link from "next/link";
 import { useAuth } from "@/stores/use-auth";
 import { readLastAccount, type LastAccount } from "@/lib/last-account";
+
+// Hydration-safe cookie read: the server snapshot is null (no
+// document.cookie during SSR), the client snapshot is read once and
+// cached — the cookie only changes on a login, which navigates. The
+// cache keeps the snapshot referentially stable, as
+// useSyncExternalStore requires.
+const subscribeNever = () => () => {};
+let lastAccountSnapshot: LastAccount | null | undefined;
+function readLastAccountCached(): LastAccount | null {
+  lastAccountSnapshot ??= readLastAccount();
+  return lastAccountSnapshot ?? null;
+}
 import { PasswordInput } from "./PasswordInput";
 import { FieldError } from "./FieldError";
 import { SubmitButton } from "./SubmitButton";
@@ -47,14 +65,16 @@ export function LoginCard({
   // so the button never flips back to "Sign in" while the old document
   // is still on screen.
   const [redirecting, setRedirecting] = useState(false);
-  // Read post-mount — document.cookie doesn't exist during SSR.
-  const [lastAccount, setLastAccount] = useState<LastAccount | null>(null);
+  // Read via external-store subscription — document.cookie doesn't
+  // exist during SSR, so the server snapshot is null and the client
+  // snapshot arrives on hydration without a setState-in-effect.
+  const lastAccount = useSyncExternalStore(
+    subscribeNever,
+    readLastAccountCached,
+    () => null,
+  );
   const formRef = useRef<HTMLFormElement>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setLastAccount(readLastAccount());
-  }, []);
 
   useEffect(() => {
     if (!loading && isAuthenticated) {

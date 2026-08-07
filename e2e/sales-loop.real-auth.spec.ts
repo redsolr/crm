@@ -6,6 +6,7 @@ import {
   loginWithPassword,
   trackDeadApiCalls,
 } from "./helpers/real-auth";
+import { pickOption } from "./helpers/select";
 
 /**
  * The core sales loop against the REAL stack (real WorkOS session, real
@@ -71,9 +72,19 @@ test("company → deal → table → saved view survives reload", async ({
     page.getByTestId("sales-companies-view-select"),
   ).toContainText(VIEW, { timeout: 45_000 });
 
-  // …and still does after a full reload (server-persisted, not local
-  // state) — this is the /api/views round-trip.
+  // …and still EXISTS after a full reload (server-persisted, not local
+  // state) — this is the /api/views round-trip. Which view is SELECTED
+  // is session-local by design, so prove persistence by re-picking the
+  // saved view from the switcher's list and seeing it applied. (The
+  // old native <select> asserted toContainText on the closed control,
+  // which passed via the hidden option list's text; the custom trigger
+  // renders only the selected label.)
   await page.reload();
+  await pickOption(
+    page.getByTestId("sales-companies-view-select"),
+    { label: VIEW },
+    { timeout: 45_000 },
+  );
   await expect(
     page.getByTestId("sales-companies-view-select"),
   ).toContainText(VIEW, { timeout: 45_000 });
