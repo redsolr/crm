@@ -103,12 +103,17 @@ gate (one trip to claude.ai → Settings → Connectors):
    account, never the infra root. The WorkOS-side prerequisites (DCR
    + resource registration) are DONE (§ Auth above), so the custom
    connector's OAuth flow completes end-to-end.
-   STATUS 2026-08-07: Gmail ✓ + Calendar ✓ connected (Type "Web");
-   CRM connector NOT yet added. The routine-side connector roster
-   still reports EMPTY — web-type connectors do not (yet) propagate
-   to Claude Code cloud routines, so the caveat below is LIVE: the
-   loop runs interactively (claude.ai chat or a morning Claude Code
-   session) until the connectors appear on the Code surface.
+   STATUS 2026-08-07 (late): **all three connected** — Gmail ✓ +
+   Calendar ✓ + crm ✓ (the custom connector completed the full
+   DCR + PKCE + AuthKit flow and lists all 8 tools; per-tool
+   permissions default to "Needs approval" — reads like
+   `find_crm_record` / `list_commitments` are safe to set
+   always-allow, keep writes on approval until trust is earned).
+   The INTERACTIVE loop is fully runnable in any claude.ai chat.
+   The routine-side connector roster still reports EMPTY — web-type
+   connectors do not (yet) propagate to Claude Code cloud routines,
+   so the caveat below is LIVE for SCHEDULED runs only: run the loop
+   interactively until the connectors appear on the Code surface.
 2. **Create the routine** (`/schedule` in any Claude Code session, or
    claude.ai/code/routines): daily **06:30 Bangkok (23:30 UTC)** — 30
    minutes BEFORE the digest cron, so the 07:00 digest already
