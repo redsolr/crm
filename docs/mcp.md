@@ -53,6 +53,20 @@ and the resource URIs registered via `setAuthkitOauthResources`
 OAuth clients (claude.ai connectors, Cursor, …) can now complete the
 full DCR + PKCE flow; the service token keeps working regardless.
 
+**Standalone Connect (2026-08-08, PROVEN live)**: the OAuth door's
+login screen is OUR login page, not the hosted AuthKit UI — AuthKit's
+external Login URI points at `/login/connect`
+(`src/server/connect.ts` has the full mechanics; signed-in users
+authorize with zero screens). Confirmed end-to-end against claude.ai:
+the DCR-registered client honors the delegation (no CIMD flag
+needed), the branded LoginCard renders with the authorize note, and
+the connector lands with all 8 tools. The env's `externalLoginUri`
+currently points at `http://localhost:3100/login/connect` (set for
+the live confirm — the deployed builds don't carry the route yet);
+**flip to `https://crm.jurisimus.com/login/connect` when this build
+deploys**, or null it to restore the hosted screen. While it points
+at localhost, connector auth from any other machine dead-ends.
+
 ## Tools
 
 The registry is `src/server/ask-tools.ts` — single source of truth
