@@ -18,6 +18,7 @@
  */
 
 import { test, expect } from "./fixtures/auth.fixture";
+import type { Page } from "@playwright/test";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
 import { expectSelectValue, pickOption } from "./helpers/select";
 import {
@@ -35,21 +36,28 @@ const FIRMS = [
   "Krung Thep Family Law",
 ];
 
+/** Land on the pipeline and create companies through the UI, waiting
+ *  out each create modal — the boilerplate every test here shares. */
+async function seedCompanies(page: Page, names: readonly string[]) {
+  await page.goto("/sales");
+  await expect(page.getByTestId("sales-pipeline")).toBeVisible({
+    timeout: STEP_TIMEOUT,
+  });
+  for (const name of names) {
+    await createAccountViaUi(page, name);
+    await expect(page.getByTestId("sales-account-name-input")).toHaveCount(
+      0,
+      { timeout: STEP_TIMEOUT },
+    );
+  }
+}
+
 test.describe("Searchable selects", () => {
   test("account picker filters by typed query, commits the id, and anchors to its trigger", async ({
     authedPage,
   }) => {
     await setupSalesHandlers(authedPage);
-    await authedPage.goto("/sales");
-    await expect(authedPage.getByTestId("sales-pipeline")).toBeVisible({
-      timeout: STEP_TIMEOUT,
-    });
-    for (const firm of FIRMS) {
-      await createAccountViaUi(authedPage, firm);
-      await expect(
-        authedPage.getByTestId("sales-account-name-input"),
-      ).toHaveCount(0, { timeout: STEP_TIMEOUT });
-    }
+    await seedCompanies(authedPage, FIRMS);
 
     // ── Open the New-opportunity modal's account picker ────────────
     await authedPage.getByTestId("sales-add-opportunity-button").click();
@@ -104,14 +112,7 @@ test.describe("Searchable selects", () => {
     authedPage,
   }) => {
     await setupSalesHandlers(authedPage);
-    await authedPage.goto("/sales");
-    await expect(authedPage.getByTestId("sales-pipeline")).toBeVisible({
-      timeout: STEP_TIMEOUT,
-    });
-    await createAccountViaUi(authedPage, "Rattanakorn & Partners");
-    await expect(
-      authedPage.getByTestId("sales-account-name-input"),
-    ).toHaveCount(0, { timeout: STEP_TIMEOUT });
+    await seedCompanies(authedPage, ["Rattanakorn & Partners"]);
 
     await authedPage.getByTestId("sales-nav-interviews").click();
     await authedPage.getByTestId("interviews-new-button").click();
@@ -156,14 +157,7 @@ test.describe("Searchable selects", () => {
     authedPage,
   }) => {
     await setupSalesHandlers(authedPage);
-    await authedPage.goto("/sales");
-    await expect(authedPage.getByTestId("sales-pipeline")).toBeVisible({
-      timeout: STEP_TIMEOUT,
-    });
-    await createAccountViaUi(authedPage, "Peek Firm");
-    await expect(
-      authedPage.getByTestId("sales-account-name-input"),
-    ).toHaveCount(0, { timeout: STEP_TIMEOUT });
+    await seedCompanies(authedPage, ["Peek Firm"]);
     await createOpportunityViaUi(authedPage, "Peek stage deal");
     const row = authedPage.locator("[data-testid='sales-pipeline-row']", {
       hasText: "Peek stage deal",
@@ -194,14 +188,7 @@ test.describe("Searchable selects", () => {
     authedPage,
   }) => {
     await setupSalesHandlers(authedPage);
-    await authedPage.goto("/sales");
-    await expect(authedPage.getByTestId("sales-pipeline")).toBeVisible({
-      timeout: STEP_TIMEOUT,
-    });
-    await createAccountViaUi(authedPage, "Cell Edit Co");
-    await expect(
-      authedPage.getByTestId("sales-account-name-input"),
-    ).toHaveCount(0, { timeout: STEP_TIMEOUT });
+    await seedCompanies(authedPage, ["Cell Edit Co"]);
     await authedPage.getByTestId("sales-nav-companies").click();
     const row = authedPage.locator("[data-testid='sales-companies-row']", {
       hasText: "Cell Edit Co",
@@ -236,14 +223,7 @@ test.describe("Searchable selects", () => {
     authedPage,
   }) => {
     await setupSalesHandlers(authedPage);
-    await authedPage.goto("/sales");
-    await expect(authedPage.getByTestId("sales-pipeline")).toBeVisible({
-      timeout: STEP_TIMEOUT,
-    });
-    await createAccountViaUi(authedPage, "Titan Law");
-    await expect(
-      authedPage.getByTestId("sales-account-name-input"),
-    ).toHaveCount(0, { timeout: STEP_TIMEOUT });
+    await seedCompanies(authedPage, ["Titan Law"]);
     // The end-of-list "+ Create" chip only renders on a non-empty
     // table — seed one deal through the modal first.
     await createOpportunityViaUi(authedPage, "Seed deal");

@@ -9,6 +9,7 @@
  */
 
 import { test, expect } from "./fixtures/auth.fixture";
+import type { Page } from "@playwright/test";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
 import { expectSelectValue } from "./helpers/select";
 import {
@@ -30,6 +31,35 @@ test.use({
   },
 });
 
+/** Seed a company + deal via the UI and land on the deal's detail
+ *  page (the recorder's host view). */
+async function openSeededDeal(page: Page, firm: string, deal: string) {
+  await page.goto("/sales");
+  await ensureBoardMode(page);
+  await createAccountViaUi(page, firm);
+  await expect(page.getByTestId("sales-account-name-input")).toHaveCount(0, {
+    timeout: STEP_TIMEOUT,
+  });
+  await createOpportunityViaUi(page, deal, { awaitCard: true });
+  await openFullViewViaPeek(
+    page,
+    page.locator("[data-testid='sales-kanban-card']", { hasText: deal }),
+  );
+  await expect(page.getByTestId("sales-opportunity-detail")).toBeVisible({
+    timeout: STEP_TIMEOUT,
+  });
+}
+
+/** One recording gesture: record ~a beat of fake-mic audio, stop. */
+async function recordTake(page: Page) {
+  await page.getByTestId("record-call-button").click();
+  await expect(page.getByTestId("record-call-stop")).toBeVisible({
+    timeout: STEP_TIMEOUT,
+  });
+  await page.waitForTimeout(800);
+  await page.getByTestId("record-call-stop").click();
+}
+
 const DRAFT = {
   transcript: "Founder: how do you track matters today? Firm: spreadsheets.",
   summary:
@@ -49,32 +79,10 @@ test("record → transcribe → prefilled call-note draft → saved note", async
     });
   });
 
-  await authedPage.goto("/sales");
-  await ensureBoardMode(authedPage);
-  await createAccountViaUi(authedPage, "Recorder Firm");
-  await expect(
-    authedPage.getByTestId("sales-account-name-input"),
-  ).toHaveCount(0, { timeout: STEP_TIMEOUT });
-  await createOpportunityViaUi(authedPage, "Recorder deal", {
-    awaitCard: true,
-  });
-  await openFullViewViaPeek(
-    authedPage,
-    authedPage.locator("[data-testid='sales-kanban-card']", {
-      hasText: "Recorder deal",
-    }),
-  );
-  await expect(
-    authedPage.getByTestId("sales-opportunity-detail"),
-  ).toBeVisible({ timeout: STEP_TIMEOUT });
+  await openSeededDeal(authedPage, "Recorder Firm", "Recorder deal");
 
   // ── Record a short take against the fake mic, then stop ───────────
-  await authedPage.getByTestId("record-call-button").click();
-  await expect(authedPage.getByTestId("record-call-stop")).toBeVisible({
-    timeout: STEP_TIMEOUT,
-  });
-  await authedPage.waitForTimeout(1_200);
-  await authedPage.getByTestId("record-call-stop").click();
+  await recordTake(authedPage);
 
   // ── The draft modal opens prefilled ───────────────────────────────
   const summaryBox = authedPage.getByPlaceholder(
@@ -128,27 +136,10 @@ test("transcription failure surfaces inline, opens NO draft, and the next take s
     });
   });
 
-  await authedPage.goto("/sales");
-  await ensureBoardMode(authedPage);
-  await createAccountViaUi(authedPage, "Retry Firm");
-  await expect(
-    authedPage.getByTestId("sales-account-name-input"),
-  ).toHaveCount(0, { timeout: STEP_TIMEOUT });
-  await createOpportunityViaUi(authedPage, "Retry deal", { awaitCard: true });
-  await openFullViewViaPeek(
-    authedPage,
-    authedPage.locator("[data-testid='sales-kanban-card']", {
-      hasText: "Retry deal",
-    }),
-  );
+  await openSeededDeal(authedPage, "Retry Firm", "Retry deal");
 
   // ── Failing take: inline error, NO modal, recorder back to idle ───
-  await authedPage.getByTestId("record-call-button").click();
-  await expect(authedPage.getByTestId("record-call-stop")).toBeVisible({
-    timeout: STEP_TIMEOUT,
-  });
-  await authedPage.waitForTimeout(600);
-  await authedPage.getByTestId("record-call-stop").click();
+  await recordTake(authedPage);
   await expect(authedPage.getByTestId("record-call-error")).toContainText(
     /Transcription failed/,
     { timeout: STEP_TIMEOUT },
@@ -158,12 +149,7 @@ test("transcription failure surfaces inline, opens NO draft, and the next take s
   ).toHaveCount(0);
 
   // ── Second take works — the failure was recoverable ───────────────
-  await authedPage.getByTestId("record-call-button").click();
-  await expect(authedPage.getByTestId("record-call-stop")).toBeVisible({
-    timeout: STEP_TIMEOUT,
-  });
-  await authedPage.waitForTimeout(600);
-  await authedPage.getByTestId("record-call-stop").click();
+  await recordTake(authedPage);
   await expect(
     authedPage.getByPlaceholder(
       "What they said in their words; commitments made.",

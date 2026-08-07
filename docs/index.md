@@ -166,9 +166,23 @@ runbook: [docs/realtime.md](./realtime.md).
 Every paid model call rides `src/server/llm.ts` (OpenAI; default
 `gpt-5.4-mini`, `CRM_ASK_MODEL` override): the Ask agentic loop
 (`server/ask.ts` — SSE grammar in `src/lib/chat/stream.ts` is
-provider-agnostic), attribute enrichment `/compute`, and interview
-suggest `/api/responses`. Fails loudly without `OPENAI_API_KEY` —
-never add a silent fallback (billing discipline).
+provider-agnostic), attribute enrichment `/compute`, interview
+suggest `/api/responses`, and call transcription (below). Fails
+loudly without `OPENAI_API_KEY` — never add a silent fallback
+(billing discipline).
+
+### Record-a-call (2026-08-07)
+
+The opportunity detail header's Record button captures the call in
+the browser (MediaRecorder); Stop streams the audio through
+`POST /api/transcribe` — speech-to-text (`TRANSCRIBE_MODEL`, default
+`gpt-4o-mini-transcribe`) plus an `ASK_MODEL` extraction pass
+(`src/server/transcribe.ts`, client-injected and DB-free) — and
+`CreateCallNoteModal` opens PREFILLED (signal-coded summary,
+transcript appended, outcome guess). The founder reviews and saves;
+the model never writes the record. Audio is never stored
+(transcript-only by design). The route is exempt from the
+Idempotency-Key gate: pure compute, no server-side write.
 
 ### AI chat surfaces (Chat tab + drawer, 2026-08-03)
 
