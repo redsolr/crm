@@ -11,8 +11,11 @@
 
 import { useRef, useState } from "react";
 import type { WorkItem } from "@/lib/workItemsApi";
-import { SelectMenu, keyOptions } from "@/components/ui/select";
-import { OPPORTUNITY_USE_CASE_OPTIONS } from "@/lib/sales/constants";
+import { SelectMenu } from "@/components/ui/select";
+import {
+  USE_CASE_SELECT_OPTIONS,
+  recordOptions,
+} from "../select-options";
 
 export interface InlineOpportunityInput {
   title: string;
@@ -102,7 +105,7 @@ export function InlineOpportunityCreateRow({
         ariaLabel="Account"
         value={accountId}
         onChange={setAccountId}
-        options={accounts.map((a) => ({ value: a.id, label: a.title }))}
+        options={recordOptions(accounts)}
         placeholder="Company…"
         searchPlaceholder="Search companies…"
         testId="sales-pipeline-inline-account"
@@ -112,7 +115,7 @@ export function InlineOpportunityCreateRow({
         ariaLabel="Use case"
         value={useCase}
         onChange={setUseCase}
-        options={keyOptions(OPPORTUNITY_USE_CASE_OPTIONS)}
+        options={USE_CASE_SELECT_OPTIONS}
         placeholder="Use case…"
         testId="sales-pipeline-inline-use-case"
       />

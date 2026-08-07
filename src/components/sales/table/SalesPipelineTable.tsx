@@ -44,7 +44,8 @@ import { parseAttributeValueForType } from "@/lib/sales/attribute-editing";
 import { fireActivation } from "@/lib/sales/activation";
 import { formatTHB } from "@/lib/format-currency";
 import { CompanyLogo } from "../CompanyLogo";
-import { SelectMenu, keyOptions } from "@/components/ui/select";
+import { SelectMenu } from "@/components/ui/select";
+import { PIPELINE_STAGE_SELECT_OPTIONS } from "../select-options";
 import { TransitionToClosedModal } from "../TransitionToClosedModal";
 import { CrmRecordTable } from "./CrmRecordTable";
 import {
@@ -454,7 +455,7 @@ function StageSelectCell({
       testId="sales-pipeline-stage-select"
       value={value}
       ariaLabel="Pipeline stage"
-      options={keyOptions(PIPELINE_STAGE_ORDER)}
+      options={PIPELINE_STAGE_SELECT_OPTIONS}
       searchable={false}
       onChange={(next) => {
         if (next === serverValue) return;

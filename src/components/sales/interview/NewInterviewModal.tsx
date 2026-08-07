@@ -13,16 +13,13 @@
 
 import { useMemo, useState } from "react";
 import { Modal } from "@/components/ui/modal";
-import {
-  SelectMenu,
-  TypeaheadCombobox,
-  keyOptions,
-} from "@/components/ui/select";
+import { SelectMenu, TypeaheadCombobox } from "@/components/ui/select";
 import { Field, FORM_INPUT_CLASS as INPUT } from "../form";
 import {
-  OPPORTUNITY_USE_CASE_OPTIONS,
-  SALES_TYPE_KEYS,
-} from "@/lib/sales/constants";
+  USE_CASE_SELECT_OPTIONS,
+  recordOptions,
+} from "../select-options";
+import { SALES_TYPE_KEYS } from "@/lib/sales/constants";
 import {
   useCreateAccount,
   useCreateOpportunity,
@@ -137,7 +134,7 @@ export function NewInterviewModal({
               testId="new-interview-company-input"
               value={company}
               onValueChange={setCompany}
-              options={accounts.map((a) => ({ value: a.id, label: a.title }))}
+              options={recordOptions(accounts)}
               onEnter={() => void handleStart()}
               placeholder="Firm name — existing or new"
               className={INPUT}
@@ -167,7 +164,7 @@ export function NewInterviewModal({
               testId="new-interview-use-case-select"
               value={useCase}
               onChange={setUseCase}
-              options={keyOptions(OPPORTUNITY_USE_CASE_OPTIONS)}
+              options={USE_CASE_SELECT_OPTIONS}
               className={INPUT}
               ariaLabel="Use case"
             />

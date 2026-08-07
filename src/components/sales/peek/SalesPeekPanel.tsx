@@ -28,14 +28,10 @@ import {
   useChildItemsQuery,
   useWorkItemQuery,
 } from "@/lib/sales/use-sales-queries";
-import { useTransitionWorkItem } from "@/lib/sales/use-sales-mutations";
-import {
-  PIPELINE_STAGE_ORDER,
-  SALES_TYPE_KEYS,
-} from "@/lib/sales/constants";
+import { SALES_TYPE_KEYS } from "@/lib/sales/constants";
 import { timeAgo } from "@/lib/sales/relative-time";
 import { formatTHB } from "@/lib/format-currency";
-import { SelectMenu, keyOptions } from "@/components/ui/select";
+import { PipelineStageSelect } from "../PipelineStageSelect";
 import { TransitionToClosedModal } from "../TransitionToClosedModal";
 import type {
   AttributeDefinition,
@@ -164,8 +160,6 @@ export function SalesPeekPanel({ bundle, workItemId, onClose }: Props) {
     };
   }, [onClose, closedTransitionOpen]);
 
-  const transition = useTransitionWorkItem();
-
   // Attribute defs for this record's type, keyed for display.
   const defs = useMemo<AttributeDefinition[]>(() => {
     const type = bundle.workItemTypes.find((t) => t.key === typeKey);
@@ -271,24 +265,11 @@ export function SalesPeekPanel({ bundle, workItemId, onClose }: Props) {
               {isOpportunity ? (
                 <>
                   <PeekRow label="Stage">
-                    <SelectMenu
-                      value={record.state.key}
-                      onChange={(next) => {
-                        if (next === "lost" || next === "not_now") {
-                          setClosedTransition(next);
-                          return;
-                        }
-                        transition.mutate({
-                          id: record.id,
-                          version: record.version,
-                          state_key: next,
-                        });
-                      }}
-                      options={keyOptions(PIPELINE_STAGE_ORDER)}
-                      searchable={false}
+                    <PipelineStageSelect
+                      record={record}
+                      onClosedTransition={setClosedTransition}
                       className="rounded-md bg-[var(--theme-bg-secondary)] border border-[var(--theme-border-secondary)] px-2 py-1 text-[12.5px] text-[var(--theme-text-primary)] focus:outline-none"
                       testId="sales-peek-stage-select"
-                      ariaLabel="Pipeline stage"
                     />
                   </PeekRow>
                   <PeekRow label="Company">

@@ -24,7 +24,6 @@ import {
 import { useTransitionWorkItem } from "@/lib/sales/use-sales-mutations";
 import {
   COMMITMENT_STATE_KEYS,
-  PIPELINE_STAGE_ORDER,
   SALES_TYPE_KEYS,
 } from "@/lib/sales/constants";
 import { fireActivation } from "@/lib/sales/activation";
@@ -36,7 +35,7 @@ import type { AttributeDefinition } from "@/lib/generated/api/models";
 import type { WorkItem } from "@/lib/workItemsApi";
 import { queryKeys } from "@/queries/query-keys";
 import { CreateCallNoteModal } from "./CreateCallNoteModal";
-import { SelectMenu, keyOptions } from "@/components/ui/select";
+import { PipelineStageSelect } from "./PipelineStageSelect";
 import { CreateCommitmentModal } from "./CreateCommitmentModal";
 import { TransitionToClosedModal } from "./TransitionToClosedModal";
 import { InterviewMode } from "./interview/InterviewMode";
@@ -59,7 +58,6 @@ export function SalesOpportunityDetailView({ opportunityId }: Props) {
     bundle?.workspace.id,
     opportunityId,
   );
-  const transition = useTransitionWorkItem();
 
   // Timeline inputs (hooks must precede the conditional returns).
   const activities = useEntityActivitiesQuery(opportunityId);
@@ -154,28 +152,11 @@ export function SalesOpportunityDetailView({ opportunityId }: Props) {
         >
           ▶ Interview
         </button>
-        <SelectMenu
-          value={opp.state.key}
-          onChange={(next) => {
-            // Intercept closures — `lost` requires lost_reason, `not_now`
-            // requires not_now_until. The modal handles the attribute
-            // write before the workflow transition. Other transitions
-            // PATCH directly.
-            if (next === "lost" || next === "not_now") {
-              setClosedTransition(next);
-              return;
-            }
-            transition.mutate({
-              id: opp.id,
-              version: opp.version,
-              state_key: next,
-            });
-          }}
-          options={keyOptions(PIPELINE_STAGE_ORDER)}
-          searchable={false}
+        <PipelineStageSelect
+          record={opp}
+          onClosedTransition={setClosedTransition}
           className="px-3 py-1.5 rounded-md text-[12.5px] bg-[var(--theme-bg-tertiary)] border border-[var(--theme-border-secondary)] text-[var(--theme-text-primary)] focus:outline-none focus:border-[var(--theme-accent-border)]"
           testId="sales-opportunity-detail-stage-select"
-          ariaLabel="Pipeline stage"
         />
       </div>
 

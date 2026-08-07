@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
-import { SelectMenu, keyOptions } from "@/components/ui/select";
+import { SelectMenu } from "@/components/ui/select";
 import { Field, FORM_INPUT_CLASS as INPUT } from "./form";
 import {
-  OPPORTUNITY_USE_CASE_OPTIONS,
-  SALES_TYPE_KEYS,
-} from "@/lib/sales/constants";
+  USE_CASE_SELECT_OPTIONS,
+  recordOptions,
+} from "./select-options";
+import { SALES_TYPE_KEYS } from "@/lib/sales/constants";
 import { useCreateOpportunity } from "@/lib/sales/use-sales-mutations";
 import { fireActivation } from "@/lib/sales/activation";
 import type { WorkItem } from "@/lib/workItemsApi";
@@ -115,7 +116,7 @@ export function CreateOpportunityModal({
               testId="sales-opportunity-account-select"
               value={accountId}
               onChange={setAccountId}
-              options={accounts.map((a) => ({ value: a.id, label: a.title }))}
+              options={recordOptions(accounts)}
               placeholder="Pick an account…"
               searchPlaceholder="Search companies…"
               className={INPUT}
@@ -126,7 +127,7 @@ export function CreateOpportunityModal({
               testId="sales-opportunity-use-case-select"
               value={useCase}
               onChange={setUseCase}
-              options={keyOptions(OPPORTUNITY_USE_CASE_OPTIONS)}
+              options={USE_CASE_SELECT_OPTIONS}
               placeholder="Pick a use case…"
               className={INPUT}
             />

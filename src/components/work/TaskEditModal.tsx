@@ -32,6 +32,26 @@ import {
 } from "@/lib/work/constants";
 import { taskSnapshot } from "@/lib/work/task-snapshot";
 
+// Static pick lists, built once at module scope (same convention as
+// sales/select-options.ts — the work domain labels via
+// labelizeOptionKey, so it keeps its own copies).
+const STAGE_SELECT_OPTIONS = TASK_STATE_ORDER.map((key) => ({
+  value: key,
+  label: TASK_STATE_LABELS[key] ?? key,
+}));
+const PROJECT_SELECT_OPTIONS = TASK_PROJECT_OPTIONS.map((o) => ({
+  value: o,
+  label: labelizeOptionKey(o),
+}));
+const PRIORITY_SELECT_OPTIONS = TASK_PRIORITY_OPTIONS.map((o) => ({
+  value: o,
+  label: labelizeOptionKey(o),
+}));
+const ASSIGNEE_SELECT_OPTIONS = TASK_ASSIGNEE_OPTIONS.map((o) => ({
+  value: o,
+  label: labelizeOptionKey(o),
+}));
+
 interface Props {
   task: WorkItem;
   definitions: AttributeDefinition[];
@@ -142,10 +162,7 @@ export function TaskEditModal({ task, definitions, values, onClose }: Props) {
                 testId="work-task-stage-select"
                 value={stateKey}
                 onChange={setStateKey}
-                options={TASK_STATE_ORDER.map((key) => ({
-                  value: key,
-                  label: TASK_STATE_LABELS[key] ?? key,
-                }))}
+                options={STAGE_SELECT_OPTIONS}
                 className={INPUT}
                 ariaLabel="Stage"
               />
@@ -155,10 +172,7 @@ export function TaskEditModal({ task, definitions, values, onClose }: Props) {
                 testId="work-task-project-select"
                 value={project}
                 onChange={setProject}
-                options={TASK_PROJECT_OPTIONS.map((o) => ({
-                  value: o,
-                  label: labelizeOptionKey(o),
-                }))}
+                options={PROJECT_SELECT_OPTIONS}
                 placeholder="Pick a project…"
                 className={INPUT}
                 ariaLabel="Project"
@@ -171,10 +185,7 @@ export function TaskEditModal({ task, definitions, values, onClose }: Props) {
                 testId="work-task-priority-select"
                 value={priority}
                 onChange={setPriority}
-                options={TASK_PRIORITY_OPTIONS.map((o) => ({
-                  value: o,
-                  label: labelizeOptionKey(o),
-                }))}
+                options={PRIORITY_SELECT_OPTIONS}
                 placeholder="None"
                 emptyOptionLabel="None"
                 className={INPUT}
@@ -196,10 +207,7 @@ export function TaskEditModal({ task, definitions, values, onClose }: Props) {
               testId="work-task-assignee-select"
               value={assignee}
               onChange={setAssignee}
-              options={TASK_ASSIGNEE_OPTIONS.map((o) => ({
-                value: o,
-                label: labelizeOptionKey(o),
-              }))}
+              options={ASSIGNEE_SELECT_OPTIONS}
               placeholder="Unassigned"
               emptyOptionLabel="Unassigned"
               className={INPUT}

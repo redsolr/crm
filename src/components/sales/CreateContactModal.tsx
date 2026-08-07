@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
-import { SelectMenu, keyOptions } from "@/components/ui/select";
+import { SelectMenu } from "@/components/ui/select";
 import { Field, FORM_INPUT_CLASS as INPUT } from "./form";
 import {
-  CONTACT_DECISION_ROLE_OPTIONS,
-  SALES_TYPE_KEYS,
-} from "@/lib/sales/constants";
+  DECISION_ROLE_SELECT_OPTIONS,
+  recordOptions,
+} from "./select-options";
+import { SALES_TYPE_KEYS } from "@/lib/sales/constants";
 import { useCreateContact } from "@/lib/sales/use-sales-mutations";
 import type { WorkItem } from "@/lib/workItemsApi";
 import type { SalesWorkspaceBundle } from "@/lib/sales/use-sales-workspace";
@@ -117,7 +118,7 @@ export function CreateContactModal({
               testId="sales-contact-account-select"
               value={accountId}
               onChange={setAccountId}
-              options={accounts.map((a) => ({ value: a.id, label: a.title }))}
+              options={recordOptions(accounts)}
               placeholder="No company"
               emptyOptionLabel="No company"
               searchPlaceholder="Search companies…"
@@ -140,7 +141,7 @@ export function CreateContactModal({
                 testId="sales-contact-decision-role-select"
                 value={decisionRole}
                 onChange={setDecisionRole}
-                options={keyOptions(CONTACT_DECISION_ROLE_OPTIONS)}
+                options={DECISION_ROLE_SELECT_OPTIONS}
                 placeholder="Pick one…"
                 className={INPUT}
                 ariaLabel="Decision role"

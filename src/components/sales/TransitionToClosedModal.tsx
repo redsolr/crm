@@ -19,9 +19,9 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
-import { SelectMenu, keyOptions } from "@/components/ui/select";
+import { SelectMenu } from "@/components/ui/select";
 import { FORM_INPUT_CLASS as INPUT } from "./form";
-import { OPPORTUNITY_LOST_REASON_OPTIONS } from "@/lib/sales/constants";
+import { LOST_REASON_SELECT_OPTIONS } from "./select-options";
 import { useUpsertAttributeValue, useTransitionWorkItem } from "@/lib/sales/use-sales-mutations";
 import type { AttributeDefinition } from "@/lib/generated/api/models";
 
@@ -119,7 +119,7 @@ export function TransitionToClosedModal({
               testId="sales-transition-lost-reason-select"
               value={lostReason}
               onChange={setLostReason}
-              options={keyOptions(OPPORTUNITY_LOST_REASON_OPTIONS)}
+              options={LOST_REASON_SELECT_OPTIONS}
               placeholder="Pick a reason…"
               className={INPUT}
               ariaLabel="Lost reason"

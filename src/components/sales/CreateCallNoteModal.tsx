@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
-import { SelectMenu, keyOptions } from "@/components/ui/select";
+import { SelectMenu } from "@/components/ui/select";
 import { Field, FORM_INPUT_CLASS as INPUT } from "./form";
 import {
-  CALL_NOTE_OUTCOME_OPTIONS,
-  CALL_NOTE_CALL_TYPE_OPTIONS,
-  SALES_TYPE_KEYS,
-} from "@/lib/sales/constants";
+  OUTCOME_SELECT_OPTIONS,
+  CALL_TYPE_SELECT_OPTIONS,
+} from "./select-options";
+import { SALES_TYPE_KEYS } from "@/lib/sales/constants";
 import { useCreateCallNote } from "@/lib/sales/use-sales-mutations";
 import { fireActivation } from "@/lib/sales/activation";
 import { todayDateString } from "@/lib/sales/use-opportunity-attributes";
@@ -131,7 +131,7 @@ export function CreateCallNoteModal({
                 testId="sales-call-note-outcome-select"
                 value={outcome}
                 onChange={setOutcome}
-                options={keyOptions(CALL_NOTE_OUTCOME_OPTIONS)}
+                options={OUTCOME_SELECT_OPTIONS}
                 placeholder="—"
                 emptyOptionLabel="—"
                 className={INPUT}
@@ -144,7 +144,7 @@ export function CreateCallNoteModal({
               testId="sales-call-note-type-select"
               value={callType}
               onChange={setCallType}
-              options={keyOptions(CALL_NOTE_CALL_TYPE_OPTIONS)}
+              options={CALL_TYPE_SELECT_OPTIONS}
               placeholder="—"
               emptyOptionLabel="—"
               className={INPUT}

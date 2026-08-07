@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
-import { SelectMenu, keyOptions } from "@/components/ui/select";
+import { SelectMenu } from "@/components/ui/select";
 import { Field, FORM_INPUT_CLASS as INPUT } from "./form";
 import {
-  ACCOUNT_SOURCE_OPTIONS,
-  ACCOUNT_SEGMENT_OPTIONS,
-  ACCOUNT_PRACTICE_AREA_OPTIONS,
-  SALES_TYPE_KEYS,
-} from "@/lib/sales/constants";
+  SOURCE_SELECT_OPTIONS,
+  SEGMENT_SELECT_OPTIONS,
+  PRACTICE_AREA_SELECT_OPTIONS,
+} from "./select-options";
+import { SALES_TYPE_KEYS } from "@/lib/sales/constants";
 import { useCreateAccount } from "@/lib/sales/use-sales-mutations";
 import { fireActivation } from "@/lib/sales/activation";
 import type { WorkItem } from "@/lib/workItemsApi";
@@ -101,7 +101,7 @@ export function CreateAccountModal({ bundle, onClose, onCreated }: Props) {
               testId="sales-account-source-select"
               value={source}
               onChange={setSource}
-              options={keyOptions(ACCOUNT_SOURCE_OPTIONS)}
+              options={SOURCE_SELECT_OPTIONS}
               placeholder="Select a source…"
               className={INPUT}
             />
@@ -119,7 +119,7 @@ export function CreateAccountModal({ bundle, onClose, onCreated }: Props) {
             <SelectMenu
               value={segment}
               onChange={setSegment}
-              options={keyOptions(ACCOUNT_SEGMENT_OPTIONS)}
+              options={SEGMENT_SELECT_OPTIONS}
               placeholder="—"
               emptyOptionLabel="—"
               className={INPUT}
@@ -130,7 +130,7 @@ export function CreateAccountModal({ bundle, onClose, onCreated }: Props) {
             <SelectMenu
               value={practiceArea}
               onChange={setPracticeArea}
-              options={keyOptions(ACCOUNT_PRACTICE_AREA_OPTIONS)}
+              options={PRACTICE_AREA_SELECT_OPTIONS}
               placeholder="—"
               emptyOptionLabel="—"
               className={INPUT}

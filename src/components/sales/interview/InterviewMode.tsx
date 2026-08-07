@@ -19,13 +19,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import {
-  CALL_NOTE_CALL_TYPE_OPTIONS,
-  CALL_NOTE_OUTCOME_OPTIONS,
-  SALES_TYPE_KEYS,
-} from "@/lib/sales/constants";
+import { SALES_TYPE_KEYS } from "@/lib/sales/constants";
 import { useCreateCallNote } from "@/lib/sales/use-sales-mutations";
-import { SelectMenu, keyOptions } from "@/components/ui/select";
+import { SelectMenu } from "@/components/ui/select";
+import {
+  OUTCOME_SELECT_OPTIONS,
+  CALL_TYPE_SELECT_OPTIONS,
+} from "../select-options";
 import { BRAND_CTA_CLASS } from "../form";
 import { fireActivation } from "@/lib/sales/activation";
 import type { WorkItem } from "@/lib/workItemsApi";
@@ -606,7 +606,7 @@ export function InterviewMode({
                 <SelectMenu
                   value={outcome || defaultOutcome}
                   onChange={setOutcome}
-                  options={keyOptions(CALL_NOTE_OUTCOME_OPTIONS)}
+                  options={OUTCOME_SELECT_OPTIONS}
                   placeholder="—"
                   emptyOptionLabel="—"
                   testId="interview-outcome-select"
@@ -621,7 +621,7 @@ export function InterviewMode({
                 <SelectMenu
                   value={callType}
                   onChange={setCallType}
-                  options={keyOptions(CALL_NOTE_CALL_TYPE_OPTIONS)}
+                  options={CALL_TYPE_SELECT_OPTIONS}
                   testId="interview-call-type-select"
                   ariaLabel="Call type"
                   className="w-full px-3 py-2 rounded-lg bg-[var(--theme-bg-tertiary)] border border-[var(--theme-border-hover)] text-sm text-[var(--theme-text-primary)] focus:outline-none"
