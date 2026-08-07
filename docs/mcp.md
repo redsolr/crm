@@ -152,6 +152,21 @@ gate (one trip to claude.ai → Settings → Connectors):
    > Skip any email that looks personal or non-pipeline — when in
    > doubt, leave it alone and do not log it.
 
+### Testing the loop (founder call 2026-08-08)
+
+Keep jadoreran as the connected mailbox (reads + drafts are the safe
+half, and the real inbox's noise is exactly what the "touch only
+pipeline mail" skill must be tested against). Use a THROWAWAY Gmail
+as the counterparty: set it as a fictional firm contact's email in
+the CRM, send a realistic reply from it ("thanks for the demo — call
+Friday?"), then run the loop and verify the full chain: record found
+→ exchange logged → stage → `replied` → "call Friday" commitment →
+Gmail draft — and everything non-pipeline in the inbox untouched.
+Calendar: a fake event titled with the firm name → prep note on the
+opportunity. When Route B (CRM-owned sync) is ever built, its dev/e2e
+uses a dedicated test Google account — same discipline as the
+synthetic `E2E_WORKOS_*` users, never a real mailbox.
+
 CAVEAT (unverified from a cockpit session): connector availability
 inside SCHEDULED cloud runs. If the routine can't see the Gmail /
 Calendar connectors at runtime, fall back to running the same prompt
