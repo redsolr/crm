@@ -98,9 +98,17 @@ gate (one trip to claude.ai → Settings → Connectors):
 
 1. **Connect three connectors**: Gmail, Google Calendar, and the CRM
    (Add custom connector → `https://crm.jurisimus.com/mcp`, sign in
-   with your CRM seat). If CRM registration fails, complete the two
-   WorkOS-side residuals first (§ Auth above: enable dynamic client
-   registration + register the OAuth resources).
+   with your CRM seat). The ops mailbox is **jadoreran@gmail.com**
+   (founder call 2026-08-07) — Gmail/Calendar connect under that
+   account, never the infra root. If CRM registration fails, complete
+   the two WorkOS-side residuals first (§ Auth above: enable dynamic
+   client registration + register the OAuth resources).
+   STATUS 2026-08-07: Gmail ✓ + Calendar ✓ connected (Type "Web");
+   CRM connector NOT yet added. The routine-side connector roster
+   still reports EMPTY — web-type connectors do not (yet) propagate
+   to Claude Code cloud routines, so the caveat below is LIVE: the
+   loop runs interactively (claude.ai chat or a morning Claude Code
+   session) until the connectors appear on the Code surface.
 2. **Create the routine** (`/schedule` in any Claude Code session, or
    claude.ai/code/routines): daily **06:30 Bangkok (23:30 UTC)** — 30
    minutes BEFORE the digest cron, so the 07:00 digest already
