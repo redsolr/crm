@@ -81,34 +81,69 @@ the work, replies with `log_call_note` on the same parent, and calls
 `complete_commitment`. Prod serves the full 8-tool registry (incl. the
 commitment tools) since the 2026-08-07 modern-UI deploy.
 
-### Arming the poller (runbook, 2026-08-07)
+### Morning-ops routine (runbook, 2026-08-07 — Route A locked)
 
-The durable poller is a **scheduled Claude Code cloud routine**
-(claude.ai → Code → Routines). Cloud agents reach the CRM only through
-a claude.ai MCP connector — never by embedding `CRM_MCP_TOKEN` in a
-prompt. One founder-interactive step gates it:
+Founder decision 2026-08-07: email/calendar reaches the CRM through
+the AGENT, not a CRM-owned sync engine ("Route A"). The agent reads
+Gmail/Calendar via claude.ai connectors and acts through this /mcp
+door; the in-app timeline shows its trail (every write is
+agent-attributed). A CRM-owned sync worker ("Route B", Attio-shape
+thread→timeline) stays behind the earned-connector trigger.
 
-1. **Connect the CRM as a claude.ai connector** (Settings →
-   Connectors → Add custom connector →
-   `https://crm.jurisimus.com/mcp`, sign in with your CRM seat). If
-   registration fails, complete the two WorkOS-side residuals first
-   (§ Auth above: enable dynamic client registration + register the
-   OAuth resources).
+One **scheduled Claude Code cloud routine** carries the whole loop —
+delegated commitments + inbox sweep + calendar prep. Cloud agents get
+capabilities only through claude.ai connectors — never by embedding
+`CRM_MCP_TOKEN` or Google credentials in a prompt. Founder-interactive
+gate (one trip to claude.ai → Settings → Connectors):
+
+1. **Connect three connectors**: Gmail, Google Calendar, and the CRM
+   (Add custom connector → `https://crm.jurisimus.com/mcp`, sign in
+   with your CRM seat). If CRM registration fails, complete the two
+   WorkOS-side residuals first (§ Auth above: enable dynamic client
+   registration + register the OAuth resources).
 2. **Create the routine** (`/schedule` in any Claude Code session, or
-   claude.ai/code/routines): daily around 08:00 Bangkok (01:00 UTC),
-   CRM connector attached, no repo needed. Prompt:
+   claude.ai/code/routines): daily **06:30 Bangkok (23:30 UTC)** — 30
+   minutes BEFORE the digest cron, so the 07:00 digest already
+   reflects the agent's writes. All three connectors attached, no
+   repo needed. Prompt:
 
-   > Poll the CRM for delegated work: call
-   > `list_commitments(query: "Claude:", status: "open")`. For each
-   > result, do what the title instructs IF it is doable with the CRM
-   > tools + web research alone (research a firm, draft outreach,
-   > summarize pipeline state, enrich records). Write results back
-   > with `log_call_note` on the same parent record, then
-   > `complete_commitment` with a short completion note. If an
-   > instruction needs code, deploys, local files, or anything outside
-   > those bounds, leave it OPEN and log a call note explaining what
-   > is missing. Never push, deploy, or touch anything outside the
-   > CRM. If there are no `Claude:` commitments, end quietly.
+   > You are the CRM morning-ops agent. Do these three sweeps, then
+   > end quietly.
+   >
+   > 1. DELEGATED WORK: call
+   >    `list_commitments(query: "Claude:", status: "open")`. Execute
+   >    each instruction IF doable with CRM tools + web research +
+   >    Gmail drafting alone (research a firm, draft outreach,
+   >    summarize pipeline state, enrich records). Write results back
+   >    with `log_call_note` on the same parent, then
+   >    `complete_commitment` with a short note. If an instruction
+   >    needs code, deploys, or anything beyond those bounds, leave it
+   >    OPEN and log a call note saying what is missing.
+   > 2. INBOX: search Gmail for messages from the last 24h that match
+   >    pipeline companies or contacts (resolve with
+   >    `find_crm_record`). For each relevant thread: log the exchange
+   >    with `log_call_note` on the matching opportunity or account
+   >    (quote only what is needed); if a firm replied to outreach,
+   >    move the stage with `update_opportunity` (e.g. contacted →
+   >    replied); if a promise with a date was made in either
+   >    direction, `create_commitment`. When a reply is clearly
+   >    needed, CREATE A GMAIL DRAFT — never send.
+   > 3. CALENDAR: read today's Google Calendar. For each meeting that
+   >    matches a pipeline firm, log a prep note on its opportunity:
+   >    recent activity summary, open commitments, and 2-3 suggested
+   >    talking points.
+   >
+   > Hard rules: never send email (drafts only); never delete
+   > anything anywhere; never touch systems other than the CRM tools,
+   > Gmail, and Calendar; if a sweep finds nothing, skip it silently.
+   > Skip any email that looks personal or non-pipeline — when in
+   > doubt, leave it alone and do not log it.
+
+CAVEAT (unverified from a cockpit session): connector availability
+inside SCHEDULED cloud runs. If the routine can't see the Gmail /
+Calendar connectors at runtime, fall back to running the same prompt
+from an interactive session each morning while keeping the routine
+for the CRM-only sweep (1).
 
 ## Connect from Claude Code
 
