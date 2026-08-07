@@ -152,20 +152,36 @@ gate (one trip to claude.ai → Settings → Connectors):
    > Skip any email that looks personal or non-pipeline — when in
    > doubt, leave it alone and do not log it.
 
-### Testing the loop (founder call 2026-08-08)
+### Testing the loop (founder call 2026-08-08 — sandbox mailbox first)
 
-Keep jadoreran as the connected mailbox (reads + drafts are the safe
-half, and the real inbox's noise is exactly what the "touch only
-pipeline mail" skill must be tested against). Use a THROWAWAY Gmail
-as the counterparty: set it as a fictional firm contact's email in
-the CRM, send a realistic reply from it ("thanks for the demo — call
-Friday?"), then run the loop and verify the full chain: record found
-→ exchange logged → stage → `replied` → "call Friday" commitment →
-Gmail draft — and everything non-pipeline in the inbox untouched.
-Calendar: a fake event titled with the firm name → prep note on the
-opportunity. When Route B (CRM-owned sync) is ever built, its dev/e2e
-uses a dedicated test Google account — same discipline as the
-synthetic `E2E_WORKOS_*` users, never a real mailbox.
+The guardrails ("touch only pipeline mail", "drafts, never send") are
+the CLAIM UNDER TEST — do not point the agent at the personal inbox
+until they are proven. Rig:
+
+- **Ops mailbox under test**: `admin@jurisimus.com` if it is
+  Google-backed (the connectors need a Gmail/Workspace account), else
+  a fresh throwaway Gmail. The Claude account stays jadoreran — in
+  Settings → Connectors, reconnect Gmail + Calendar and pick the TEST
+  account in Google's account picker (the connector belongs to the
+  Claude account; the granted Google account decides whose mailbox it
+  reads).
+- **Counterparty**: the founder's personal address plays the fake
+  firm contact — set it as a fictional firm contact's email in the
+  CRM and send a realistic reply from it ("thanks for the demo —
+  call Friday?") to the test mailbox.
+- **Verify the full chain**: record found → exchange logged → stage
+  → `replied` → "call Friday" commitment → Gmail DRAFT (content
+  checked word-for-word) — and any non-pipeline mail seeded in the
+  test inbox untouched. Calendar: a fake event titled with the firm
+  name → prep note on the opportunity.
+- **Graduation**: only after a sustained stretch of clean runs (no
+  surprise actions, accurate drafts) re-grant the connectors to the
+  personal mailbox. Write tools stay on "Needs approval" throughout;
+  drafts-never-send is absolute at every stage.
+
+When Route B (CRM-owned sync) is ever built, its dev/e2e uses a
+dedicated test Google account — same discipline as the synthetic
+`E2E_WORKOS_*` users, never a real mailbox.
 
 CAVEAT (unverified from a cockpit session): connector availability
 inside SCHEDULED cloud runs. If the routine can't see the Gmail /
