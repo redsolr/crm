@@ -25,11 +25,14 @@
 
 export default {
   // ESLint on staged TS/JS files under src/. lint-staged appends the staged
-  // file list to this command automatically. --max-warnings keeps the
-  // warn-not-error tech debt from blocking commits while still enforcing
-  // a 0-error policy.
+  // file list to this command automatically. --concurrency=1 (not auto):
+  // the type-aware rule tier (2026-08-07) loads a full TS program per
+  // worker, and auto-spawned workers running next to the parallel tsc
+  // task OOM'd the pre-commit hook (SIGKILL) on a cold cache. One worker
+  // is plenty for a staged-file list. --max-warnings=0: the baseline is
+  // 0 warnings — keep it there.
   'src/**/*.{ts,tsx,js,jsx,mjs,cjs}':
-    'eslint --cache --cache-location node_modules/.cache/eslint/ --cache-strategy content --concurrency=auto --max-warnings=10000',
+    'eslint --cache --cache-location node_modules/.cache/eslint/ --cache-strategy content --concurrency=1 --max-warnings=0',
 
   // Whole-project tsc — runs whenever ANY .ts/.tsx file is staged anywhere
   // in the repo (root tsconfig.json, src/, e2e/). Function form so
