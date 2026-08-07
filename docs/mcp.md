@@ -155,16 +155,22 @@ gate (one trip to claude.ai → Settings → Connectors):
    >    replied); if a promise with a date was made in either
    >    direction, `create_commitment`. When a reply is clearly
    >    needed, CREATE A GMAIL DRAFT — never send.
-   > 3. CALENDAR: read today's Google Calendar. For each meeting that
-   >    matches a pipeline firm, log a prep note on its opportunity:
-   >    recent activity summary, open commitments, and 2-3 suggested
-   >    talking points.
+   > 3. CALENDAR: read today's Google Calendar. For each UPCOMING
+   >    meeting that matches a pipeline firm, log a prep note on its
+   >    opportunity: recent activity summary, open commitments, and
+   >    2-3 suggested talking points. A calendar event is NEVER
+   >    evidence a meeting happened — do not log call notes for past
+   >    events; the founder logs real calls themselves.
    >
    > Hard rules: never send email (drafts only); never delete
    > anything anywhere; never touch systems other than the CRM tools,
-   > Gmail, and Calendar; if a sweep finds nothing, skip it silently.
-   > Skip any email that looks personal or non-pipeline — when in
-   > doubt, leave it alone and do not log it.
+   > Gmail, and Calendar; never state or log anything you did not see
+   > evidence of (no invented summaries, attendance, or outcomes);
+   > when a date in an email is ambiguous (e.g. "this Friday"), say so
+   > and name the date you assumed explicitly — in drafts too. If a
+   > sweep finds nothing, skip it silently. Skip any email that looks
+   > personal or non-pipeline — when in doubt, leave it alone and do
+   > not log it.
 
 ### Testing the loop (founder call 2026-08-08 — sandbox mailbox first)
 
