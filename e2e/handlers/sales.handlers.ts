@@ -598,6 +598,33 @@ export async function setupSalesHandlers(page: Page) {
   // its workflows / types / attribute definitions from the
   // workspace-scoped routes below.
 
+  // GET /api/digest/latest — no digest by default. Specs exercising the
+  // morning-digest card register their own route AFTER this setup
+  // (later registrations win in Playwright), so every other sales spec
+  // renders the Summary without digest chrome or a DB dependency.
+  await page.route(
+    (url) => url.pathname === "/api/digest/latest",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ digest: null }),
+      });
+    },
+  );
+
+  // GET /api/notifications/vapid-key — push layer reads as unconfigured.
+  await page.route(
+    (url) => url.pathname === "/api/notifications/vapid-key",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ publicKey: null }),
+      });
+    },
+  );
+
   // GET /api/workspaces/:id/workflows
   await page.route(
     (url) => /^\/api\/workspaces\/[^/]+\/workflows$/.test(url.pathname),

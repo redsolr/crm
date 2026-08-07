@@ -78,10 +78,37 @@ commitment titled `Claude: <instruction>` (any record — the `Claude
 Ops` account exists for tasks that belong to no deal), and a scheduled
 Claude Code session polls `list_commitments(query: "Claude:")`, does
 the work, replies with `log_call_note` on the same parent, and calls
-`complete_commitment`. Until the founder pushes/deploys this build,
-prod serves only the original six tools — the poller falls back to
-`find_crm_record` for discovery and leaves completion to the founder's
-inbox tick.
+`complete_commitment`. Prod serves the full 8-tool registry (incl. the
+commitment tools) since the 2026-08-07 modern-UI deploy.
+
+### Arming the poller (runbook, 2026-08-07)
+
+The durable poller is a **scheduled Claude Code cloud routine**
+(claude.ai → Code → Routines). Cloud agents reach the CRM only through
+a claude.ai MCP connector — never by embedding `CRM_MCP_TOKEN` in a
+prompt. One founder-interactive step gates it:
+
+1. **Connect the CRM as a claude.ai connector** (Settings →
+   Connectors → Add custom connector →
+   `https://crm.jurisimus.com/mcp`, sign in with your CRM seat). If
+   registration fails, complete the two WorkOS-side residuals first
+   (§ Auth above: enable dynamic client registration + register the
+   OAuth resources).
+2. **Create the routine** (`/schedule` in any Claude Code session, or
+   claude.ai/code/routines): daily around 08:00 Bangkok (01:00 UTC),
+   CRM connector attached, no repo needed. Prompt:
+
+   > Poll the CRM for delegated work: call
+   > `list_commitments(query: "Claude:", status: "open")`. For each
+   > result, do what the title instructs IF it is doable with the CRM
+   > tools + web research alone (research a firm, draft outreach,
+   > summarize pipeline state, enrich records). Write results back
+   > with `log_call_note` on the same parent record, then
+   > `complete_commitment` with a short completion note. If an
+   > instruction needs code, deploys, local files, or anything outside
+   > those bounds, leave it OPEN and log a call note explaining what
+   > is missing. Never push, deploy, or touch anything outside the
+   > CRM. If there are no `Claude:` commitments, end quietly.
 
 ## Connect from Claude Code
 

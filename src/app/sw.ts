@@ -19,3 +19,49 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+/**
+ * Web-push display (ambient-digest arc, 2026-08-07). The server sends
+ * a JSON `PushPayload` (`src/server/push.ts`); the `tag` collapses
+ * repeated digests into one bubble instead of a morning pile.
+ */
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+  let payload: { title?: string; body?: string; url?: string; tag?: string };
+  try {
+    payload = event.data.json() as typeof payload;
+  } catch (error) {
+    console.error("[sw] push payload is not JSON — dropping it:", error);
+    return;
+  }
+  event.waitUntil(
+    self.registration.showNotification(payload.title ?? "CRM", {
+      body: payload.body ?? "",
+      icon: "/icons/icon-192.png",
+      tag: payload.tag ?? "crm-digest",
+      data: { url: payload.url ?? "/sales" },
+    }),
+  );
+});
+
+/** Click focuses an existing CRM tab (navigating it) or opens one. */
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const data = event.notification.data as { url?: string } | undefined;
+  const url = data?.url ?? "/sales";
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      const existing = windows[0];
+      if (existing) {
+        await existing.focus();
+        await existing.navigate(url);
+        return;
+      }
+      await self.clients.openWindow(url);
+    })(),
+  );
+});

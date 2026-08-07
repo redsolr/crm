@@ -294,6 +294,50 @@ export const comments = pgTable("comments", {
  * sends no emails. v1 is link-first: the creator copies the
  * `/invite/<code>` URL and shares it themselves.
  */
+/**
+ * Web-push subscriptions (ambient-digest arc, 2026-08-07). One row per
+ * browser push endpoint; the actor who enabled notifications is
+ * stamped for audit. Endpoints that the push service reports gone
+ * (404/410 on delivery) are deleted by the sender — no soft-disable
+ * state to drift.
+ */
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: text("id").primaryKey(),
+  /** Push-service URL — unique per browser installation. */
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  accountId: text("account_id").notNull(),
+  accountName: text("account_name"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * Morning-digest runs — one row per Bangkok calendar date. `payload`
+ * holds the computed buckets + LLM follow-up drafts the Summary tab
+ * renders; `pushedAt` makes the daily web-push once-only (a same-day
+ * re-run refreshes the payload but never re-notifies).
+ */
+export const digests = pgTable("digests", {
+  id: text("id").primaryKey(),
+  /** Local `YYYY-MM-DD` in Asia/Bangkok — the founder's morning. */
+  runDate: text("run_date").notNull().unique(),
+  payload: jsonb("payload").notNull(),
+  pushedAt: timestamp("pushed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const invites = pgTable("invites", {
   id: text("id").primaryKey(),
   /** URL token — the secret. High-entropy base58, never logged. */

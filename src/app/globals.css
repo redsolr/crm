@@ -1253,6 +1253,44 @@ body.is-dragging .project-board-card {
   color: var(--theme-text-muted);
 }
 
+/* ── Morning digest card (ambient-digest arc) — blue = AI ── */
+
+.crm-digest-card {
+  padding: 12px 14px;
+  border: 1px solid var(--theme-border-primary);
+  border-left: 3px solid var(--theme-accent-blue);
+  border-radius: 10px;
+  background: var(--theme-bg-secondary);
+}
+
+.crm-digest-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.crm-digest-heading {
+  margin-bottom: 6px;
+}
+
+.crm-digest-date {
+  margin-left: 8px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--theme-text-muted);
+}
+
+.crm-digest-draft-text {
+  white-space: normal;
+}
+
+.crm-digest-error {
+  font-size: 12px;
+  color: var(--crm-red);
+}
+
 @media (max-width: 767px) {
   /* Join the shared 12px mobile gutter (desktop keeps px-5 = 20px). */
   .sales-pipeline-summary {

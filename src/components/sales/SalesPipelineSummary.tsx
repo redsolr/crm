@@ -34,6 +34,7 @@ import { fireActivation } from "@/lib/sales/activation";
 import { queryKeys } from "@/queries/query-keys";
 import { formatTHB } from "@/lib/format-currency";
 import { CompanyLogo } from "./CompanyLogo";
+import { SalesDigestCard } from "./SalesDigestCard";
 
 interface Props {
   bundle: SalesWorkspaceBundle;
@@ -140,6 +141,9 @@ export function SalesPipelineSummary({
           <span className="crm-summary-pulse-clear">nothing overdue</span>
         )}
       </div>
+
+      {/* ── Morning digest (drafts + push enrollment) ── */}
+      <SalesDigestCard onOpenOpportunity={onOpenOpportunity} />
 
       {/* ── Due & overdue ── */}
       <section data-testid="summary-due-section">

@@ -217,9 +217,9 @@ function errMessage(err: unknown): string {
  * yesterday's date for the first seven hours of every day. Defaults
  * derive from the app timezone instead.
  */
-const APP_TIME_ZONE = "Asia/Bangkok";
+export const APP_TIME_ZONE = "Asia/Bangkok";
 
-function todayInAppTimeZone(): string {
+export function todayInAppTimeZone(): string {
   // en-CA formats as YYYY-MM-DD.
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: APP_TIME_ZONE,

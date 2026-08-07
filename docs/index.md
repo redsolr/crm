@@ -184,6 +184,29 @@ the model never writes the record. Audio is never stored
 (transcript-only by design). The route is exempt from the
 Idempotency-Key gate: pure compute, no server-side write.
 
+### Ambient digest (2026-08-07)
+
+The morning digest is the CRM's first ambient loop: a Vercel cron
+(vercel.json, 00:00 UTC = 07:00 Bangkok) calls `GET /api/digest/run`
+(bearer `CRON_SECRET`, closed-by-default like /mcp). The run composes
+"what deserves attention today" with the SAME deterministic neglect
+ranking the Summary tab uses (`src/lib/sales/followup-ranking.ts` —
+extracted pure so page and push can never disagree), plus open
+commitments due; drafts follow-up messages for the top 3 actionable
+deals through the LLM seam (`src/server/digest.ts`, strict-JSON
+response, failures surfaced in `drafts_error` — never silent); persists
+one `digests` row per Bangkok date; and web-pushes a one-line summary
+(once per date — re-runs refresh the payload but never re-notify).
+
+Web push rides the serwist service worker (`src/app/sw.ts` push +
+notificationclick handlers; prod-only — dev has no SW) and a
+`push_subscriptions` table (migration 0007). Env-gated like realtime:
+no `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` ⇒ no enable affordance, no
+push leg; the digest still composes and renders in-app. The Summary
+tab's `SalesDigestCard` shows the newest digest's drafts
+(copy-and-send) and this browser's notification toggle
+(`use-push-notifications.ts`). Keys: `npx web-push generate-vapid-keys`.
+
 ### AI chat surfaces (Chat tab + drawer, 2026-08-03)
 
 One conversation, two mounts of `AskConversation` over the shared

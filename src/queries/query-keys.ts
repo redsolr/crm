@@ -324,6 +324,12 @@ export const queryKeys = {
       [...queryKeys.publicMatterChat.all, "thread", token] as const,
   },
 
+  // Morning digest (ambient-digest arc)
+  digest: {
+    all: ["digest"] as const,
+    latest: () => [...queryKeys.digest.all, "latest"] as const,
+  },
+
   // Sales (workspace template scope)
   sales: {
     all: ["sales"] as const,
