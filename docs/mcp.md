@@ -158,13 +158,16 @@ The guardrails ("touch only pipeline mail", "drafts, never send") are
 the CLAIM UNDER TEST — do not point the agent at the personal inbox
 until they are proven. Rig:
 
-- **Ops mailbox under test**: `admin@jurisimus.com` if it is
-  Google-backed (the connectors need a Gmail/Workspace account), else
-  a fresh throwaway Gmail. The Claude account stays jadoreran — in
-  Settings → Connectors, reconnect Gmail + Calendar and pick the TEST
-  account in Google's account picker (the connector belongs to the
-  Claude account; the granted Google account decides whose mailbox it
-  reads).
+- **Sandbox Claude account (built 2026-08-08)**: the founder
+  registered a SEPARATE Claude account under `admin@jurisimus.com`
+  (Google-backed) — the whole test agent lives there, fully walled
+  off from the personal account. On IT: connect Gmail + Calendar
+  (granting the admin@ Google account) and add the crm custom
+  connector, signing into AuthKit with the **admin@ CRM seat** — so
+  every test write attributes as admin@ in the timeline, cleanly
+  separable from personal activity. The WorkOS DCR/resource settings
+  are env-level (done), so the connector flow works from any Claude
+  account.
 - **Counterparty**: the founder's personal address plays the fake
   firm contact — set it as a fictional firm contact's email in the
   CRM and send a realistic reply from it ("thanks for the demo —
