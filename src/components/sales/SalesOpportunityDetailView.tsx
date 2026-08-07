@@ -35,6 +35,10 @@ import type { AttributeDefinition } from "@/lib/generated/api/models";
 import type { WorkItem } from "@/lib/workItemsApi";
 import { queryKeys } from "@/queries/query-keys";
 import { CreateCallNoteModal } from "./CreateCallNoteModal";
+import {
+  RecordCallButton,
+  type CallDraft,
+} from "./recorder/RecordCallButton";
 import { PipelineStageSelect } from "./PipelineStageSelect";
 import { CreateCommitmentModal } from "./CreateCommitmentModal";
 import { TransitionToClosedModal } from "./TransitionToClosedModal";
@@ -79,6 +83,9 @@ export function SalesOpportunityDetailView({ opportunityId }: Props) {
   const [showCallModal, setShowCallModal] = useState(false);
   const [showCommitmentModal, setShowCommitmentModal] = useState(false);
   const [showInterview, setShowInterview] = useState(false);
+  // Record-a-call flow: the transcribed draft opens the call-note
+  // modal prefilled; saving is still the founder's decision.
+  const [callDraft, setCallDraft] = useState<CallDraft | null>(null);
   const [closedTransition, setClosedTransition] = useState<
     "lost" | "not_now" | null
   >(null);
@@ -144,6 +151,10 @@ export function SalesOpportunityDetailView({ opportunityId }: Props) {
         >
           {opp.title}
         </h1>
+        <RecordCallButton
+          contextTitle={opp.title}
+          onDraft={setCallDraft}
+        />
         <button
           onClick={() => setShowInterview(true)}
           className={`px-3 py-1.5 rounded-md text-[12.5px] font-medium ${BRAND_CTA_CLASS}`}
@@ -223,6 +234,16 @@ export function SalesOpportunityDetailView({ opportunityId }: Props) {
           parentId={opp.id}
           parentTitle={opp.title}
           onClose={() => setShowCallModal(false)}
+        />
+      )}
+      {callDraft !== null && (
+        <CreateCallNoteModal
+          bundle={bundle}
+          parentId={opp.id}
+          parentTitle={opp.title}
+          initialSummary={`${callDraft.summary}\n\n--- Transcript ---\n${callDraft.transcript}`}
+          initialOutcome={callDraft.outcome}
+          onClose={() => setCallDraft(null)}
         />
       )}
       {showCommitmentModal && (

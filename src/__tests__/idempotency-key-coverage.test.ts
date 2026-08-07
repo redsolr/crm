@@ -99,6 +99,15 @@ const IDEMPOTENCY_EXEMPTIONS: ReadonlyArray<{
     mode: "prefix",
     reason: "Health/liveness probes — infra, not platform writes",
   },
+  // Call-recorder transcription — pure compute: audio in, draft text
+  // out, NOTHING written server-side (the founder reviews the draft
+  // and saves the call note through the normal write path, which
+  // carries its own key). A retry just re-runs the transcription.
+  {
+    match: "/api/transcribe",
+    mode: "exact",
+    reason: "Pure compute (speech-to-draft) — no server-side write to dedupe",
+  },
 ];
 
 interface WriteCallSite {
@@ -241,7 +250,15 @@ function scanFile(filePath: string): WriteCallSite[] {
         const optionsArg = node.arguments[1];
         const method = extractMethod(optionsArg);
         if (method != null) {
-          const { path, isPlatform } = resolveTemplatePath(node.arguments[0]);
+          // A bare-fetch string literal is already the FULL path —
+          // only BaseApiClient's `this.request` adds `/api`. Without
+          // this flag, fetch("/api/transcribe") resolved to the
+          // nonexistent "/api/api/transcribe" and could never match
+          // its exemption.
+          const { path, isPlatform } = resolveTemplatePath(
+            node.arguments[0],
+            /* isUnprefixedRequest */ true,
+          );
           if (isPlatform) {
             sites.push({
               file: relative(REPO_ROOT, filePath).replace(/\\/g, "/"),

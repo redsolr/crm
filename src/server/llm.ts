@@ -14,6 +14,11 @@ import OpenAI from "openai";
 /** Server-side model policy — the FE's requested model is ignored. */
 export const ASK_MODEL = process.env.CRM_ASK_MODEL ?? "gpt-5.4-mini";
 
+/** Speech-to-text model for call recordings — OpenAI's current
+ *  recommended transcription model (`whisper-1` is the legacy path). */
+export const TRANSCRIBE_MODEL =
+  process.env.CRM_TRANSCRIBE_MODEL ?? "gpt-4o-mini-transcribe";
+
 export function openaiClient(): OpenAI {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error(

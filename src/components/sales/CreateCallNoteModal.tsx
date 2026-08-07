@@ -24,8 +24,10 @@ interface Props {
    *  logging a call is fill-summary-and-submit instead of naming work. */
   parentTitle?: string;
   /** Prefilled summary — the live-note freeze flow hands the co-edited
-   *  text in here. */
+   *  text in here; the call recorder hands in the transcribed draft. */
   initialSummary?: string;
+  /** Prefilled outcome — the recorder's model guess ("" = unset). */
+  initialOutcome?: string;
   onClose: () => void;
   onCreated?: (callNote: WorkItem) => void;
 }
@@ -35,6 +37,7 @@ export function CreateCallNoteModal({
   parentId,
   parentTitle,
   initialSummary,
+  initialOutcome,
   onClose,
   onCreated,
 }: Props) {
@@ -44,7 +47,7 @@ export function CreateCallNoteModal({
     parentTitle ? `Call — ${parentTitle} (${todayDateString()})` : "",
   );
   const [callDate, setCallDate] = useState<string>(todayDateString());
-  const [outcome, setOutcome] = useState<string>("");
+  const [outcome, setOutcome] = useState<string>(initialOutcome ?? "");
   const [callType, setCallType] = useState<string>("");
   const [attendees, setAttendees] = useState("");
   const [summary, setSummary] = useState(initialSummary ?? "");
