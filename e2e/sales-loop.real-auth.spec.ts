@@ -92,3 +92,26 @@ test("company → deal → table → saved view survives reload", async ({
   await page.waitForTimeout(3_000);
   expect(notFound).toEqual([]);
 });
+
+test("the transcribe route EXISTS on the real stack and validates (no LLM spent)", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  test.skip(
+    !email || !password,
+    "E2E_WORKOS_EMAIL / E2E_WORKOS_PASSWORD missing (env or .env.local)",
+  );
+
+  // This tier's reason for existing: mocked tests structurally cannot
+  // catch a missing real route. A form without an `audio` file must
+  // hit the route's OWN validation (422) — a missing route would 404 —
+  // and validation rejects before any OpenAI call, so the probe costs
+  // nothing.
+  await loginWithPassword(page, email!, password!);
+  const response = await page.request.post("/api/transcribe", {
+    multipart: { context: "route probe" },
+  });
+  expect(response.status()).toBe(422);
+  const body = (await response.json()) as { code?: string };
+  expect(body.code).toBe("validation_failed");
+});

@@ -19,7 +19,7 @@
 
 import { test, expect } from "./fixtures/auth.fixture";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
-import { pickOption } from "./helpers/select";
+import { expectSelectValue, pickOption } from "./helpers/select";
 import {
   STEP_TIMEOUT,
   createAccountViaUi,
@@ -150,6 +150,86 @@ test.describe("Searchable selects", () => {
       authedPage.getByText(/New company — the account is created/),
     ).toBeVisible();
     await authedPage.getByRole("button", { name: "Cancel" }).click();
+  });
+
+  test("peek panel stage select: picking from the portaled menu commits WITHOUT dismissing the peek", async ({
+    authedPage,
+  }) => {
+    await setupSalesHandlers(authedPage);
+    await authedPage.goto("/sales");
+    await expect(authedPage.getByTestId("sales-pipeline")).toBeVisible({
+      timeout: STEP_TIMEOUT,
+    });
+    await createAccountViaUi(authedPage, "Peek Firm");
+    await expect(
+      authedPage.getByTestId("sales-account-name-input"),
+    ).toHaveCount(0, { timeout: STEP_TIMEOUT });
+    await createOpportunityViaUi(authedPage, "Peek stage deal");
+    const row = authedPage.locator("[data-testid='sales-pipeline-row']", {
+      hasText: "Peek stage deal",
+    });
+    await expect(row).toBeVisible({ timeout: STEP_TIMEOUT });
+
+    // Row click opens the right-snap peek — a surface that DISMISSES
+    // on outside clicks. The stage menu portals outside the panel, so
+    // picking an option is the regression case: the pick must commit
+    // and the peek must stay open.
+    await row.getByTestId("sales-pipeline-cell-title").click();
+    const peek = authedPage.getByTestId("sales-peek-panel");
+    await expect(peek).toBeVisible({ timeout: STEP_TIMEOUT });
+
+    const stage = authedPage.getByTestId("sales-peek-stage-select");
+    await pickOption(stage, "contacted");
+    await expect(peek).toBeVisible();
+    await expectSelectValue(stage, "contacted", { timeout: STEP_TIMEOUT });
+    // The table behind the peek reflects the transition too.
+    await expectSelectValue(
+      row.getByTestId("sales-pipeline-stage-select"),
+      "contacted",
+      { timeout: STEP_TIMEOUT },
+    );
+  });
+
+  test("select-type cell editor: Escape cancels without committing; a pick commits", async ({
+    authedPage,
+  }) => {
+    await setupSalesHandlers(authedPage);
+    await authedPage.goto("/sales");
+    await expect(authedPage.getByTestId("sales-pipeline")).toBeVisible({
+      timeout: STEP_TIMEOUT,
+    });
+    await createAccountViaUi(authedPage, "Cell Edit Co");
+    await expect(
+      authedPage.getByTestId("sales-account-name-input"),
+    ).toHaveCount(0, { timeout: STEP_TIMEOUT });
+    await authedPage.getByTestId("sales-nav-companies").click();
+    const row = authedPage.locator("[data-testid='sales-companies-row']", {
+      hasText: "Cell Edit Co",
+    });
+    await expect(row).toBeVisible({ timeout: STEP_TIMEOUT });
+
+    // Clicking a select cell opens the editor's menu IMMEDIATELY
+    // (defaultOpen). Escape = dismissed without a pick = the edit
+    // session cancels — the cell must stay untouched.
+    await row.getByTestId("sales-companies-cell-segment").click();
+    await expect(authedPage.getByTestId("crm-select-menu")).toBeVisible({
+      timeout: STEP_TIMEOUT,
+    });
+    await authedPage.keyboard.press("Escape");
+    await expect(authedPage.getByTestId("crm-select-menu")).toBeHidden();
+    await expect(
+      row.getByTestId("sales-companies-cell-segment"),
+    ).toContainText("—");
+
+    // Same cell, real pick — commits.
+    await row.getByTestId("sales-companies-cell-segment").click();
+    await pickOption(
+      authedPage.getByTestId("sales-companies-edit-segment"),
+      "solo",
+    );
+    await expect(
+      row.getByTestId("sales-companies-cell-segment"),
+    ).toContainText("solo", { timeout: STEP_TIMEOUT });
   });
 
   test("pipeline inline-create company dropdown works inside the table row (pickOption helper)", async ({

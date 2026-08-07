@@ -99,3 +99,74 @@ test("record → transcribe → prefilled call-note draft → saved note", async
       .getByText(/Call — Recorder deal/),
   ).toBeVisible({ timeout: STEP_TIMEOUT });
 });
+
+test("transcription failure surfaces inline, opens NO draft, and the next take succeeds", async ({
+  authedPage,
+}) => {
+  await setupSalesHandlers(authedPage);
+  // First attempt 502s (LLM down); the retry succeeds.
+  let attempts = 0;
+  await authedPage.route("**/api/transcribe", async (route) => {
+    attempts += 1;
+    if (attempts === 1) {
+      await route.fulfill({
+        status: 502,
+        contentType: "application/json",
+        body: JSON.stringify({
+          statusCode: 502,
+          error: "Bad Gateway",
+          code: "transcription_failed",
+          message: "OpenAI unavailable",
+        }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(DRAFT),
+    });
+  });
+
+  await authedPage.goto("/sales");
+  await ensureBoardMode(authedPage);
+  await createAccountViaUi(authedPage, "Retry Firm");
+  await expect(
+    authedPage.getByTestId("sales-account-name-input"),
+  ).toHaveCount(0, { timeout: STEP_TIMEOUT });
+  await createOpportunityViaUi(authedPage, "Retry deal", { awaitCard: true });
+  await openFullViewViaPeek(
+    authedPage,
+    authedPage.locator("[data-testid='sales-kanban-card']", {
+      hasText: "Retry deal",
+    }),
+  );
+
+  // ── Failing take: inline error, NO modal, recorder back to idle ───
+  await authedPage.getByTestId("record-call-button").click();
+  await expect(authedPage.getByTestId("record-call-stop")).toBeVisible({
+    timeout: STEP_TIMEOUT,
+  });
+  await authedPage.waitForTimeout(600);
+  await authedPage.getByTestId("record-call-stop").click();
+  await expect(authedPage.getByTestId("record-call-error")).toContainText(
+    /Transcription failed/,
+    { timeout: STEP_TIMEOUT },
+  );
+  await expect(
+    authedPage.getByRole("button", { name: "Log call", exact: true }),
+  ).toHaveCount(0);
+
+  // ── Second take works — the failure was recoverable ───────────────
+  await authedPage.getByTestId("record-call-button").click();
+  await expect(authedPage.getByTestId("record-call-stop")).toBeVisible({
+    timeout: STEP_TIMEOUT,
+  });
+  await authedPage.waitForTimeout(600);
+  await authedPage.getByTestId("record-call-stop").click();
+  await expect(
+    authedPage.getByPlaceholder(
+      "What they said in their words; commitments made.",
+    ),
+  ).toHaveValue(/matters live in spreadsheets/, { timeout: STEP_TIMEOUT });
+});
