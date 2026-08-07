@@ -80,16 +80,20 @@ describe("push routes", () => {
     else process.env.VAPID_PRIVATE_KEY = previousPrivate;
   });
 
+  // `getVapidKey` became async when the requireApiSession gate landed
+  // (2026-08-08) — it must be awaited. The mocked actor below is a real
+  // identity (`usr_test`), so the gate passes and these keep asserting
+  // the env-gating behavior rather than the auth behavior.
   it("vapid-key answers null when the push layer is unconfigured", async () => {
     withVapidEnv(false);
-    const res = getVapidKey();
+    const res = await getVapidKey();
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ publicKey: null });
   });
 
   it("vapid-key serves the configured public key", async () => {
     withVapidEnv(true);
-    const res = getVapidKey();
+    const res = await getVapidKey();
     expect(await res.json()).toEqual({ publicKey: "test-public-key" });
   });
 

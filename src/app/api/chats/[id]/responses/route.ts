@@ -6,6 +6,7 @@ import {
   MAX_PASTED_IMAGES,
   isValidImageDataUrl,
 } from "@/lib/chat/image-paste";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `POST /api/chats/{id}/responses` — Anthropic-style SSE streaming for
@@ -21,6 +22,8 @@ export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ): Promise<Response> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   const chat = await loadChat(id);
   if (chat === null) {

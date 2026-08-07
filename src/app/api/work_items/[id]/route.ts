@@ -12,6 +12,7 @@ import {
   serializeWorkItem,
   updateWorkItemSchema,
 } from "@/server/work-items";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `GET` / `PATCH` / `DELETE` `/api/work_items/:id`. Mutations enforce
@@ -28,6 +29,8 @@ export async function GET(
   _request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   const row = await loadWorkItem(id);
   if (!row) return apiError(404, "not_found", `Work item not found: ${id}`);
@@ -38,6 +41,8 @@ export async function PATCH(
   request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
 
   const version = parseIfMatchVersion(request);
@@ -172,6 +177,8 @@ export async function DELETE(
   request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse | Response> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
 
   const version = parseIfMatchVersion(request);

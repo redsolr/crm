@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { mintId } from "@/db/ids";
 import { apiError, readJsonBody } from "@/server/api-error";
 import { openaiClient, ASK_MODEL } from "@/server/llm";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `POST /api/responses` — local replacement for the platform's
@@ -17,6 +18,8 @@ const MAX_QUESTION_CHARS = 8000;
 const MAX_TOKENS = 2048;
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const parsed = await readJsonBody(request);
   if (!parsed.ok) return parsed.response;
   const body = parsed.body;

@@ -8,6 +8,7 @@ import {
   inviteStatus,
   serializeInvite,
 } from "@/server/invites";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `DELETE /api/invites/:id` — revoke a pending invite (the link stops
@@ -20,6 +21,8 @@ export async function DELETE(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   const actor = await currentActor();
   if (!actorMayManageInvites(actor.id)) {

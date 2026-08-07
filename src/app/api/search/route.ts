@@ -6,6 +6,7 @@ import {
   searchRecords,
   type SearchHitPayload,
 } from "@/server/search";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `GET /api/search` — keyword (FTS) search over CRM records, local
@@ -35,6 +36,8 @@ function emptyResponse(query: string, totalMs: number): NextResponse {
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const started = Date.now();
   const params = request.nextUrl.searchParams;
 

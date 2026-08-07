@@ -7,6 +7,7 @@ import { apiError, readJsonBody } from "@/server/api-error";
 import { currentActor } from "@/server/actor";
 import { CRM_WORKSPACE_ID } from "@/server/constants";
 import { createViewSchema, serializeSavedView } from "@/server/views";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `GET /api/views?kind=&visibility=&owner=` → `{ data }` and
@@ -16,6 +17,8 @@ import { createViewSchema, serializeSavedView } from "@/server/views";
  */
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const params = request.nextUrl.searchParams;
   const conditions: SQL[] = [eq(savedViews.workspaceId, CRM_WORKSPACE_ID)];
 
@@ -42,6 +45,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const parsedBody = await readJsonBody(request);
   if (!parsedBody.ok) return parsedBody.response;
   const parsed = createViewSchema.safeParse(parsedBody.body);

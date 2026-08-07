@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiError } from "@/server/api-error";
 import { loadChat, loadMessages, serializeChat, serializeChatMessage } from "@/server/chats";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `GET /api/chats/:id/messages` — reload a persisted Ask conversation
@@ -13,6 +14,8 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   const chat = await loadChat(id);
   if (chat === null) {

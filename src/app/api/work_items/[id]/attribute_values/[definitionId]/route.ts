@@ -9,6 +9,7 @@ import {
   validateBareValue,
 } from "@/server/attributes";
 import { loadWorkItem } from "@/server/work-items";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `PUT` (upsert) / `DELETE` (unset) `/api/work_items/:id/
@@ -25,6 +26,8 @@ export async function PUT(
   request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id, definitionId } = await context.params;
 
   const item = await loadWorkItem(id);
@@ -63,6 +66,8 @@ export async function DELETE(
   _request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse | Response> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id, definitionId } = await context.params;
 
   const item = await loadWorkItem(id);

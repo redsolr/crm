@@ -13,6 +13,7 @@ import {
   serializeWorkItem,
   type JoinedWorkItem,
 } from "@/server/work-items";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `POST /api/work_items/bulk` — bulk field update. Exempt from
@@ -21,6 +22,8 @@ import {
  */
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const parsedBody = await readJsonBody(request);
   if (!parsedBody.ok) return parsedBody.response;
   const raw = parsedBody.body;

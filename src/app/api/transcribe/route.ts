@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { apiError } from "@/server/api-error";
 import { openaiClient } from "@/server/llm";
 import { extractCallNote, transcribeAudio } from "@/server/transcribe";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `POST /api/transcribe` (multipart: `audio` file + optional `context`
@@ -22,6 +23,8 @@ const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 export const maxDuration = 300;
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   let form: FormData;
   try {
     form = await request.formData();

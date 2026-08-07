@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { listChats, serializeChat } from "@/server/chats";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `GET /api/chats/history` — the Ask chat history rail. Serves the
@@ -9,6 +10,8 @@ import { listChats, serializeChat } from "@/server/chats";
  * relative time, not by the backend's date buckets.
  */
 export async function GET(): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const rows = await listChats();
   return NextResponse.json({
     chats: rows.map(serializeChat),

@@ -6,6 +6,7 @@ import {
   listDefinitionsForType,
   serializeDefinition,
 } from "@/server/attributes";
+import { requireApiSession } from "@/server/api-auth";
 
 /** `GET /api/work_item_types/:id/attribute_definitions` → `{ data }`. */
 
@@ -17,6 +18,8 @@ export async function GET(
   _request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   const type = await db
     .select()

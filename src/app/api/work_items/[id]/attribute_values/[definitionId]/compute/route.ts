@@ -10,6 +10,7 @@ import {
   validateBareValue,
 } from "@/server/attributes";
 import { loadWorkItem } from "@/server/work-items";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `POST /api/work_items/{id}/attribute_values/{definitionId}/compute` —
@@ -32,6 +33,8 @@ export async function POST(
   _request: NextRequest,
   context: { params: Promise<{ id: string; definitionId: string }> },
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id, definitionId } = await context.params;
 
   const item = await loadWorkItem(id);

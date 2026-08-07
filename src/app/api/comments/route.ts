@@ -7,6 +7,7 @@ import { logActivity } from "@/server/activities";
 import { asActivityActor, currentActor } from "@/server/actor";
 import { serializeComment } from "@/server/comments";
 import { loadWorkItem } from "@/server/work-items";
+import { requireApiSession } from "@/server/api-auth";
 
 /** `POST /api/comments` → `{ comment }` + a `comment_added` activity. */
 
@@ -17,6 +18,8 @@ const createCommentSchema = z.object({
 });
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const parsedBody = await readJsonBody(request);
   if (!parsedBody.ok) return parsedBody.response;
   const raw = parsedBody.body;

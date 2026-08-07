@@ -7,6 +7,7 @@ import {
   removePushSubscription,
   upsertPushSubscription,
 } from "@/server/push";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `POST /api/notifications/push/subscribe` — store this browser's push
@@ -28,6 +29,8 @@ const unsubscribeSchema = z.object({
 });
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   if (!pushConfigured()) {
     return apiError(
       503,
@@ -52,6 +55,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const parsed = await readJsonBody(request);
   if (!parsed.ok) return parsed.response;
   const body = unsubscribeSchema.safeParse(parsed.body);

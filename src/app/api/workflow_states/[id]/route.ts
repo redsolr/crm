@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db, workflowStages } from "@/db";
 import { apiError, readJsonBody } from "@/server/api-error";
 import { serializeStage } from "@/server/bootstrap";
+import { requireApiSession } from "@/server/api-auth";
 
 /** `PATCH /api/workflow_states/:id` → `{ state }` (lane rename). */
 
@@ -19,6 +20,8 @@ export async function PATCH(
   request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   const existing = await db
     .select()

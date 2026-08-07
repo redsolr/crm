@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, workflows } from "@/db";
 import { apiError } from "@/server/api-error";
 import { listStagesForWorkflow, serializeStage } from "@/server/bootstrap";
+import { requireApiSession } from "@/server/api-auth";
 
 /** `GET /api/workflows/:id/states` → `{ data }` (position order). */
 
@@ -14,6 +15,8 @@ export async function GET(
   _request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   const workflow = await db
     .select()

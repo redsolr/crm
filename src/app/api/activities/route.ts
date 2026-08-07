@@ -1,10 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError } from "@/server/api-error";
 import { listActivitiesPaged, serializeActivity } from "@/server/activities";
+import { requireApiSession } from "@/server/api-auth";
 
 /** `GET /api/activities` (sidebar feed) → `{ activities, total }`. */
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const params = request.nextUrl.searchParams;
 
   let page = 1;

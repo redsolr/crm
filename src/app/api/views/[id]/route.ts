@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { savedViews } from "@/db/schema";
 import { apiError, readJsonBody } from "@/server/api-error";
 import { serializeSavedView, updateViewSchema } from "@/server/views";
+import { requireApiSession } from "@/server/api-auth";
 
 /** `PATCH` / `DELETE` `/api/views/:id`. */
 
@@ -21,6 +22,8 @@ export async function PATCH(
   request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   const row = await findView(id);
   if (!row) return apiError(404, "not_found", `Saved view not found: ${id}`);
@@ -59,6 +62,8 @@ export async function DELETE(
   _request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   const row = await findView(id);
   if (!row) return apiError(404, "not_found", `Saved view not found: ${id}`);

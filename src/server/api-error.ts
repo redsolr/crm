@@ -8,6 +8,8 @@ import { NextResponse } from "next/server";
 
 const REASON_PHRASES: Record<number, string> = {
   400: "Bad Request",
+  401: "Unauthorized",
+  403: "Forbidden",
   404: "Not Found",
   409: "Conflict",
   412: "Precondition Failed",

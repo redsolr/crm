@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db, comments } from "@/db";
 import { apiError, readJsonBody } from "@/server/api-error";
 import { serializeComment } from "@/server/comments";
+import { requireApiSession } from "@/server/api-auth";
 
 /** `GET` / `PUT` / `DELETE` `/api/comments/:id`. */
 
@@ -24,6 +25,8 @@ export async function GET(
   _request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   const row = await findComment(id);
   if (!row) return apiError(404, "not_found", `Comment not found: ${id}`);
@@ -34,6 +37,8 @@ export async function PUT(
   request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   const row = await findComment(id);
   if (!row) return apiError(404, "not_found", `Comment not found: ${id}`);
@@ -71,6 +76,8 @@ export async function DELETE(
   _request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse | Response> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   const row = await findComment(id);
   if (!row) return apiError(404, "not_found", `Comment not found: ${id}`);

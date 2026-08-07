@@ -15,6 +15,7 @@ import {
   serializeWorkItem,
   type ListFilters,
 } from "@/server/work-items";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `GET /api/work_items` (cursor list) + `POST /api/work_items` (create) —
@@ -23,6 +24,8 @@ import {
  */
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const params = request.nextUrl.searchParams;
 
   let pageSize = MAX_PAGE_SIZE;
@@ -85,6 +88,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const parsedBody = await readJsonBody(request);
   if (!parsedBody.ok) return parsedBody.response;
   const raw = parsedBody.body;

@@ -29,8 +29,16 @@ import { authkitProxy } from "@workos-inc/authkit-nextjs";
  * `/login`. So we disable it and enforce auth ourselves:
  *   - client: `ProtectedRoute` gates every `(app)` route → `/login`
  *     (renders a spinner, never protected content, until auth resolves);
- *   - server: the backend cookie-guards every `/api/*` call (401 →
- *     api-client redirects), so data is never shipped to an anon user.
+ *   - server: every `/api/*` handler opens with `requireApiSession()`
+ *     (`src/server/api-auth.ts`) and answers 401 to a session-less
+ *     caller, which the api-client turns into a login redirect.
+ *     NOTE (2026-08-08): this line previously ASSERTED that guard
+ *     while no such guard existed — every data route served anonymous
+ *     callers on production for nine days. The enforcement is real
+ *     now, ratcheted by `src/__tests__/api-auth-coverage.test.ts` and
+ *     proven by `e2e/api-auth.real-auth.spec.ts`. Disabling
+ *     `middlewareAuth` means the ROUTES are the only line of defense —
+ *     never add an `/api` route without the gate.
  * The proxy still runs on every request for SESSION REFRESH + header
  * injection; only the redirect-to-hosted behavior is off — the same
  * enforcement model mock-auth dev already ran under.

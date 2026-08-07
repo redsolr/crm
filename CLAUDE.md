@@ -131,6 +131,32 @@ silent model update reds a scheduled run, not a push.
 
 **These three are coupled**: `getAuthorizationUrl` (routes) + custom `authenticateWithCode` callback + plain `authkitProxy` proxy. Changing any one breaks the others.
 
+### API authorization — the gate every route must carry (2026-08-08)
+
+**Every `/api/*` handler opens with:**
+
+```ts
+const gate = await requireApiSession();   // src/server/api-auth.ts
+if (!gate.ok) return gate.response;       // 401 platform envelope
+```
+
+This exists because it once did NOT: a production probe on 2026-08-08
+found every data route serving anonymous callers — reads returned real
+records (Ask chat history included) and writes reached validation.
+`currentActor()` falls back to the `usr_local` placeholder when there
+is no session (right for attribution, fatal as an authorization
+decision), and `proxy.ts` runs `middlewareAuth.enabled:false` by design
+because the CRM ships a custom login UI — so **the routes are the only
+line of defense**. Two guards keep it that way: the ratchet
+`src/__tests__/api-auth-coverage.test.ts` (fails CI on an ungated
+handler; exemptions require a stated enforcement) and the adversarial
+`e2e/api-auth.real-auth.spec.ts` (anonymous reads AND writes must 401 —
+the real-auth tier is the only one without MOCK_AUTH, so it's the only
+place this can be honestly asserted). Exempt today: `/mcp`
+(bearer/OAuth), `/api/digest/run` (CRON_SECRET), `/api/invite/[code]`
++ `/accept` (public by design — the code is the credential),
+`/api/realtime/session` (inline equivalent guard).
+
 ### Backend identity (team attribution, swap step 6 — DONE 2026-07-31)
 
 Every write route resolves WHO is writing via `src/server/actor.ts`

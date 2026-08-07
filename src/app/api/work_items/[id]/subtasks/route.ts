@@ -5,6 +5,7 @@ import {
   loadWorkItem,
   serializeWorkItem,
 } from "@/server/work-items";
+import { requireApiSession } from "@/server/api-auth";
 
 /** `GET /api/work_items/:id/subtasks` — children via `parent_id`. */
 
@@ -16,6 +17,8 @@ export async function GET(
   _request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   const parent = await loadWorkItem(id);
   if (!parent) return apiError(404, "not_found", `Work item not found: ${id}`);

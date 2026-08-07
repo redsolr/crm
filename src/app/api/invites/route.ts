@@ -12,6 +12,7 @@ import {
   mintInviteCode,
   serializeInvite,
 } from "@/server/invites";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * Admin surface of the CRM-native invite flow:
@@ -25,6 +26,8 @@ import {
  */
 
 export async function GET(): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const actor = await currentActor();
   if (!actorMayManageInvites(actor.id)) {
     return apiError(401, "unauthorized", "Sign in to manage invites.");
@@ -38,6 +41,8 @@ export async function GET(): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const parsedBody = await readJsonBody(request);
   if (!parsedBody.ok) return parsedBody.response;
   const parsed = createInviteSchema.safeParse(parsedBody.body);

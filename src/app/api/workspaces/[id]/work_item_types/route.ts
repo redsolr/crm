@@ -5,6 +5,7 @@ import {
   listRecordTypes,
   serializeWorkItemType,
 } from "@/server/bootstrap";
+import { requireApiSession } from "@/server/api-auth";
 
 /** `GET /api/workspaces/:id/work_item_types` → `{ data }`. */
 
@@ -16,6 +17,8 @@ export async function GET(
   _request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const { id } = await context.params;
   if (id !== STUB_WORKSPACE.id) {
     return apiError(404, "not_found", `Workspace not found: ${id}`);

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError, readJsonBody } from "@/server/api-error";
 import { createChat, serializeChat } from "@/server/chats";
+import { requireApiSession } from "@/server/api-auth";
 
 /**
  * `POST /api/chats` — lazy Ask-conversation create (backend-swap: Ask
@@ -9,6 +10,8 @@ import { createChat, serializeChat } from "@/server/chats";
  * single-tenant with no folders, both are ignored.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const gate = await requireApiSession();
+  if (!gate.ok) return gate.response;
   const parsed = await readJsonBody(request);
   if (!parsed.ok) return parsed.response;
   const body = parsed.body;
