@@ -153,14 +153,14 @@ test.describe("Wide viewport (≥1440 screen-centered branch)", () => {
     await page.mouse.up();
     await expect
       .poll(async () => tabs.allInnerTexts(), { timeout: STEP_TIMEOUT })
-      .toEqual(["Board", "Inbox", "Table"]);
+      .toEqual(["Board", "Summary", "Table"]);
     await page.reload();
     await expect(
       page.getByTestId("sales-pipeline-mode-toggle"),
     ).toBeVisible({ timeout: STEP_TIMEOUT });
     await expect
       .poll(async () => tabs.allInnerTexts(), { timeout: STEP_TIMEOUT })
-      .toEqual(["Board", "Inbox", "Table"]);
+      .toEqual(["Board", "Summary", "Table"]);
   });
 
   test("row click opens the peek panel over the centered column", async ({

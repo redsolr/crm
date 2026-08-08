@@ -39,7 +39,7 @@ export function usePageContext(): AskPageContext | null {
 
   if (pathname === "/sales") {
     return pipelineMode === "inbox"
-      ? { label: "Inbox (follow-ups + commitments)", chip: "Inbox" }
+      ? { label: "Summary (follow-ups + commitments)", chip: "Summary" }
       : { label: "Pipeline view", chip: "Pipeline" };
   }
   if (pathname.startsWith("/sales/companies")) {

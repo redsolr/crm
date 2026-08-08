@@ -62,7 +62,7 @@ test.describe("Ask surface", () => {
       "Which deals need attention this week?",
     );
     await expect(panel.getByTestId("sales-ask-context")).toContainText(
-      "Inbox",
+      "Summary",
     );
 
     // ── Escape dismisses; the header icon re-summons ────────────────

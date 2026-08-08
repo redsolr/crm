@@ -38,7 +38,7 @@ export interface SuggestedNavItem {
  *  sidebar nav (Workflow / Records / Insights / Account). */
 export const SUGGESTED_NAV: readonly SuggestedNavItem[] = [
   { id: "pipeline", label: "Pipeline", href: "/sales", icon: <BarChart3 size={14} /> },
-  { id: "inbox", label: "Inbox", href: "/sales/inbox", icon: <Inbox size={14} /> },
+  { id: "inbox", label: "Summary", href: "/sales/inbox", icon: <Inbox size={14} /> },
   { id: "chat", label: "Chat", href: "/sales/ask", icon: <MessageSquare size={14} /> },
   { id: "interviews", label: "Interviews", href: "/sales/interviews", icon: <Mic size={14} /> },
   { id: "companies", label: "Companies", href: "/sales/companies", icon: <Building2 size={14} /> },

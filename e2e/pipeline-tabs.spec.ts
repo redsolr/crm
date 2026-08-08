@@ -25,7 +25,7 @@ test.describe("Pipeline layout tabs", () => {
       '[data-testid="sales-pipeline-mode-toggle"] [role="tab"]',
     );
     await expect(tabs).toHaveCount(3);
-    expect(await tabs.allInnerTexts()).toEqual(["Inbox", "Table", "Board"]);
+    expect(await tabs.allInnerTexts()).toEqual(["Summary", "Table", "Board"]);
 
     // Clicking switches the layout (asserted BEFORE any drag — dnd-kit
     // suppresses the first click right after a drop, so a post-drag
@@ -52,7 +52,7 @@ test.describe("Pipeline layout tabs", () => {
     await authedPage.mouse.up();
     await expect
       .poll(async () => tabs.allInnerTexts(), { timeout: STEP_TIMEOUT })
-      .toEqual(["Board", "Inbox", "Table"]);
+      .toEqual(["Board", "Summary", "Table"]);
 
     // The order (and the mode chosen by the earlier click) survive a
     // reload.
@@ -62,7 +62,7 @@ test.describe("Pipeline layout tabs", () => {
     ).toBeVisible({ timeout: STEP_TIMEOUT });
     await expect
       .poll(async () => tabs.allInnerTexts(), { timeout: STEP_TIMEOUT })
-      .toEqual(["Board", "Inbox", "Table"]);
+      .toEqual(["Board", "Summary", "Table"]);
     await expect(
       authedPage.getByTestId("sales-pipeline-mode-kanban"),
     ).toHaveAttribute("data-active", "true");
