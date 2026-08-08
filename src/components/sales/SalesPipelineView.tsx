@@ -138,7 +138,7 @@ function writeStoredTabOrder(order: PipelineTabId[]) {
 }
 
 const TAB_LABELS: Record<PipelineTabId, string> = {
-  inbox: "Inbox",
+  inbox: "Summary",
   table: "Table",
   kanban: "Board",
 };
