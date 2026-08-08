@@ -2,15 +2,16 @@
 
 /**
  * Morning-digest card (ambient-digest arc, 2026-08-07) — the top of
- * the Summary tab. Renders the newest cron-composed digest: the
+ * the Inbox tab. Renders the newest cron-composed digest: the
  * AI-drafted follow-ups (copy-and-send) plus the notification
  * enrollment toggle for THIS browser. The deterministic due/overdue
  * lists are NOT repeated here — they live directly below in the
- * Summary's own sections; the card carries only what the cron adds
+ * Inbox's own sections; the card carries only what the cron adds
  * (drafts + push).
  *
- * Blue = AI per the design guidelines: drafts are model output and are
- * visually marked as such.
+ * Border is the neutral card border (founder 2026-08-08 — the blue
+ * AI rail was dropped; the "Morning digest" label carries the AI
+ * provenance on its own).
  */
 
 import { useState } from "react";
@@ -47,9 +48,9 @@ export function SalesDigestCard({
   };
 
   return (
-    <section className="crm-digest-card" data-testid="summary-digest-card">
+    <section className="crm-digest-card" data-testid="inbox-digest-card">
       <div className="crm-digest-header">
-        <h2 className="crm-summary-heading crm-digest-heading">
+        <h2 className="crm-digest-heading">
           Morning digest
           {digest && (
             <span className="crm-digest-date" data-testid="digest-run-date">
@@ -71,7 +72,7 @@ export function SalesDigestCard({
       </div>
 
       {digest === null ? (
-        <p className="crm-summary-empty" data-testid="digest-empty">
+        <p className="crm-digest-empty" data-testid="digest-empty">
           No digest yet — the first one composes at 07:00 and lands here.
         </p>
       ) : (
@@ -110,7 +111,7 @@ export function SalesDigestCard({
             </ul>
           )}
           {digest.drafts.length === 0 && digest.drafts_error === null && (
-            <p className="crm-summary-empty" data-testid="digest-no-drafts">
+            <p className="crm-digest-empty" data-testid="digest-no-drafts">
               Nothing actionable to draft this morning.
             </p>
           )}

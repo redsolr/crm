@@ -55,12 +55,14 @@ test.describe("Ask surface", () => {
     await expect(panel).toBeVisible({ timeout: STEP_TIMEOUT });
 
     // Empty state shows the founder-CRM suggestions, and the header
-    // frames the current view as the conversation's context.
+    // frames the current view as the conversation's context — the
+    // landing surface is the Inbox tab (2026-08-08), and the context
+    // is mode-aware.
     await expect(panel.getByTestId("crm-ask-suggestion-0")).toContainText(
       "Which deals need attention this week?",
     );
     await expect(panel.getByTestId("sales-ask-context")).toContainText(
-      "Pipeline",
+      "Inbox",
     );
 
     // ── Escape dismisses; the header icon re-summons ────────────────
@@ -91,10 +93,11 @@ test.describe("Ask surface", () => {
       timeout: STEP_TIMEOUT,
     });
 
-    // The wire payload carried the pipeline-view context preamble.
+    // The wire payload carried the Inbox context preamble (the
+    // landing tab frames the conversation).
     expect(capturedStreamInputs).toHaveLength(1);
     expect(capturedStreamInputs[0]).toBe(
-      `[Viewing: Pipeline view]\n\n${question}`,
+      `[Viewing: Inbox (follow-ups + commitments)]\n\n${question}`,
     );
 
     // ── Expand → full-page /sales/ask, same conversation ────────────

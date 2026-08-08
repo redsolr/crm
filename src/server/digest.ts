@@ -30,7 +30,7 @@ import {
 /**
  * Morning digest (ambient-digest arc, 2026-08-07): the 07:00-Bangkok
  * cron composes "what deserves attention today" — the SAME deterministic
- * neglect ranking the Summary tab runs (`followup-ranking.ts`), plus
+ * neglect ranking the Inbox tab runs (`followup-ranking.ts`), plus
  * open commitments due — drafts follow-up messages for the top
  * actionable deals via the LLM seam, persists one `digests` row per
  * Bangkok date, and web-pushes a one-line summary to every enrolled

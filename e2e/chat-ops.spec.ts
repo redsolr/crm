@@ -18,7 +18,7 @@
 import { test, expect } from "./fixtures/auth.fixture";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
 import { setupAskHandlers } from "./handlers/ask.handlers";
-import { STEP_TIMEOUT } from "./helpers/sales-ui";
+import { STEP_TIMEOUT, ensureInboxMode } from "./helpers/sales-ui";
 import { localDate } from "./helpers/dates";
 
 test.describe("Conversational CRM ops", () => {
@@ -125,8 +125,10 @@ test.describe("Conversational CRM ops", () => {
       }),
     ).toBeVisible({ timeout: STEP_TIMEOUT });
 
-    // ── …and tomorrow's follow-up is already on the morning list ────
-    await authedPage.getByTestId("sales-nav-inbox").click();
+    // ── …and tomorrow's follow-up is already on the morning list
+    // (the Inbox is the Pipeline's first tab since 2026-08-08) ──────
+    await authedPage.getByTestId("sales-nav-pipeline").click();
+    await ensureInboxMode(authedPage);
     await expect(
       authedPage.locator("[data-testid='sales-inbox-upcoming-item']", {
         hasText: "Send pilot pricing",

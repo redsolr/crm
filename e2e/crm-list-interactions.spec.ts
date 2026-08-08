@@ -24,6 +24,7 @@ import {
   STEP_TIMEOUT,
   createAccountViaUi,
   createOpportunityViaUi,
+  ensureTableMode,
 } from "./helpers/sales-ui";
 
 /** Seed a company + three opportunities and land on the table. */
@@ -33,6 +34,7 @@ async function seedPipeline(page: Page) {
   await expect(page.getByTestId("sales-pipeline")).toBeVisible({
     timeout: STEP_TIMEOUT,
   });
+  await ensureTableMode(page); // rows live in the table layout
   await createAccountViaUi(page, "Probe Co");
   await expect(page.getByTestId("sales-account-name-input")).toHaveCount(0, {
     timeout: STEP_TIMEOUT,

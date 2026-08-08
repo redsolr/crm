@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { pickOption } from "./helpers/select";
+import { ensureTableMode } from "./helpers/sales-ui";
 import {
   createAccountViaUi,
   createOpportunityViaUi,
@@ -74,6 +75,8 @@ test("two seats: presence pill, live stage propagation, co-edited note", async (
   await loginWithPassword(seatB, teammateEmail!, teammatePassword!);
 
   // ── Seat A creates the shared record and opens its page ────────────
+  // (Table rows are an explicit opt-in — Inbox is the landing tab.)
+  await ensureTableMode(seatA, 45_000);
   await createAccountViaUi(seatA, COMPANY, "intro");
   await createOpportunityViaUi(seatA, { title: DEAL, accountName: COMPANY });
 

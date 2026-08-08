@@ -9,11 +9,13 @@
  * today / No next action / Closed). Closed kicks the kanban into
  * "show closed" mode so won / lost / not_now columns surface.
  *
- * Attio table slice (2026-07-18): a kanban ⇄ table toggle in the
- * header. Table mode renders the same (chip-filtered) opportunities
- * through CrmRecordTable — inline stage select (closed stages still
- * intercepted by the reason modal), inline attribute editing, sort /
- * filter / saved views. The mode persists in localStorage.
+ * Layout tabs (Inbox | Table | Board): the Inbox tab is the landing
+ * surface (digest + follow-up queue + commitments — founder
+ * 2026-08-08); Table (Attio slice, 2026-07-18) renders the same
+ * (chip-filtered) opportunities through CrmRecordTable — inline stage
+ * select (closed stages still intercepted by the reason modal), inline
+ * attribute editing, sort / filter / saved views. The mode persists in
+ * localStorage (`pipeline-view-mode.ts`).
  *
  * Per the 2026-05-26 architecture decision, the Sales container is
  * auto-provisioned by the platform at signup time
@@ -71,7 +73,11 @@ import { formatTHB } from "@/lib/format-currency";
 import { SalesPipelineTable } from "./table/SalesPipelineTable";
 import { CrmTableSkeleton } from "./table/CrmTableSkeleton";
 import { usePeekRoute } from "@/lib/sales/use-peek-route";
-import { SalesPipelineSummary } from "./SalesPipelineSummary";
+import { SalesInboxTab } from "./SalesInboxTab";
+import {
+  setPipelineViewMode,
+  usePipelineViewMode,
+} from "./pipeline-view-mode";
 
 /** Static header set — mirrors SalesPipelineTable's column labels so
  *  the first-load skeleton renders the real headers. */
@@ -85,58 +91,7 @@ const PIPELINE_SKELETON_COLUMNS = [
   { id: "expected_close_date", label: "Expected close" },
 ] as const;
 
-/** localStorage key persisting the kanban ⇄ table mode choice. */
-const PIPELINE_VIEW_MODE_STORAGE_KEY = "crm-pipeline-view-mode";
-
-type PipelineViewMode = "summary" | "kanban" | "table";
-
-// The persisted view mode is an EXTERNAL store (module value backed
-// by localStorage), read via useSyncExternalStore: the server
-// snapshot always renders kanban and the client snapshot restores the
-// stored choice hydration-safely — no setState-in-effect rehydration.
-const viewModeListeners = new Set<() => void>();
-let viewModeCache: PipelineViewMode | null = null;
-
-function readStoredViewMode(): PipelineViewMode {
-  if (viewModeCache === null) {
-    try {
-      // TABLE is the first-run default (user decision 2026-07-18) —
-      // summary/board are opt-ins that persist per user, so whoever
-      // ends the day on Summary starts there tomorrow.
-      const stored = window.localStorage.getItem(
-        PIPELINE_VIEW_MODE_STORAGE_KEY,
-      );
-      viewModeCache =
-        stored === "kanban" || stored === "summary" ? stored : "table";
-    } catch (err) {
-      console.warn(
-        "[SalesPipelineView] could not read persisted view mode:",
-        err,
-      );
-      viewModeCache = "table";
-    }
-  }
-  return viewModeCache;
-}
-
-function subscribeToViewMode(callback: () => void): () => void {
-  viewModeListeners.add(callback);
-  return () => {
-    viewModeListeners.delete(callback);
-  };
-}
-
-function writeStoredViewMode(mode: PipelineViewMode) {
-  viewModeCache = mode;
-  try {
-    window.localStorage.setItem(PIPELINE_VIEW_MODE_STORAGE_KEY, mode);
-  } catch (err) {
-    console.warn("[SalesPipelineView] could not persist view mode:", err);
-  }
-  for (const listener of viewModeListeners) listener();
-}
-
-// The TAB ORDER is a second persisted external store (drag-to-
+// The TAB ORDER is a persisted external store (drag-to-
 // rearrange like Jira's project tab strip, founder 2026-08-04) — same
 // hydration-safe shape as the view mode above.
 const tabOrderListeners = new Set<() => void>();
@@ -183,7 +138,7 @@ function writeStoredTabOrder(order: PipelineTabId[]) {
 }
 
 const TAB_LABELS: Record<PipelineTabId, string> = {
-  summary: "Summary",
+  inbox: "Inbox",
   table: "Table",
   kanban: "Board",
 };
@@ -240,15 +195,11 @@ export function SalesPipelineView() {
   // full detail route (web-app mini-panel pattern). Peek state IS the
   // URL (`?peek=`) — shareable, back-button closes it.
   const { peekId, openPeek, closePeek } = usePeekRoute();
-  // Kanban ⇄ table — persisted external store (see module helpers).
-  const viewMode = useSyncExternalStore(
-    subscribeToViewMode,
-    readStoredViewMode,
-    // Server snapshot mirrors the client default (table) so hydration
-    // never flashes the board for table users.
-    () => "table" as PipelineViewMode,
-  );
-  const changeViewMode = writeStoredViewMode;
+  // Inbox / table / board — persisted external store (module
+  // `pipeline-view-mode.ts`; the palette + /sales/inbox redirect
+  // write it too).
+  const viewMode = usePipelineViewMode();
+  const changeViewMode = setPipelineViewMode;
 
   // Tab strip order — persisted external store + dnd wiring.
   const tabOrder = useSyncExternalStore(
@@ -293,8 +244,8 @@ export function SalesPipelineView() {
 
   // First load only (no cached data): table mode gets the real-chrome
   // skeleton (header labels mirror SalesPipelineTable's static
-  // columns); board/summary modes keep the quiet centered line — a
-  // kanban skeleton is a different shape and those modes are opt-in.
+  // columns); inbox/board modes keep the quiet centered line — a
+  // kanban skeleton is a different shape from a queue's.
   // The gate includes the attribute fan-outs so rows land FULLY
   // hydrated — without them the table appears and stage/value/date
   // cells pop in one by one (founder 2026-08-04); the latch keeps a
@@ -448,10 +399,9 @@ export function SalesPipelineView() {
       >
         {/* Tabs render in the user's PERSISTED order and drag to
             rearrange (Jira tab strip, founder 2026-08-04). Default:
-            overview first, then the default working view, then the
-            alternate; Table stays the first-run mode DEFAULT
-            (2026-07-18 decision — order and active mode are separate
-            choices). */}
+            Inbox first — and Inbox is also the first-run mode DEFAULT
+            (founder 2026-08-08; order and active mode stay separate
+            choices, so a Table user keeps landing on their Table). */}
         <DndContext
           sensors={tabSensors}
           collisionDetection={closestCenter}
@@ -473,7 +423,7 @@ export function SalesPipelineView() {
         </DndContext>
       </div>
 
-      {/* Chips slice record lists — the Summary owns its own slicing.
+      {/* Chips slice record lists — the Inbox owns its own slicing.
           Table mode: the chips ride the table's toolbar ROW (Jira-class
           single control strip) instead of owning a strip of their own;
           the kanban keeps the standalone row. */}
@@ -481,16 +431,8 @@ export function SalesPipelineView() {
         <FilterChips value={filter} onChange={setFilter} />
       )}
 
-      {viewMode === "summary" ? (
-        <SalesPipelineSummary
-          bundle={bundle}
-          opportunities={allOpportunities}
-          accountsById={Object.fromEntries(allAccounts.map((a) => [a.id, a]))}
-          attributesById={attributesByOpportunityId}
-          accountDomainsById={accountAttributesById}
-          activePipelineValue={activePipelineValue}
-          onOpenOpportunity={openPeek}
-        />
+      {viewMode === "inbox" && !isEmpty ? (
+        <SalesInboxTab bundle={bundle} onOpenOpportunity={openPeek} />
       ) : isEmpty ? (
         <EmptyState
           hasAccounts={allAccounts.length > 0}

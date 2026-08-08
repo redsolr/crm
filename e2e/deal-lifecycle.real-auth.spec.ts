@@ -8,6 +8,7 @@ import {
 } from "./helpers/real-auth";
 import { localDate } from "./helpers/dates";
 import { pickOption } from "./helpers/select";
+import { ensureInboxMode, ensureTableMode } from "./helpers/sales-ui";
 
 /**
  * The FULL deal lifecycle against the real stack (real WorkOS session,
@@ -49,16 +50,20 @@ const COMMITMENT = `E2E Lifecycle follow-up ${stamp}`;
 /** Create an opportunity from the pipeline header (company exists). */
 async function createDeal(page: Page, title: string): Promise<void> {
   await createOpportunityViaUi(page, { title, accountName: COMPANY });
-  // The board re-renders with the new card before the modal state
-  // settles; anchor on the card being present.
+  // The table re-renders with the new row before the modal state
+  // settles; anchor on the row being present.
   await expect(page.getByText(title, { exact: true }).first()).toBeVisible({
     timeout: 45_000,
   });
 }
 
-/** Open a deal's full record page via card → peek → expand. */
+/** Open a deal's full record page via table row → peek → expand.
+ *  Table rows are an explicit opt-in — the Inbox tab is the landing
+ *  default (2026-08-08), and the inbox step below switches the
+ *  persisted layout, so every visit re-asserts the table. */
 async function openDealPage(page: Page, title: string): Promise<string> {
   await page.getByTestId("sales-nav-pipeline").click();
+  await ensureTableMode(page, 45_000);
   await page.getByText(title, { exact: true }).first().click();
   await expect(page.getByTestId("sales-peek-panel")).toBeVisible({
     timeout: 45_000,
@@ -95,6 +100,9 @@ test("full funnel: win with call+commitment, lose with reason, park and RESURFAC
 
   const notFound = trackDeadApiCalls(page);
   await loginWithPassword(page, email!, password!);
+  // The landing tab is the Inbox — the seeds below assert their rows
+  // in the table, so opt in once up front (persists per context).
+  await ensureTableMode(page, 45_000);
 
   // ── Seed: one company, three deals ─────────────────────────────────
   await createAccountViaUi(page, COMPANY);
@@ -139,7 +147,9 @@ test("full funnel: win with call+commitment, lose with reason, park and RESURFAC
 
   // The commitment surfaces in the Inbox "Upcoming" bucket — tomorrow's
   // work is visible today — and completing it there closes the loop.
-  await page.getByTestId("sales-nav-inbox").click();
+  // (The Inbox is the Pipeline's first tab since 2026-08-08.)
+  await page.getByTestId("sales-nav-pipeline").click();
+  await ensureInboxMode(page, 45_000);
   const upcomingRow = page
     .locator("[data-testid='sales-inbox-upcoming-item']", {
       hasText: COMMITMENT,
@@ -203,7 +213,8 @@ test("full funnel: win with call+commitment, lose with reason, park and RESURFAC
 
   // The revisit date has passed — the parked deal is back in the
   // morning list, badged "Revisit", and clicks through to the record.
-  await page.getByTestId("sales-nav-inbox").click();
+  await page.getByTestId("sales-nav-pipeline").click();
+  await ensureInboxMode(page, 45_000);
   const revisitRow = page
     .locator("[data-testid='sales-followup-row']", { hasText: DEAL_PARKED })
     .first();

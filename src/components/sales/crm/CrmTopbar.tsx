@@ -14,7 +14,6 @@ import { GlobalSearchBar } from "@/components/sales/search/GlobalSearchBar";
 import { PresenceAvatarStack } from "@/components/presence/PresenceAvatarStack";
 
 const TOPBAR_SECTIONS: ReadonlyArray<{ prefix: string; label: string }> = [
-  { prefix: "/sales/inbox", label: "Inbox" },
   { prefix: "/sales/companies", label: "Companies" },
   { prefix: "/sales/account/", label: "Companies" },
   { prefix: "/sales/contacts", label: "Contacts" },

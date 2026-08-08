@@ -5,7 +5,7 @@
  * external-store wiring lives in `SalesPipelineView`.
  */
 
-export const PIPELINE_TAB_IDS = ["summary", "table", "kanban"] as const;
+export const PIPELINE_TAB_IDS = ["inbox", "table", "kanban"] as const;
 export type PipelineTabId = (typeof PIPELINE_TAB_IDS)[number];
 
 export const PIPELINE_TAB_ORDER_STORAGE_KEY = "crm-pipeline-tab-order";

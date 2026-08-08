@@ -601,7 +601,7 @@ export async function setupSalesHandlers(page: Page) {
   // GET /api/digest/latest — no digest by default. Specs exercising the
   // morning-digest card register their own route AFTER this setup
   // (later registrations win in Playwright), so every other sales spec
-  // renders the Summary without digest chrome or a DB dependency.
+  // renders the Inbox tab without digest chrome or a DB dependency.
   await page.route(
     (url) => url.pathname === "/api/digest/latest",
     async (route) => {

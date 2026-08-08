@@ -5,9 +5,9 @@ import {
 
 describe("sanitizeTabOrder", () => {
   it("accepts a full permutation", () => {
-    expect(sanitizeTabOrder(["kanban", "summary", "table"])).toEqual([
+    expect(sanitizeTabOrder(["kanban", "inbox", "table"])).toEqual([
       "kanban",
-      "summary",
+      "inbox",
       "table",
     ]);
   });
@@ -29,7 +29,13 @@ describe("sanitizeTabOrder", () => {
       ...PIPELINE_TAB_IDS,
     ]);
     expect(
-      sanitizeTabOrder(["table", "kanban", "summary", "docs"]),
+      sanitizeTabOrder(["table", "kanban", "inbox", "docs"]),
     ).toEqual([...PIPELINE_TAB_IDS]);
+  });
+
+  it("falls back on an order stored by the retired Summary tab set", () => {
+    expect(sanitizeTabOrder(["summary", "table", "kanban"])).toEqual([
+      ...PIPELINE_TAB_IDS,
+    ]);
   });
 });

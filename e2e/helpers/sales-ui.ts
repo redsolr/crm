@@ -34,21 +34,41 @@ export async function openFullViewViaPeek(page: Page, trigger: Locator) {
 }
 
 /**
- * Switches the Pipeline to BOARD mode (kanban). TABLE is the product
- * default since 2026-07-18 — specs that drive kanban cards opt into the
- * board explicitly via the tab strip. No-op when already on board.
+ * Switches the Pipeline to the given layout tab. INBOX is the product
+ * default since 2026-08-08 (the digest + follow-up cockpit; it
+ * superseded the 2026-07-18 table default) — specs that drive table
+ * rows or kanban cards opt in explicitly via the tab strip. No-op when
+ * the tab is already active. `timeout` widens the ceiling for the
+ * real-auth tier's slower first paint.
  */
-export async function ensureBoardMode(page: Page) {
-  const boardTab = page.getByTestId("sales-pipeline-mode-kanban");
-  await expect(boardTab).toBeVisible({ timeout: STEP_TIMEOUT });
-  if ((await boardTab.getAttribute("data-active")) !== "true") {
-    await boardTab.click();
+async function ensurePipelineMode(
+  page: Page,
+  mode: "inbox" | "table" | "kanban",
+  timeout = STEP_TIMEOUT,
+) {
+  const tab = page.getByTestId(`sales-pipeline-mode-${mode}`);
+  await expect(tab).toBeVisible({ timeout });
+  if ((await tab.getAttribute("data-active")) !== "true") {
+    await tab.click();
   }
-  // Assert the MODE, not the board container — an empty pipeline
-  // renders the welcome state instead of the board in either mode.
-  await expect(boardTab).toHaveAttribute("data-active", "true", {
-    timeout: STEP_TIMEOUT,
-  });
+  // Assert the MODE, not the content container — an empty pipeline
+  // renders the welcome state instead of the layout in every mode.
+  await expect(tab).toHaveAttribute("data-active", "true", { timeout });
+}
+
+/** Switch to BOARD mode (kanban) — specs that drive kanban cards. */
+export async function ensureBoardMode(page: Page, timeout?: number) {
+  await ensurePipelineMode(page, "kanban", timeout);
+}
+
+/** Switch to TABLE mode — specs that drive table rows. */
+export async function ensureTableMode(page: Page, timeout?: number) {
+  await ensurePipelineMode(page, "table", timeout);
+}
+
+/** Switch to the INBOX tab (digest + follow-ups + commitments). */
+export async function ensureInboxMode(page: Page, timeout?: number) {
+  await ensurePipelineMode(page, "inbox", timeout);
 }
 
 /** Phone-flow twins of the create helpers below — on <768px the

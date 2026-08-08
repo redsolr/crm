@@ -22,6 +22,7 @@ import { pickOption } from "./helpers/select";
 import {
   createAccountViaMobileMenu,
   createOpportunityViaMobileMenu,
+  ensureTableMode,
   STEP_TIMEOUT,
 } from "./helpers/sales-ui";
 
@@ -138,7 +139,9 @@ test.describe("Mobile shell (390px)", () => {
     await createAccountViaMobileMenu(authedPage, "Mobile Firm");
     await createOpportunityViaMobileMenu(authedPage, "Mobile Firm — matter_chaos");
 
-    // Table mode is the default — on a phone it must render as cards.
+    // Opt into Table mode (Inbox is the landing default) — on a phone
+    // the table must render as cards.
+    await ensureTableMode(authedPage);
     const cards = authedPage.getByTestId("sales-pipeline-card");
     await expect(cards.first()).toBeVisible({ timeout: STEP_TIMEOUT });
     await expect(
@@ -170,6 +173,7 @@ test.describe("Mobile shell (390px)", () => {
   }) => {
     await createAccountViaMobileMenu(authedPage, "Filter Firm");
     await createOpportunityViaMobileMenu(authedPage, "Filter Firm — drafting");
+    await ensureTableMode(authedPage); // the filter toolbar rides the table
 
     const toggle = authedPage.getByTestId("sales-pipeline-filter-toggle");
     const bar = authedPage.getByTestId("sales-pipeline-filter-bar");

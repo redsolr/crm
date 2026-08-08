@@ -1,7 +1,7 @@
 /**
  * Pipeline layout tab strip E2E (Tier 1 — mocked).
  *
- * The Summary/Table/Board tabs drag to rearrange like Jira's project
+ * The Inbox/Table/Board tabs drag to rearrange like Jira's project
  * tab strip (founder 2026-08-04): the order persists per browser
  * (localStorage) and survives a reload; clicking a tab still switches
  * the layout (the 5px drag threshold spares clicks).
@@ -25,34 +25,34 @@ test.describe("Pipeline layout tabs", () => {
       '[data-testid="sales-pipeline-mode-toggle"] [role="tab"]',
     );
     await expect(tabs).toHaveCount(3);
-    expect(await tabs.allInnerTexts()).toEqual(["Summary", "Table", "Board"]);
+    expect(await tabs.allInnerTexts()).toEqual(["Inbox", "Table", "Board"]);
 
     // Clicking switches the layout (asserted BEFORE any drag — dnd-kit
     // suppresses the first click right after a drop, so a post-drag
     // click assertion races the suppression window on slow runners).
     const board = authedPage.getByTestId("sales-pipeline-mode-kanban");
-    const summary = authedPage.getByTestId("sales-pipeline-mode-summary");
+    const inbox = authedPage.getByTestId("sales-pipeline-mode-inbox");
     await board.click();
     await expect(board).toHaveAttribute("data-active", "true");
 
     // Drag Board to the front.
     const boardBox = await board.boundingBox();
-    const summaryBox = await summary.boundingBox();
-    if (!boardBox || !summaryBox) throw new Error("no tab boxes");
+    const inboxBox = await inbox.boundingBox();
+    if (!boardBox || !inboxBox) throw new Error("no tab boxes");
     await authedPage.mouse.move(
       boardBox.x + boardBox.width / 2,
       boardBox.y + boardBox.height / 2,
     );
     await authedPage.mouse.down();
     await authedPage.mouse.move(
-      summaryBox.x + 4,
-      summaryBox.y + summaryBox.height / 2,
+      inboxBox.x + 4,
+      inboxBox.y + inboxBox.height / 2,
       { steps: 10 },
     );
     await authedPage.mouse.up();
     await expect
       .poll(async () => tabs.allInnerTexts(), { timeout: STEP_TIMEOUT })
-      .toEqual(["Board", "Summary", "Table"]);
+      .toEqual(["Board", "Inbox", "Table"]);
 
     // The order (and the mode chosen by the earlier click) survive a
     // reload.
@@ -62,7 +62,7 @@ test.describe("Pipeline layout tabs", () => {
     ).toBeVisible({ timeout: STEP_TIMEOUT });
     await expect
       .poll(async () => tabs.allInnerTexts(), { timeout: STEP_TIMEOUT })
-      .toEqual(["Board", "Summary", "Table"]);
+      .toEqual(["Board", "Inbox", "Table"]);
     await expect(
       authedPage.getByTestId("sales-pipeline-mode-kanban"),
     ).toHaveAttribute("data-active", "true");

@@ -25,6 +25,7 @@ import {
   STEP_TIMEOUT,
   createAccountViaUi,
   createOpportunityViaUi,
+  ensureTableMode,
 } from "./helpers/sales-ui";
 
 const FIRMS = [
@@ -159,6 +160,7 @@ test.describe("Searchable selects", () => {
     await setupSalesHandlers(authedPage);
     await seedCompanies(authedPage, ["Peek Firm"]);
     await createOpportunityViaUi(authedPage, "Peek stage deal");
+    await ensureTableMode(authedPage); // rows live in the table layout
     const row = authedPage.locator("[data-testid='sales-pipeline-row']", {
       hasText: "Peek stage deal",
     });
@@ -230,12 +232,13 @@ test.describe("Searchable selects", () => {
     await expect(
       authedPage.getByTestId("sales-opportunity-title-input"),
     ).toHaveCount(0, { timeout: STEP_TIMEOUT });
+    await ensureTableMode(authedPage); // rows live in the table layout
     await expect(
       authedPage.getByTestId("sales-pipeline-row"),
     ).toHaveCount(1, { timeout: STEP_TIMEOUT });
 
-    // Table mode is the default; the end-of-list "+ Create" chip opens
-    // the inline row.
+    // In table mode the end-of-list "+ Create" chip opens the inline
+    // row.
     await authedPage.getByTestId("sales-pipeline-create-row-button").click();
     await authedPage
       .getByTestId("sales-pipeline-inline-title")

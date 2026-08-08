@@ -21,6 +21,7 @@ import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/queries/query-keys";
 import type { WorkItem } from "@/lib/workItemsApi";
+import { usePipelineViewMode } from "../pipeline-view-mode";
 
 export interface AskPageContext {
   /** Full descriptor for the wire preamble. */
@@ -32,12 +33,14 @@ export interface AskPageContext {
 export function usePageContext(): AskPageContext | null {
   const pathname = usePathname();
   const queryClient = useQueryClient();
+  // The Inbox is a /sales layout tab (not a route) — the mode store
+  // is the only signal for which pipeline surface the user is on.
+  const pipelineMode = usePipelineViewMode();
 
   if (pathname === "/sales") {
-    return { label: "Pipeline view", chip: "Pipeline" };
-  }
-  if (pathname.startsWith("/sales/inbox")) {
-    return { label: "Inbox (follow-ups + commitments)", chip: "Inbox" };
+    return pipelineMode === "inbox"
+      ? { label: "Inbox (follow-ups + commitments)", chip: "Inbox" }
+      : { label: "Pipeline view", chip: "Pipeline" };
   }
   if (pathname.startsWith("/sales/companies")) {
     return { label: "Companies list", chip: "Companies" };

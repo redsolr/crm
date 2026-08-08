@@ -1,13 +1,16 @@
 /**
- * Pipeline Summary tab (Tier 1 — mocked) — the day-start feed.
+ * Pipeline Inbox tab (Tier 1 — mocked) — the landing surface.
  *
- * Claims (2026-08-04, after the modern-CRM scan):
- * - The tab strip is Summary | Table | Board; the pulse strip carries
- *   the due count (overdue/today next actions + commitments).
- * - Due & overdue lists the overdue next action; Overlooked lists
- *   active deals with no next action.
- * - Rows open the URL-routed peek (?peek=).
- * - The chosen tab persists across reload (localStorage).
+ * Claims (founder 2026-08-08, superseding the Summary tab):
+ * - A fresh session lands on the Inbox tab (Inbox | Table | Board);
+ *   an explicitly chosen tab persists across reload (localStorage).
+ * - The Inbox renders the follow-up queue ("Needs attention") and the
+ *   commitment inbox — the same engines the retired Summary re-drew.
+ * - The morning-digest card tops the Inbox: drafts render + copy,
+ *   the card contributes NO chrome before the first cron run, and a
+ *   drafting failure is surfaced, never silent.
+ * - /sales/inbox (the retired standalone route) redirects to the
+ *   pipeline with the Inbox tab selected — bookmarks keep working.
  */
 
 import { test, expect } from "./fixtures/auth.fixture";
@@ -15,63 +18,77 @@ import { setupSalesHandlers } from "./handlers/sales.handlers";
 import {
   createAccountViaUi,
   createOpportunityViaUi,
+  ensureTableMode,
   STEP_TIMEOUT,
 } from "./helpers/sales-ui";
 import { localDate } from "./helpers/dates";
 
-test.describe("Pipeline Summary tab", () => {
-  test("day feed: due actions, overlooked deals, badge, persistence", async ({
+test.describe("Pipeline Inbox tab", () => {
+  test("inbox is the landing tab: queue renders, rows click through, tab choice persists", async ({
     authedPage,
   }) => {
     await setupSalesHandlers(authedPage);
     await authedPage.goto("/sales");
+    // Empty pipeline → the welcome state, under the tab strip.
     await expect(
       authedPage.getByTestId("sales-empty-primary-cta"),
     ).toBeVisible({ timeout: STEP_TIMEOUT });
 
-    await createAccountViaUi(authedPage, "Summary Firm");
-    await createOpportunityViaUi(authedPage, "Summary overdue deal", {
+    // Fresh session (no stored choice) lands on the Inbox tab.
+    await expect(
+      authedPage.getByTestId("sales-pipeline-mode-inbox"),
+    ).toHaveAttribute("data-active", "true");
+
+    await createAccountViaUi(authedPage, "Inbox Firm");
+    await createOpportunityViaUi(authedPage, "Inbox overdue deal", {
       nextAction: "Chase the proposal",
       nextActionDate: localDate(-2),
     });
-    await createOpportunityViaUi(authedPage, "Summary overlooked deal");
 
-    await authedPage.getByTestId("sales-pipeline-mode-summary").click();
+    // The follow-up queue surfaces the overdue deal on the Inbox tab.
     await expect(
-      authedPage.getByTestId("sales-pipeline-summary"),
-    ).toBeVisible();
+      authedPage.getByTestId("sales-inbox-tab"),
+    ).toBeVisible({ timeout: STEP_TIMEOUT });
+    const row = authedPage.getByTestId("sales-followup-row");
+    await expect(row).toHaveCount(1, { timeout: STEP_TIMEOUT });
+    await expect(row).toContainText("Inbox overdue deal");
+    await expect(row).toHaveAttribute("data-reason", "overdue_next_action");
 
-    // The pulse strip carries the due count.
-    await expect(authedPage.getByTestId("summary-pulse")).toContainText(
-      "1 due",
-      { timeout: STEP_TIMEOUT },
-    );
+    // The commitment inbox section renders (empty state — no promises).
+    await expect(
+      authedPage.getByTestId("sales-inbox-empty"),
+    ).toBeVisible({ timeout: STEP_TIMEOUT });
 
-    // Due & overdue carries the overdue next action.
-    const dueRow = authedPage.getByTestId("summary-action-row");
-    await expect(dueRow).toHaveCount(1);
-    await expect(dueRow).toContainText("Chase the proposal");
-    await expect(dueRow).toContainText("Summary overdue deal");
+    // A queue row jumps straight to the opportunity record.
+    await row.click();
+    await expect(
+      authedPage.getByTestId("sales-opportunity-detail"),
+    ).toBeVisible({ timeout: STEP_TIMEOUT });
+    await authedPage.goBack();
 
-    // Overlooked carries the deal with no next action.
-    const overlooked = authedPage.getByTestId("summary-overlooked-row");
-    await expect(overlooked).toHaveCount(1);
-    await expect(overlooked).toContainText("Summary overlooked deal");
-
-    // Rows open the URL-routed peek.
-    await overlooked.click();
-    await expect(authedPage.getByTestId("sales-peek-panel")).toBeVisible({
-      timeout: STEP_TIMEOUT,
-    });
-    await expect(authedPage).toHaveURL(/\?peek=/);
-    await authedPage.getByTestId("sales-peek-close").click();
-    await expect(authedPage.getByTestId("sales-peek-panel")).toHaveCount(0);
-
-    // The chosen tab persists across reload.
+    // An explicitly chosen tab persists across reload.
+    await ensureTableMode(authedPage);
     await authedPage.reload();
     await expect(
-      authedPage.getByTestId("sales-pipeline-summary"),
-    ).toBeVisible({ timeout: STEP_TIMEOUT });
+      authedPage.getByTestId("sales-pipeline-mode-table"),
+    ).toHaveAttribute("data-active", "true", { timeout: STEP_TIMEOUT });
+  });
+
+  test("/sales/inbox redirects to the pipeline with the Inbox tab selected", async ({
+    authedPage,
+  }) => {
+    await setupSalesHandlers(authedPage);
+    // Park the persisted mode on Table first — the redirect must win.
+    await authedPage.goto("/sales");
+    await ensureTableMode(authedPage);
+
+    await authedPage.goto("/sales/inbox");
+    await expect(authedPage).toHaveURL(/\/sales$/, {
+      timeout: STEP_TIMEOUT,
+    });
+    await expect(
+      authedPage.getByTestId("sales-pipeline-mode-inbox"),
+    ).toHaveAttribute("data-active", "true", { timeout: STEP_TIMEOUT });
   });
 
   test("morning-digest card: drafts render and copy to the clipboard", async ({
@@ -106,10 +123,13 @@ test.describe("Pipeline Summary tab", () => {
       });
     });
 
+    // Seed one deal so the Inbox tab renders its queue (not the empty
+    // welcome state).
     await authedPage.goto("/sales");
-    await authedPage.getByTestId("sales-pipeline-mode-summary").click();
+    await createAccountViaUi(authedPage, "Digest Firm");
+    await createOpportunityViaUi(authedPage, "Digest deal");
 
-    const card = authedPage.getByTestId("summary-digest-card");
+    const card = authedPage.getByTestId("inbox-digest-card");
     await expect(card).toBeVisible({ timeout: STEP_TIMEOUT });
     await expect(authedPage.getByTestId("digest-run-date")).toHaveText(
       localDate(0),
@@ -144,13 +164,14 @@ test.describe("Pipeline Summary tab", () => {
   }) => {
     await setupSalesHandlers(authedPage);
     await authedPage.goto("/sales");
-    await authedPage.getByTestId("sales-pipeline-mode-summary").click();
+    await createAccountViaUi(authedPage, "Quiet Firm");
+    await createOpportunityViaUi(authedPage, "Quiet deal");
     await expect(
-      authedPage.getByTestId("sales-pipeline-summary"),
+      authedPage.getByTestId("sales-inbox-tab"),
     ).toBeVisible({ timeout: STEP_TIMEOUT });
     // digest: null + no SW registration → the card contributes no chrome.
     await expect(
-      authedPage.getByTestId("summary-digest-card"),
+      authedPage.getByTestId("inbox-digest-card"),
     ).toHaveCount(0);
   });
 
@@ -177,9 +198,10 @@ test.describe("Pipeline Summary tab", () => {
     });
 
     await authedPage.goto("/sales");
-    await authedPage.getByTestId("sales-pipeline-mode-summary").click();
+    await createAccountViaUi(authedPage, "Errored Firm");
+    await createOpportunityViaUi(authedPage, "Errored deal");
     await expect(
-      authedPage.getByTestId("summary-digest-card"),
+      authedPage.getByTestId("inbox-digest-card"),
     ).toBeVisible({ timeout: STEP_TIMEOUT });
     await expect(
       authedPage.getByTestId("digest-drafts-error"),

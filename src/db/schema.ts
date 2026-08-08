@@ -320,7 +320,7 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
 
 /**
  * Morning-digest runs — one row per Bangkok calendar date. `payload`
- * holds the computed buckets + LLM follow-up drafts the Summary tab
+ * holds the computed buckets + LLM follow-up drafts the Inbox tab
  * renders; `pushedAt` makes the daily web-push once-only (a same-day
  * re-run refreshes the payload but never re-notifies).
  */

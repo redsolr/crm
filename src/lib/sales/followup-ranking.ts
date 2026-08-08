@@ -1,8 +1,8 @@
 /**
  * Pure neglect ranking — the follow-up intelligence rules (Folk/Close
  * class, deterministic). NO "use client" directive: this module is the
- * single source of scoring for BOTH the client surfaces (Inbox strip,
- * Summary tab via `use-followup-suggestions`) and the server-side
+ * single source of scoring for BOTH the client surface (the Inbox
+ * tab's queue via `use-followup-suggestions`) and the server-side
  * morning digest (`src/server/digest.ts`), so "who deserves attention"
  * can never drift between the page and the push.
  *

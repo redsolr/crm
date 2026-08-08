@@ -16,7 +16,6 @@ const MAX_VISIBLE = 4;
 /** Human label for where a peer is, from their view path. */
 function locationLabel(path: string | undefined): string | null {
   if (path === undefined) return null;
-  if (path.startsWith("/sales/inbox")) return "Inbox";
   if (path.startsWith("/sales/companies") || path.startsWith("/sales/account/"))
     return "Companies";
   if (path.startsWith("/sales/contacts")) return "Contacts";

@@ -13,6 +13,7 @@ import { setupSalesHandlers } from "./handlers/sales.handlers";
 import {
   STEP_TIMEOUT,
   ensureBoardMode,
+  ensureInboxMode,
   createAccountViaUi,
   createOpportunityViaUi,
 } from "./helpers/sales-ui";
@@ -51,7 +52,7 @@ test.describe("Inbox follow-up intelligence", () => {
       awaitCard: true,
     });
 
-    await authedPage.goto("/sales/inbox");
+    await ensureInboxMode(authedPage); // the Inbox is the first Pipeline tab
     const panel = authedPage.getByTestId("sales-followup-panel");
     await expect(panel).toBeVisible({ timeout: STEP_TIMEOUT });
 

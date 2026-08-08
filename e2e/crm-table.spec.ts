@@ -21,6 +21,7 @@ import { test, expect } from "./fixtures/auth.fixture";
 import type { Page } from "@playwright/test";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
 import { pickOption } from "./helpers/select";
+import { ensureTableMode } from "./helpers/sales-ui";
 
 const STEP_TIMEOUT = 15_000;
 
@@ -214,12 +215,13 @@ test.describe("CRM record table", () => {
     await addCompany(authedPage, "Acme, Inc.");
     await addOpportunity(authedPage, "Acme — Workflow pilot", "Acme, Inc.");
 
-    // ── TABLE is the default mode (user decision 2026-07-18) ───────
-    // A fresh session (no stored choice) lands on the table, not the
-    // board.
+    // ── INBOX is the default mode (founder 2026-08-08) ─────────────
+    // A fresh session (no stored choice) lands on the Inbox cockpit;
+    // the Table is an explicit opt-in that then persists per user.
     await expect(
-      authedPage.getByTestId("sales-pipeline-mode-table"),
+      authedPage.getByTestId("sales-pipeline-mode-inbox"),
     ).toHaveAttribute("data-active", "true");
+    await ensureTableMode(authedPage);
     await expect(
       authedPage.getByTestId("sales-pipeline-table"),
     ).toBeVisible({ timeout: STEP_TIMEOUT });

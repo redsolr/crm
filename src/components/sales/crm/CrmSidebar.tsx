@@ -26,8 +26,6 @@ import {
   useContactsQuery,
   useOpportunitiesQuery,
 } from "@/lib/sales/use-sales-queries";
-import { useCommitmentsInbox } from "@/lib/sales/use-commitments-inbox";
-import { SALES_TYPE_KEYS } from "@/lib/sales/constants";
 import { useTasksQuery } from "@/lib/work/use-work";
 import { useLayoutUI } from "@/stores/use-layout-ui";
 import AccountMenu from "@/components/layout/AccountMenu";
@@ -133,21 +131,6 @@ export function CrmSidebar() {
   const opportunities = useOpportunitiesQuery(workspaceId);
   const contacts = useContactsQuery(workspaceId);
 
-  // Inbox count = open commitments across all opportunities — same
-  // hook the inbox view consumes, so the badge updates the moment a
-  // commitment is toggled anywhere in the app.
-  const commitmentType = bundle?.workItemTypes.find(
-    (t) => t.key === SALES_TYPE_KEYS.commitment
-  );
-  const commitmentDefs = commitmentType
-    ? bundle?.attributeDefinitionsByType[commitmentType.id] ?? []
-    : [];
-  const inbox = useCommitmentsInbox(workspaceId, commitmentDefs);
-  const openInboxCount =
-    inbox.buckets.overdue.length +
-    inbox.buckets.due_today.length +
-    inbox.buckets.upcoming.length;
-
   const activeOpportunityCount = (opportunities.data?.data ?? []).filter(
     (o) => o.state.category !== "done" && o.state.category !== "dead"
   ).length;
@@ -170,14 +153,6 @@ export function CrmSidebar() {
         icon: <PipelineIcon />,
       },
       {
-        id: "inbox",
-        label: "Inbox",
-        href: "/sales/inbox",
-        matches: (p) => p.startsWith("/sales/inbox"),
-        count: openInboxCount > 0 ? openInboxCount : undefined,
-        icon: <InboxIcon />,
-      },
-      {
         id: "interviews",
         label: "Interviews",
         href: "/sales/interviews",
@@ -196,7 +171,7 @@ export function CrmSidebar() {
         icon: <ChatIcon />,
       },
     ],
-    [activeOpportunityCount, openInboxCount]
+    [activeOpportunityCount]
   );
 
   const recordItems = useMemo<NavItem[]>(
@@ -403,25 +378,6 @@ function PipelineIcon() {
       <rect x="1" y="2" width="3.2" height="12" rx="0.8" />
       <rect x="6.4" y="2" width="3.2" height="8.5" rx="0.8" opacity="0.65" />
       <rect x="11.8" y="2" width="3.2" height="5.5" rx="0.8" opacity="0.35" />
-    </svg>
-  );
-}
-
-function InboxIcon() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M22 12h-6l-2 3h-4l-2-3H2" />
-      <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
     </svg>
   );
 }

@@ -16,7 +16,7 @@
 import { test, expect } from "./fixtures/auth.fixture";
 import { setupSalesHandlers } from "./handlers/sales.handlers";
 import { setupAskHandlers } from "./handlers/ask.handlers";
-import { STEP_TIMEOUT } from "./helpers/sales-ui";
+import { STEP_TIMEOUT, ensureInboxMode } from "./helpers/sales-ui";
 import { localDate } from "./helpers/dates";
 
 test.describe("Pre-call prep", () => {
@@ -53,8 +53,10 @@ test.describe("Pre-call prep", () => {
           "Ask who owns the pilot budget and confirm the demo scope from the discovery call.",
       });
 
-    // ── The morning list flags the deal ─────────────────────────────
-    await authedPage.goto("/sales/inbox");
+    // ── The morning list flags the deal (the Inbox tab — the
+    // Pipeline's landing surface since 2026-08-08) ──────────────────
+    await authedPage.goto("/sales");
+    await ensureInboxMode(authedPage);
     const row = authedPage
       .locator("[data-testid='sales-followup-row']", {
         hasText: "Rattanakorn — matter chaos",

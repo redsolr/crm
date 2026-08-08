@@ -23,6 +23,7 @@ import { pickOption } from "./helpers/select";
 import {
   STEP_TIMEOUT,
   ensureBoardMode,
+  ensureInboxMode,
   openFullViewViaPeek,
 } from "./helpers/sales-ui";
 
@@ -194,12 +195,12 @@ test.describe("Sales journey", () => {
     await waitForActivation(authedPage, "sales_first_commitment_created");
 
     // ── 5a) Inbox surfaces the commitment before completion ───────
-    // Navigate via the sidebar nav (replaces the old top-tab toggle).
+    // The Inbox is the Pipeline's first tab (2026-08-08).
     await authedPage.getByTestId("sales-opportunity-back").click();
     await expect(authedPage.getByTestId("sales-pipeline")).toBeVisible({
       timeout: STEP_TIMEOUT,
     });
-    await authedPage.getByTestId("sales-nav-inbox").click();
+    await ensureInboxMode(authedPage);
     const inbox = authedPage.getByTestId("sales-inbox");
     await expect(inbox).toBeVisible({ timeout: STEP_TIMEOUT });
     await expect(
@@ -220,7 +221,9 @@ test.describe("Sales journey", () => {
 
     // Back to the pipeline kanban + into the opportunity card for the
     // rest of the journey (stage transitions live on the detail view).
-    await authedPage.getByTestId("sales-nav-pipeline").click();
+    // The inbox step switched the persisted layout tab — opt back
+    // into the board explicitly.
+    await ensureBoardMode(authedPage);
     await openFullViewViaPeek(
       authedPage,
       authedPage.locator("[data-testid='sales-kanban-card']", {

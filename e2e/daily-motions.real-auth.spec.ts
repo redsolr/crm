@@ -7,6 +7,7 @@ import {
   trackDeadApiCalls,
 } from "./helpers/real-auth";
 import { localDate } from "./helpers/dates";
+import { ensureInboxMode, ensureTableMode } from "./helpers/sales-ui";
 // Reports tiles render through the app's own formatter — asserting
 // with the same import (not a hand mirror) means a format change can
 // never silently diverge spec from UI.
@@ -69,9 +70,11 @@ test("inbox follow-through → stage move with author → reports reconcile", as
   await createAccountViaUi(page, COMPANY);
   await createOpportunityViaUi(page, { title: DEAL, accountName: COMPANY });
 
-  // Open the deal's record page: card click opens the peek, expand
-  // promotes to the full detail route.
+  // Open the deal's record page: row click opens the peek, expand
+  // promotes to the full detail route. Table rows are an explicit
+  // opt-in — the Inbox tab is the landing default (2026-08-08).
   await page.getByTestId("sales-nav-pipeline").click();
+  await ensureTableMode(page, 45_000);
   await page.getByText(DEAL, { exact: true }).first().click();
   await expect(page.getByTestId("sales-peek-panel")).toBeVisible({
     timeout: 45_000,
@@ -88,7 +91,9 @@ test("inbox follow-through → stage move with author → reports reconcile", as
   await setAttr(page, "next_action_date", localDate(-2));
 
   // ── 1. Inbox follow-through: overdue surfaces and clicks through ───
-  await page.getByTestId("sales-nav-inbox").click();
+  // The Inbox is the Pipeline's first tab (2026-08-08).
+  await page.getByTestId("sales-nav-pipeline").click();
+  await ensureInboxMode(page, 45_000);
   const overdueRow = page
     .locator("[data-testid='sales-followup-row']", { hasText: DEAL })
     .first();
@@ -101,7 +106,8 @@ test("inbox follow-through → stage move with author → reports reconcile", as
 
   // Move the action to today → the deal re-files under Due today.
   await setAttr(page, "next_action_date", localDate(0));
-  await page.getByTestId("sales-nav-inbox").click();
+  await page.getByTestId("sales-nav-pipeline").click();
+  await ensureInboxMode(page, 45_000);
   const dueTodayRow = page
     .locator("[data-testid='sales-followup-row']", { hasText: DEAL })
     .first();

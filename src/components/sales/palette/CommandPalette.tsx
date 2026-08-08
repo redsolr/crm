@@ -32,6 +32,7 @@ import { CreateContactModal } from "../CreateContactModal";
 import { CreateCallNoteModal } from "../CreateCallNoteModal";
 import { TransitionToClosedModal } from "../TransitionToClosedModal";
 import { SALES_TYPE_KEYS } from "@/lib/sales/constants";
+import { setPipelineViewMode } from "../pipeline-view-mode";
 
 type PaletteLevel =
   | { kind: "root" }
@@ -173,7 +174,8 @@ export function CommandPalette() {
     // Root level: navigation + create verbs + record jump.
     const nav: PaletteItem[] = [
       { id: "nav-pipeline", label: "Go to Pipeline", run: () => { router.push("/sales"); close(); } },
-      { id: "nav-inbox", label: "Go to Inbox", run: () => { router.push("/sales/inbox"); close(); } },
+      // The Inbox is the Pipeline's first tab — select it, then land.
+      { id: "nav-inbox", label: "Go to Inbox", run: () => { setPipelineViewMode("inbox"); router.push("/sales"); close(); } },
       { id: "nav-interviews", label: "Go to Interviews", run: () => { router.push("/sales/interviews"); close(); } },
       { id: "nav-companies", label: "Go to Companies", run: () => { router.push("/sales/companies"); close(); } },
       { id: "nav-contacts", label: "Go to Contacts", run: () => { router.push("/sales/contacts"); close(); } },

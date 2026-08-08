@@ -1210,55 +1210,13 @@ body.is-dragging .project-board-card {
   }
 }
 
-/* ── Pipeline Summary tab (the day-start feed) ── */
-
-.crm-summary-pulse {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  padding: 10px 14px;
-  border: 1px solid var(--theme-border-primary);
-  border-radius: 10px;
-  background: var(--theme-bg-secondary);
-  font-size: 13px;
-  color: var(--theme-text-secondary);
-}
-
-.crm-summary-pulse-value {
-  font-weight: 650;
-  color: var(--crm-green);
-}
-
-.crm-summary-pulse-due {
-  font-weight: 650;
-  color: var(--crm-red, #e5484d);
-}
-
-.crm-summary-pulse-clear {
-  color: var(--theme-text-muted);
-}
-
-.crm-summary-heading {
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--theme-text-muted);
-  margin-bottom: 8px;
-}
-
-.crm-summary-empty {
-  font-size: 13px;
-  color: var(--theme-text-muted);
-}
-
-/* ── Morning digest card (ambient-digest arc) — blue = AI ── */
+/* ── Morning digest card (ambient-digest arc) — tops the Inbox tab.
+   Neutral card border (founder 2026-08-08: the blue AI rail was
+   dropped; the label carries the provenance). ── */
 
 .crm-digest-card {
   padding: 12px 14px;
   border: 1px solid var(--theme-border-primary);
-  border-left: 3px solid var(--theme-accent-blue);
   border-radius: 10px;
   background: var(--theme-bg-secondary);
 }
@@ -1271,7 +1229,17 @@ body.is-dragging .project-board-card {
 }
 
 .crm-digest-heading {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--theme-text-muted);
   margin-bottom: 6px;
+}
+
+.crm-digest-empty {
+  font-size: 13px;
+  color: var(--theme-text-muted);
 }
 
 .crm-digest-date {
@@ -1292,10 +1260,10 @@ body.is-dragging .project-board-card {
 }
 
 @media (max-width: 767px) {
-  /* Join the shared 12px mobile gutter (desktop keeps px-5 = 20px). */
-  .sales-pipeline-summary {
-    padding-left: 12px;
-    padding-right: 12px;
+  /* Join the shared 12px mobile gutter (desktop keeps mx-5 = 20px). */
+  .sales-inbox-digest {
+    margin-left: 12px;
+    margin-right: 12px;
   }
 }
 

@@ -23,6 +23,7 @@ import {
   STEP_TIMEOUT,
   createAccountViaUi,
   createOpportunityViaUi,
+  ensureTableMode,
 } from "./helpers/sales-ui";
 
 test.use({ viewport: { width: 1920, height: 900 } });
@@ -33,6 +34,7 @@ async function seedPipeline(page: Page) {
   await expect(page.getByTestId("sales-pipeline")).toBeVisible({
     timeout: STEP_TIMEOUT,
   });
+  await ensureTableMode(page); // rows live in the table layout
   await createAccountViaUi(page, "Probe Co");
   await expect(page.getByTestId("sales-account-name-input")).toHaveCount(0, {
     timeout: STEP_TIMEOUT,
@@ -134,31 +136,31 @@ test.describe("Wide viewport (≥1440 screen-centered branch)", () => {
       '[data-testid="sales-pipeline-mode-toggle"] [role="tab"]',
     );
     const board = page.getByTestId("sales-pipeline-mode-kanban");
-    const summary = page.getByTestId("sales-pipeline-mode-summary");
+    const inbox = page.getByTestId("sales-pipeline-mode-inbox");
     const boardBox = await board.boundingBox();
-    const summaryBox = await summary.boundingBox();
-    if (!boardBox || !summaryBox) throw new Error("no tab boxes");
+    const inboxBox = await inbox.boundingBox();
+    if (!boardBox || !inboxBox) throw new Error("no tab boxes");
     await page.mouse.move(
       boardBox.x + boardBox.width / 2,
       boardBox.y + boardBox.height / 2,
     );
     await page.mouse.down();
     await page.mouse.move(
-      summaryBox.x + 4,
-      summaryBox.y + summaryBox.height / 2,
+      inboxBox.x + 4,
+      inboxBox.y + inboxBox.height / 2,
       { steps: 10 },
     );
     await page.mouse.up();
     await expect
       .poll(async () => tabs.allInnerTexts(), { timeout: STEP_TIMEOUT })
-      .toEqual(["Board", "Summary", "Table"]);
+      .toEqual(["Board", "Inbox", "Table"]);
     await page.reload();
     await expect(
       page.getByTestId("sales-pipeline-mode-toggle"),
     ).toBeVisible({ timeout: STEP_TIMEOUT });
     await expect
       .poll(async () => tabs.allInnerTexts(), { timeout: STEP_TIMEOUT })
-      .toEqual(["Board", "Summary", "Table"]);
+      .toEqual(["Board", "Inbox", "Table"]);
   });
 
   test("row click opens the peek panel over the centered column", async ({
