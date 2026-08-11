@@ -1,8 +1,10 @@
 import type OpenAI from "openai";
+import { buildAskSystemPrompt } from "./ask-prompt";
 import { ASK_TOOLS, ASK_TOOLS_BY_NAME } from "./ask-tools";
 import { appendMessage, loadHistory } from "./chats";
 import { ASK_AGENT_ACTOR } from "./constants";
 import { openaiClient, ASK_MODEL } from "./llm";
+import { listMemories, MEMORY_PROMPT_ITEMS } from "./memories";
 
 /**
  * Ask chat agentic loop (backend-swap: Ask chat) — the local
@@ -25,15 +27,9 @@ const MAX_TOOL_LOOPS = 8;
 
 const MAX_OUTPUT_TOKENS = 16000;
 
-const SYSTEM_PROMPT = [
-  "You are the Ask assistant inside Jurisimus's internal sales CRM — the founder runs the 10-firm validation tour pipeline here. Records are work items: accounts (companies/firms), contacts, opportunities (pipeline deals, children of accounts), call notes, and commitments.",
-  "Answer questions about the pipeline by looking records up with find_crm_record — ground answers in this CRM's records, never invent record data. Keep answers focused and concise.",
-  "You have server-side tools that act on real records.",
-  "- Complete EVERY action the user asked for by calling tools — one call per action. When a request needs multiple records (e.g. a company AND a deal, or a deal AND a call note), make each tool call in sequence before giving your final answer.",
-  "- Never state that an action was completed unless a tool result in this conversation confirms it. If a tool failed or you stopped early, say exactly what was done and what was not.",
-  "- Pass along every detail the user provided (amounts, dates, sizes, sources) as tool inputs; do not drop details silently.",
-  "- Do not stop to ask about OPTIONAL fields the user did not mention — create the records with what you have; missing optional details can be filled in later. Only ask when a REQUIRED input is genuinely unknowable from the request.",
-].join("\n");
+// System prompt lives in `ask-prompt.ts` (pure) — memory injection is
+// per-send: saved facts are loaded fresh so a remember_fact in one chat
+// shapes the next send everywhere.
 
 /** Ask-tool registry → OpenAI function-tool declarations. */
 const OPENAI_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] =
@@ -90,8 +86,12 @@ export async function runAskStream(
     return;
   }
 
+  const memories = await listMemories(MEMORY_PROMPT_ITEMS);
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: "system", content: SYSTEM_PROMPT },
+    {
+      role: "system",
+      content: buildAskSystemPrompt(memories.map((m) => m.content)),
+    },
     ...history,
   ];
 

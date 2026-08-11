@@ -25,18 +25,22 @@ describe("Ask wire contract", () => {
 });
 
 describe("Ask sales tools", () => {
-  it("exposes exactly the 8 sales tools by name", () => {
+  it("exposes exactly the 11 tools by name", () => {
     expect(ASK_TOOLS.map((t) => t.definition.name).sort()).toEqual([
       "complete_commitment",
       "create_account",
       "create_commitment",
       "create_opportunity",
       "find_crm_record",
+      "forget_fact",
       "list_commitments",
+      "list_memories",
       "log_call_note",
+      "remember_fact",
       "update_opportunity",
     ]);
     expect(ASK_TOOLS_BY_NAME.get("find_crm_record")).toBeDefined();
+    expect(ASK_TOOLS_BY_NAME.get("remember_fact")).toBeDefined();
   });
 
   it("declares Messages-API tool definitions (input_schema with required)", () => {

@@ -211,8 +211,9 @@ Rules that keep it sane:
 
 ### MCP server (`POST /mcp`)
 
-The agent door — the 6 Ask-panel sales tools over Streamable HTTP,
-bearer-authed via `CRM_MCP_TOKEN`, closed when unset. Tool registry is
+The agent door — the Ask-panel tool registry (11 tools: sales CRUD,
+commitments, and agent memory) over Streamable HTTP, bearer-authed via
+`CRM_MCP_TOKEN`, closed when unset. Tool registry is
 `src/server/ask-tools.ts` (single source; the route only adapts). Full
 doc: [docs/mcp.md](./docs/mcp.md).
 

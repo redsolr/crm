@@ -35,6 +35,7 @@ const PROTECTED_READS = [
   "/api/chats/history",
   "/api/workspaces",
   "/api/invites",
+  "/api/memories",
   "/api/digest/latest",
   "/api/notifications/vapid-key",
 ];
@@ -45,6 +46,7 @@ const PROTECTED_WRITES = [
   { path: "/api/views", data: { name: "anon", kind: "work_items" } },
   { path: "/api/chats", data: {} },
   { path: "/api/invites", data: { email: "anon@example.com" } },
+  { path: "/api/memories", data: { content: "anon probe fact" } },
   { path: "/api/responses", data: { ask: "text", input: { question: "hi" } } },
 ];
 

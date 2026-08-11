@@ -338,6 +338,28 @@ export const digests = pgTable("digests", {
     .defaultNow(),
 });
 
+/**
+ * Agent memories — durable facts the assistant keeps about the founder
+ * and the sales motion (ChatGPT-memory shape): tone preferences,
+ * standing rules, business context. Written by the agent via the
+ * remember_fact/forget_fact tools (Ask panel + /mcp) or by hand on
+ * /account; injected into every Ask system prompt.
+ */
+export const agentMemories = pgTable("agent_memories", {
+  id: text("id").primaryKey(),
+  /** One durable fact, phrased as a short standalone sentence. */
+  content: text("content").notNull(),
+  /** Who saved it — a seat or an agent actor (attribution discipline). */
+  createdById: text("created_by_id").notNull(),
+  createdByName: text("created_by_name"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const invites = pgTable("invites", {
   id: text("id").primaryKey(),
   /** URL token — the secret. High-entropy base58, never logged. */

@@ -61,6 +61,11 @@ export const queryKeys = {
     all: ["invites"] as const,
   },
 
+  // Agent memories (ChatGPT-memory arc)
+  memories: {
+    all: ["memories"] as const,
+  },
+
   // Chat
   chats: {
     all: ["chats"] as const,

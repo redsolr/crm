@@ -300,6 +300,42 @@ test("Ask loop answers grounded, writes as Ask assistant; /mcp writes as Claude"
     commitsAfter.filter((c) => c.created_by_name === "Ask assistant").length,
   ).toBeGreaterThanOrEqual(1);
 
+  // ── 6. MEMORY round-trip: telling the assistant a durable
+  //       preference lands a remember_fact row; asking it to forget
+  //       removes it. Outcome-only: the state on /api/memories, never
+  //       the reply wording. ─────────────────────────────────────────
+  const remember = await askStream(
+    page,
+    chatId,
+    "Remember this standing preference for the future: keep every follow-up draft under 50 words. Save it to memory.",
+  );
+  expect(remember.toolSteps).toContain("remember_fact");
+  const memoriesAfterSave = (
+    await getJson<{ data: Array<{ id: string; content: string }> }>(
+      page,
+      "/api/memories",
+    )
+  ).data;
+  expect(
+    memoriesAfterSave.some((m) => m.content.includes("50 words")),
+  ).toBe(true);
+
+  const forget = await askStream(
+    page,
+    chatId,
+    "Forget the saved memory about follow-up draft length.",
+  );
+  expect(forget.toolSteps).toContain("forget_fact");
+  const memoriesAfterForget = (
+    await getJson<{ data: Array<{ id: string; content: string }> }>(
+      page,
+      "/api/memories",
+    )
+  ).data;
+  expect(
+    memoriesAfterForget.some((m) => m.content.includes("50 words")),
+  ).toBe(false);
+
   // ── Cleanup: close the deal (accumulating-DB etiquette). The
   //    narrative scene bumped the version — read it, don't guess. ────
   const versionNow = (

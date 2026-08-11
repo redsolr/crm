@@ -8,6 +8,7 @@ import {
   upsertValue,
   validateBareValue,
 } from "./attributes";
+import { forgetFact, listMemories, rememberFact } from "./memories";
 import {
   findTypeByKey,
   insertWorkItem,
@@ -991,6 +992,142 @@ const completeCommitment: AskTool = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Memory tools — ChatGPT-memory shape (2026-08-12). Durable facts about
+// the founder/motion, injected into every Ask system prompt; on /mcp
+// (no injected prompt) clients read them with list_memories. Semantics
+// live in `memories.ts`, shared with the /api/memories admin surface.
+// ---------------------------------------------------------------------------
+
+const rememberFactTool: AskTool = {
+  definition: {
+    name: "remember_fact",
+    description:
+      "Save a durable fact or standing preference about the user or the sales motion to long-term memory (e.g. how to draft follow-ups, selling context, rules to always apply). One short standalone sentence per fact. Never save secrets or credentials.",
+    input_schema: {
+      type: "object",
+      properties: {
+        fact: {
+          type: "string",
+          description:
+            "The fact to remember, e.g. 'Prefers follow-up drafts to be short and direct, no pleasantries.'",
+        },
+      },
+      required: ["fact"],
+    },
+  },
+  async execute(input, agent) {
+    const fact = typeof input.fact === "string" ? input.fact.trim() : "";
+    if (fact === "" || fact.length > 500) {
+      return {
+        content:
+          "fact is required — one standalone sentence up to 500 characters.",
+        isError: true,
+      };
+    }
+    try {
+      const result = await rememberFact(fact, agent);
+      if (!result.saved && result.reason === "already_saved") {
+        return { content: "That fact is already saved in memory." };
+      }
+      if (!result.saved) {
+        return {
+          content:
+            "Memory is full — ask the user to prune saved memories on the Account page first.",
+          isError: true,
+        };
+      }
+      return { content: `Remembered: "${fact}".` };
+    } catch (err) {
+      console.error(`[ask-tools] remember_fact failed:`, err);
+      return {
+        content: `Could not save the memory: ${errMessage(err)}`,
+        isError: true,
+      };
+    }
+  },
+};
+
+const forgetFactTool: AskTool = {
+  definition: {
+    name: "forget_fact",
+    description:
+      "Delete a saved memory (matched by its wording). Use when the user asks to forget something or a saved fact is no longer true. Resolve ambiguity by asking the user, not by guessing.",
+    input_schema: {
+      type: "object",
+      properties: {
+        fact: {
+          type: "string",
+          description: "The saved memory to delete, or a distinctive part of it.",
+        },
+      },
+      required: ["fact"],
+    },
+  },
+  async execute(input) {
+    const fact = typeof input.fact === "string" ? input.fact.trim() : "";
+    if (fact === "") {
+      return { content: "fact is required.", isError: true };
+    }
+    try {
+      const result = await forgetFact(fact);
+      if ("notFound" in result) {
+        return {
+          content: `No saved memory matches "${fact}". Call list_memories to see what is saved.`,
+          isError: true,
+        };
+      }
+      if ("ambiguous" in result) {
+        return {
+          content: `Several memories match — ask the user which one to forget: ${result.ambiguous
+            .map((m) => `"${m}"`)
+            .join("; ")}`,
+          isError: true,
+        };
+      }
+      return { content: `Forgot: "${result.forgotten}".` };
+    } catch (err) {
+      console.error(`[ask-tools] forget_fact failed:`, err);
+      return {
+        content: `Could not delete the memory: ${errMessage(err)}`,
+        isError: true,
+      };
+    }
+  },
+};
+
+const listMemoriesTool: AskTool = {
+  definition: {
+    name: "list_memories",
+    description:
+      "Read the saved long-term memories (standing facts and preferences about the user and the sales motion). Ask-panel sends already carry them in context; on /mcp call this at the start of a working session to apply the user's standing rules.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  async execute() {
+    try {
+      const rows = await listMemories();
+      if (rows.length === 0) {
+        return { content: "No memories saved yet." };
+      }
+      return {
+        content: `${rows.length} saved ${rows.length === 1 ? "memory" : "memories"} (oldest first):\n${rows
+          .map((r) => `- ${r.content}`)
+          .join("\n")}`,
+      };
+    } catch (err) {
+      console.error(`[ask-tools] list_memories failed:`, err);
+      return {
+        content: `Could not read memories: ${errMessage(err)}`,
+        isError: true,
+      };
+    }
+  },
+};
+
 export const ASK_TOOLS: AskTool[] = [
   findCrmRecord,
   createAccount,
@@ -1000,6 +1137,9 @@ export const ASK_TOOLS: AskTool[] = [
   createCommitment,
   listCommitments,
   completeCommitment,
+  rememberFactTool,
+  forgetFactTool,
+  listMemoriesTool,
 ];
 
 export const ASK_TOOLS_BY_NAME = new Map(

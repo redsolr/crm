@@ -2,9 +2,9 @@
 
 > **What this is**: the CRM's Model Context Protocol endpoint. Any MCP
 > client (Claude Code, Claude Desktop, Cursor, …) can read and write
-> the pipeline directly — the same six tools the in-app Ask panel
-> uses. This is the programmatic door for agent-driven data entry
-> (bulk seeding, enrichment, call-note logging) — the Attio-style
+> the pipeline directly — the same tool registry the in-app Ask panel
+> uses (11 tools). This is the programmatic door for agent-driven data
+> entry (bulk seeding, enrichment, call-note logging) — the Attio-style
 > surface, sized for an internal tool.
 
 ## Endpoint
@@ -83,6 +83,16 @@ tool there publishes it here with no route change.
 | `create_commitment` | A promise made to a firm — lands in the Inbox, ranked by due date |
 | `list_commitments` | List commitments by status / title / due window — soonest due first |
 | `complete_commitment` | Mark a commitment done or dropped, with an optional timeline note |
+| `remember_fact` | Save a durable fact/preference to agent memory (ChatGPT-memory shape) |
+| `forget_fact` | Delete a saved memory by its wording |
+| `list_memories` | Read the saved memories — call at session start on /mcp (Ask sends carry them in-context) |
+
+**Agent memory (2026-08-12)**: durable facts about the founder and the
+sales motion live in the `agent_memories` table. Ask-panel sends inject
+them into the system prompt automatically; /mcp clients read them with
+`list_memories` (a scheduled routine should call it first and apply the
+standing rules). The founder reviews/adds/deletes on `/account` →
+Assistant memory, backed by the session-gated `/api/memories` routes.
 
 ## Delegated-work loop (Claude ↔ CRM)
 
