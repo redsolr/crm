@@ -93,11 +93,12 @@ test.describe("Ask surface", () => {
       timeout: STEP_TIMEOUT,
     });
 
-    // The wire payload carried the Inbox context preamble (the
-    // landing tab frames the conversation).
+    // The wire payload carried the landing-tab context preamble (the
+    // tab is labeled Summary since d6829c7, wording carried through
+    // the Ask context in 3393165).
     expect(capturedStreamInputs).toHaveLength(1);
     expect(capturedStreamInputs[0]).toBe(
-      `[Viewing: Inbox (follow-ups + commitments)]\n\n${question}`,
+      `[Viewing: Summary (follow-ups + commitments)]\n\n${question}`,
     );
 
     // ── Expand → full-page /sales/ask, same conversation ────────────
