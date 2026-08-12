@@ -4,6 +4,7 @@
 
 > **Key References** — read these for full context before major changes:
 >
+> - **[docs/features.md](./docs/features.md)** — Current capability map: what the product can do today, residuals, and deliberate cuts. **Any feature-visible change updates it in the SAME commit** (same discipline as threading an actor).
 > - **[docs/index.md](./docs/index.md)** — Architecture, data flow, API clients, query hooks, testing
 > - **[docs/components/index.md](./docs/components/index.md)** — All UI components with props, usage examples, stores, hooks
 > - **[docs/authentication.md](./docs/authentication.md)** — WorkOS auth flow, middleware, token exchange
