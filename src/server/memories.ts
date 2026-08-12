@@ -1,6 +1,7 @@
-import { and, asc, eq, ilike } from "drizzle-orm";
+import { and, asc, eq, ilike, sql } from "drizzle-orm";
 import { agentMemories, db } from "@/db";
 import { mintId } from "@/db/ids";
+import { escapeLikePattern } from "./sql-like";
 
 /**
  * Agent memory (ChatGPT-memory shape, 2026-08-12) — durable facts about
@@ -41,8 +42,9 @@ export async function listMemories(limit = MEMORY_CAP): Promise<MemoryRow[]> {
 }
 
 export type RememberResult =
-  | { saved: true; id: string }
-  | { saved: false; reason: "already_saved" | "memory_full" };
+  | { saved: true; memory: MemoryRow }
+  | { saved: false; reason: "already_saved"; memory: MemoryRow }
+  | { saved: false; reason: "memory_full" };
 
 /** Save a fact unless an identical one exists (case-insensitive). */
 export async function rememberFact(
@@ -50,23 +52,29 @@ export async function rememberFact(
   actor: { id: string; name: string | null },
 ): Promise<RememberResult> {
   const existing = await db.query.agentMemories.findFirst({
-    where: ilike(agentMemories.content, content),
+    where: ilike(agentMemories.content, escapeLikePattern(content)),
   });
-  if (existing) return { saved: false, reason: "already_saved" };
+  if (existing) {
+    return { saved: false, reason: "already_saved", memory: existing };
+  }
 
-  const rows = await listMemories();
-  if (rows.length >= MEMORY_CAP) {
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(agentMemories);
+  if (Number(count) >= MEMORY_CAP) {
     return { saved: false, reason: "memory_full" };
   }
 
-  const id = mintId("memo");
-  await db.insert(agentMemories).values({
-    id,
-    content,
-    createdById: actor.id,
-    createdByName: actor.name,
-  });
-  return { saved: true, id };
+  const [created] = await db
+    .insert(agentMemories)
+    .values({
+      id: mintId("memo"),
+      content,
+      createdById: actor.id,
+      createdByName: actor.name,
+    })
+    .returning();
+  return { saved: true, memory: created };
 }
 
 export type ForgetResult =
@@ -79,7 +87,7 @@ export type ForgetResult =
  * several matches are returned so the caller can ask which one.
  */
 export async function forgetFact(match: string): Promise<ForgetResult> {
-  const escaped = match.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const escaped = escapeLikePattern(match);
   const matches = await db
     .select({ id: agentMemories.id, content: agentMemories.content })
     .from(agentMemories)

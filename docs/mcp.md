@@ -93,6 +93,9 @@ them into the system prompt automatically; /mcp clients read them with
 `list_memories` (a scheduled routine should call it first and apply the
 standing rules). The founder reviews/adds/deletes on `/account` →
 Assistant memory, backed by the session-gated `/api/memories` routes.
+A **pause toggle** (same panel; `app_settings.memory_enabled`) turns the
+agent side off entirely — nothing injected, `remember_fact`/`forget_fact`
+refuse — while keeping the saved rows and the founder's own management.
 
 ## Delegated-work loop (Claude ↔ CRM)
 

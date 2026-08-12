@@ -339,6 +339,19 @@ export const digests = pgTable("digests", {
 });
 
 /**
+ * Workspace-level app settings — single-tenant key/value (jsonb).
+ * First consumer: the memory pause toggle. Read through
+ * `server/settings.ts`, never directly.
+ */
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
  * Agent memories — durable facts the assistant keeps about the founder
  * and the sales motion (ChatGPT-memory shape): tone preferences,
  * standing rules, business context. Written by the agent via the

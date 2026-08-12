@@ -16,12 +16,31 @@ export interface AgentMemory {
   created_at: string;
 }
 
+export interface MemoryList {
+  memories: AgentMemory[];
+  /** False = the founder paused memory (not injected, not writable). */
+  enabled: boolean;
+}
+
 class MemoriesApiClient extends BaseApiClient {
-  async listMemories(): Promise<AgentMemory[]> {
-    const raw = await this.request<{ data: AgentMemory[] }>("/memories", {
-      method: "GET",
+  async listMemories(): Promise<MemoryList> {
+    const raw = await this.request<{ data: AgentMemory[]; enabled: boolean }>(
+      "/memories",
+      { method: "GET" },
+    );
+    return { memories: raw.data, enabled: raw.enabled };
+  }
+
+  async setMemoryEnabled(
+    enabled: boolean,
+    idempotencyKey: string = freshIdempotencyKey(),
+  ): Promise<boolean> {
+    const raw = await this.request<{ enabled: boolean }>("/memories", {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
+      headers: { "Idempotency-Key": idempotencyKey },
     });
-    return raw.data;
+    return raw.enabled;
   }
 
   async createMemory(

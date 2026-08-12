@@ -160,11 +160,21 @@ export const test = base.extend<{
       if (request.method() !== "GET") return route.fallback();
       await route.fulfill(emptyJson({ data: [] }));
     });
-    // Agent memories (account → Assistant memory section) — `{ data: [] }`.
+    // Agent memories (account → Assistant memory section).
     await page.route(`${API_ROOT}/memories**`, async (route, request) => {
       if (request.method() !== "GET") return route.fallback();
-      await route.fulfill(emptyJson({ data: [] }));
+      await route.fulfill(emptyJson({ data: [], enabled: true }));
     });
+    // Realtime session mint — env-off behavior is 204 (layer renders
+    // nothing); every page load fetches it, and before this handler the
+    // tripwire 599'd it on every spec (fail-soft, but pure log noise).
+    await page.route(
+      (url) => url.pathname === "/api/realtime/session",
+      async (route, request) => {
+        if (request.method() !== "GET") return route.fallback();
+        await route.fulfill({ status: 204 });
+      },
+    );
     // Communication threads LIST — the matters explorer's communications
     // tree background-fetches this on views that never registered the
     // matter-intake handlers (tripwire hit 2026-07-10, matters-lab spec).

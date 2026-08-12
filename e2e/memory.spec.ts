@@ -5,6 +5,7 @@
  * - Account → Assistant memory lists saved facts.
  * - Adding a fact posts `{ content }` and the row appears.
  * - Deleting a row removes it and the empty state returns.
+ * - The pause toggle PATCHes `{ enabled }` and surfaces the paused note.
  *
  * The agent-side halves live elsewhere: tool registry + prompt
  * injection in jest (`ask.test.ts`, `ask-prompt.test.ts`), the real
@@ -18,12 +19,22 @@ import { API_ROOT } from "./handlers/shared";
 test.describe("Account → Assistant memory", () => {
   test("adds a memory, lists it, deletes it", async ({ authedPage }) => {
     const memories: Array<Record<string, unknown>> = [];
+    let enabled = true;
     await authedPage.route(`${API_ROOT}/memories`, async (route, request) => {
       if (request.method() === "GET") {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ data: memories }),
+          body: JSON.stringify({ data: memories, enabled }),
+        });
+        return;
+      }
+      if (request.method() === "PATCH") {
+        enabled = (request.postDataJSON() as { enabled: boolean }).enabled;
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ enabled }),
         });
         return;
       }
@@ -76,5 +87,15 @@ test.describe("Account → Assistant memory", () => {
     await authedPage.getByTestId("memory-row-delete").click();
     await expect(rowLocator).toHaveCount(0);
     await expect(authedPage.getByTestId("memory-empty")).toBeVisible();
+
+    // ── Pause toggle round-trip ─────────────────────────────────────
+    const toggleButton = authedPage.getByTestId("memory-toggle");
+    await expect(toggleButton).toHaveText("Pause memory");
+    await toggleButton.click();
+    await expect(toggleButton).toHaveText("Resume memory");
+    await expect(authedPage.getByTestId("memory-paused-note")).toBeVisible();
+    await toggleButton.click();
+    await expect(toggleButton).toHaveText("Pause memory");
+    await expect(authedPage.getByTestId("memory-paused-note")).toHaveCount(0);
   });
 });

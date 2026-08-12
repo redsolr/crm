@@ -64,6 +64,13 @@
       "when": 1786489252508,
       "tag": "0008_melted_frank_castle",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786492907088,
+      "tag": "0009_shocking_legion",
+      "breakpoints": true
     }
   ]
 }

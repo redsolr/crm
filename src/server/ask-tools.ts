@@ -9,6 +9,8 @@ import {
   validateBareValue,
 } from "./attributes";
 import { forgetFact, listMemories, rememberFact } from "./memories";
+import { isMemoryEnabled } from "./settings";
+import { escapeLikePattern } from "./sql-like";
 import {
   findTypeByKey,
   insertWorkItem,
@@ -80,10 +82,6 @@ interface SalesRecordRow {
   stateKey: string;
 }
 
-/** Escape LIKE wildcards so a user-typed query matches literally. */
-function escapeLikePattern(value: string): string {
-  return value.replace(/[\\%_]/g, (c) => `\\${c}`);
-}
 
 /**
  * Find sales records by title substring (or exact `wi_…` id) and type.
@@ -1026,6 +1024,13 @@ const rememberFactTool: AskTool = {
       };
     }
     try {
+      if (!(await isMemoryEnabled())) {
+        return {
+          content:
+            "Memory is paused — the user can resume it on the Account page before new facts can be saved.",
+          isError: true,
+        };
+      }
       const result = await rememberFact(fact, agent);
       if (!result.saved && result.reason === "already_saved") {
         return { content: "That fact is already saved in memory." };
@@ -1070,6 +1075,13 @@ const forgetFactTool: AskTool = {
       return { content: "fact is required.", isError: true };
     }
     try {
+      if (!(await isMemoryEnabled())) {
+        return {
+          content:
+            "Memory is paused — the user can resume it on the Account page before memories can be changed.",
+          isError: true,
+        };
+      }
       const result = await forgetFact(fact);
       if ("notFound" in result) {
         return {

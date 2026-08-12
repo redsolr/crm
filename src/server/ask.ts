@@ -5,6 +5,7 @@ import { appendMessage, loadHistory } from "./chats";
 import { ASK_AGENT_ACTOR } from "./constants";
 import { openaiClient, ASK_MODEL } from "./llm";
 import { listMemories, MEMORY_PROMPT_ITEMS } from "./memories";
+import { isMemoryEnabled } from "./settings";
 
 /**
  * Ask chat agentic loop (backend-swap: Ask chat) — the local
@@ -86,7 +87,10 @@ export async function runAskStream(
     return;
   }
 
-  const memories = await listMemories(MEMORY_PROMPT_ITEMS);
+  // Paused memory (Account toggle) = nothing injected this send.
+  const memories = (await isMemoryEnabled())
+    ? await listMemories(MEMORY_PROMPT_ITEMS)
+    : [];
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     {
       role: "system",

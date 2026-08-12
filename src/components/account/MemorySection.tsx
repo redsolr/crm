@@ -45,6 +45,12 @@ export function MemorySection() {
     onError: (err) => console.error("[memories] delete failed:", err),
   });
 
+  const toggle = useMutation({
+    mutationFn: (enabled: boolean) => memoriesApi.setMemoryEnabled(enabled),
+    onSuccess: () => void invalidate(),
+    onError: (err) => console.error("[memories] toggle failed:", err),
+  });
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const value = content.trim();
@@ -55,16 +61,39 @@ export function MemorySection() {
     create.mutate(value);
   }
 
-  const rows = memories.data ?? [];
+  const rows = memories.data?.memories ?? [];
+  const enabled = memories.data?.enabled ?? true;
 
   return (
     <section className="crm-panel space-y-3" data-testid="account-memory">
-      <h2 className="crm-panel-title">Assistant memory</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="crm-panel-title">Assistant memory</h2>
+        {memories.data && (
+          <button
+            type="button"
+            onClick={() => toggle.mutate(!enabled)}
+            disabled={toggle.isPending}
+            className="crm-btn-ghost crm-btn-xs disabled:opacity-50"
+            data-testid="memory-toggle"
+          >
+            {enabled ? "Pause memory" : "Resume memory"}
+          </button>
+        )}
+      </div>
       <p className="text-[13px] text-[var(--theme-text-muted)]">
         Standing facts the assistant applies in every Ask conversation —
         it saves them itself when you share something durable ("remember
         that…"), or add one here. Delete anything it shouldn't keep.
       </p>
+      {!enabled && (
+        <p
+          className="text-[12.5px] font-medium text-[var(--theme-text-secondary)]"
+          data-testid="memory-paused-note"
+        >
+          Memory is paused — saved facts are not used and the assistant
+          cannot save new ones until you resume.
+        </p>
+      )}
 
       <form
         onSubmit={handleSubmit}
