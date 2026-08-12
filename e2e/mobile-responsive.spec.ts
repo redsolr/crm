@@ -114,6 +114,10 @@ test.describe("Mobile shell (390px)", () => {
   test("core surfaces keep the body free of sideways scroll", async ({
     authedPage,
   }) => {
+    // Six sequential dev-mode navigations share this one test — the
+    // default 30s budget structurally can't fit them on a local run
+    // (0-for-8 on 2026-08-12 while every sibling spec passed).
+    test.setTimeout(120_000);
     await expectNoBodyHorizontalScroll(authedPage);
 
     for (const path of [

@@ -205,12 +205,19 @@ test.describe("Global search", () => {
     await expect(authedPage.getByTestId("crm-search-nav")).toBeVisible({
       timeout: STEP_TIMEOUT,
     });
-    // No recents → index 0 = Pipeline; ↓ moves to Inbox; Enter routes.
+    // No recents → index 0 = Pipeline; ↓ moves to Summary; Enter routes.
+    // The suggestion targets /sales/inbox, which REDIRECTS to the
+    // pipeline with the Summary tab selected (Inbox-first rework) — so
+    // the outcome to assert is the settled URL + active tab, never the
+    // transient pre-redirect URL (a race this spec used to lose).
     await authedPage.keyboard.press("ArrowDown");
     await authedPage.keyboard.press("Enter");
-    await expect(authedPage).toHaveURL(/\/sales\/inbox$/, {
+    await expect(authedPage).toHaveURL(/\/sales$/, {
       timeout: STEP_TIMEOUT,
     });
+    await expect(
+      authedPage.getByTestId("sales-pipeline-mode-inbox"),
+    ).toHaveAttribute("data-active", "true", { timeout: STEP_TIMEOUT });
     await expect(authedPage.getByTestId("crm-search-dropdown")).toHaveCount(0);
   });
 
