@@ -6,7 +6,7 @@ import {
 } from "jose";
 import type { AuthInfo } from "@modelcontextprotocol/server";
 import { getWorkOS } from "@/lib/workos";
-import { MCP_AGENT_ACTOR } from "./constants";
+import { MCP_AGENT_ACTOR, MCP_BRIDGE_ACTOR } from "./constants";
 
 /**
  * MCP authorization — the OAuth 2.1 resource-server layer plus the
@@ -151,6 +151,19 @@ export async function verifyMcpToken(
       clientId: "crm-service-token",
       scopes: [],
       extra: { actor: MCP_AGENT_ACTOR },
+    };
+  }
+
+  // The Jurisimus platform's crm-bridge — a SECOND static bearer with
+  // its own actor so Mission Control-originated writes are attributed
+  // to the system that made them (WHO-wrote doctrine), never to Claude.
+  const bridgeToken = process.env.CRM_MCP_BRIDGE_TOKEN;
+  if (bridgeToken && bearer === bridgeToken) {
+    return {
+      token: bearer,
+      clientId: "jurisimus-bridge-token",
+      scopes: [],
+      extra: { actor: MCP_BRIDGE_ACTOR },
     };
   }
 

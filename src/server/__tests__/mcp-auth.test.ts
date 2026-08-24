@@ -16,7 +16,7 @@ import {
   verifyAuthkitAccessToken,
   verifyMcpToken,
 } from "@/server/mcp-auth";
-import { MCP_AGENT_ACTOR } from "@/server/constants";
+import { MCP_AGENT_ACTOR, MCP_BRIDGE_ACTOR } from "@/server/constants";
 
 const ISSUER = "https://example-test.authkit.app";
 const RESOURCE = "https://crm.example.com/mcp";
@@ -144,11 +144,15 @@ describe("verifyAuthkitAccessToken", () => {
 describe("verifyMcpToken (service token path)", () => {
   const previous = {
     token: process.env.CRM_MCP_TOKEN,
+    bridgeToken: process.env.CRM_MCP_BRIDGE_TOKEN,
     domain: process.env.WORKOS_AUTHKIT_DOMAIN,
   };
   afterEach(() => {
     if (previous.token === undefined) delete process.env.CRM_MCP_TOKEN;
     else process.env.CRM_MCP_TOKEN = previous.token;
+    if (previous.bridgeToken === undefined)
+      delete process.env.CRM_MCP_BRIDGE_TOKEN;
+    else process.env.CRM_MCP_BRIDGE_TOKEN = previous.bridgeToken;
     if (previous.domain === undefined) delete process.env.WORKOS_AUTHKIT_DOMAIN;
     else process.env.WORKOS_AUTHKIT_DOMAIN = previous.domain;
   });
@@ -160,6 +164,16 @@ describe("verifyMcpToken (service token path)", () => {
     const auth = await verifyMcpToken(req, "service-secret");
     expect(auth?.clientId).toBe("crm-service-token");
     expect(actorFromAuthInfo(auth)).toEqual(MCP_AGENT_ACTOR);
+  });
+
+  it("maps the bridge token to the Jurisimus Platform actor (both tokens coexist)", async () => {
+    process.env.CRM_MCP_TOKEN = "service-secret";
+    process.env.CRM_MCP_BRIDGE_TOKEN = "bridge-secret";
+    const bridge = await verifyMcpToken(req, "bridge-secret");
+    expect(bridge?.clientId).toBe("jurisimus-bridge-token");
+    expect(actorFromAuthInfo(bridge)).toEqual(MCP_BRIDGE_ACTOR);
+    const claude = await verifyMcpToken(req, "service-secret");
+    expect(actorFromAuthInfo(claude)).toEqual(MCP_AGENT_ACTOR);
   });
 
   it("returns undefined with no bearer, and with a wrong token when OAuth is unconfigured", async () => {

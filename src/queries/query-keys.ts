@@ -66,6 +66,11 @@ export const queryKeys = {
     all: ["memories"] as const,
   },
 
+  // Jurisimus bridge (Account -> Integrations card)
+  bridge: {
+    all: ["bridge"] as const,
+  },
+
   // Chat
   chats: {
     all: ["chats"] as const,

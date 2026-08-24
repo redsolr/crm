@@ -43,6 +43,14 @@ Two doors, both verified by `src/server/mcp-auth.ts`; neither env set
    `.env.local`) — CI and the founder's long-lived `claude mcp`
    registration. Writes stamp `Claude (agent)`, unchanged. Rotate by
    changing the value and redeploying.
+3. **Bridge token (2026-08-24).** Second static bearer in
+   `CRM_MCP_BRIDGE_TOKEN` — the Jurisimus platform's crm-bridge
+   (Mission Control GTM mirror: demo-request lifecycle → company /
+   deal / call notes). Writes stamp **`Jurisimus Platform`**
+   (`MCP_BRIDGE_ACTOR`) so timelines say which SYSTEM wrote, never
+   "Claude". The platform-side var is `CRM_MCP_TOKEN` on the Railway
+   `platform` service — rotate BOTH together. Status + recent bridge
+   activity: Account → Integrations (`GET /api/bridge`).
 
 WorkOS-side prerequisites for the OAuth door — **DONE 2026-08-07 via
 the WorkOS MCP** (crm Staging env): dynamic client registration

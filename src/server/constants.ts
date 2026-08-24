@@ -29,3 +29,14 @@ export const ASK_AGENT_ACTOR = {
   id: "agent_ask",
   name: "Ask assistant",
 } as const;
+
+/**
+ * The Jurisimus platform's crm-bridge (Mission Control GTM mirror) —
+ * its own static bearer (`CRM_MCP_BRIDGE_TOKEN`) so timeline writes
+ * say which SYSTEM wrote, not "Claude". The platform-side var is
+ * `CRM_MCP_TOKEN` on the Railway `platform` service.
+ */
+export const MCP_BRIDGE_ACTOR = {
+  id: "agent_jurisimus_bridge",
+  name: "Jurisimus Platform",
+} as const;

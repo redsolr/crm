@@ -19,6 +19,7 @@ import { LoadingDots } from "@/components/shared/LoadingDots";
 import { ThemeCard } from "@/components/shared/ThemeCard";
 import { InvitesSection } from "@/components/account/InvitesSection";
 import { MemorySection } from "@/components/account/MemorySection";
+import { IntegrationsSection } from "@/components/account/IntegrationsSection";
 import { useAuth } from "@/stores/use-auth";
 import { useTheme, type ThemeMode } from "@/stores/use-theme";
 import { useUserSettings } from "@/stores/use-user-settings";
@@ -130,6 +131,9 @@ export default function AccountPage() {
 
         {/* ── Assistant memory — ChatGPT-memory arc (2026-08-12) ── */}
         <MemorySection />
+
+        {/* ── Integrations — app-ecosystem doctrine (2026-08-24) ── */}
+        <IntegrationsSection />
 
         {/* ── Subscription ── */}
         <section

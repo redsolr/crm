@@ -30,6 +30,7 @@
 ## Ask assistant (AI)
 
 - **Ask drawer + `/sales/ask` full page** — streaming SSE chat, drag-resizable drawer, same transcript expands to the Chat tab with history rail (2026-08-03)
+- **Jurisimus bridge (inbound, 2026-08-24)** — the platform's Mission Control mirrors demo-request lifecycle events through the /mcp door under its own bearer (`CRM_MCP_BRIDGE_TOKEN`) and actor ("Jurisimus Platform"): landing-form request → company (source inbound) + deal + call note; mark-contacted → note; dismiss → deal lost + note; provision → deal won + note. Account → Integrations card shows connection posture + recent bridge writes. Residual: segment select keys are best-effort mapped from the landing form's firm-size buckets (unknown keys degrade to unset, never fail).
 - **Agentic tool loop** — 11 server-side tools: `find_crm_record`, `create_account`, `create_opportunity`, `update_opportunity`, `log_call_note`, `create_commitment`, `list_commitments`, `complete_commitment`, `remember_fact`, `forget_fact`, `list_memories`; visible ✓ tool steps; multi-write narratives ("just finished the call…" → note + stage + follow-up)
 - **Agent memory (ChatGPT shape)** — durable facts injected into every Ask send; agent saves/forgets from conversation; founder manages (add/delete) on /account → Assistant memory; **pause toggle** stops injection + agent writes while keeping rows (2026-08-12)
 - **Page-context framing** — the current view rides the wire as a `[Viewing: …]` preamble (record pages, pipeline tab), never shown in the transcript
